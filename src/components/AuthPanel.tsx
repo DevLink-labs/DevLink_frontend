@@ -95,7 +95,7 @@ export default function AuthPanel({ onAuthenticated, onNotice, connectionState, 
         </form>
         <div className="auth-footnote"><Icon name="shield" size={16} /><span>로그인 정보는 보안 세션으로 관리합니다.</span></div>
       </div>
-      <p className="auth-bottom-caption">DevLink Workspace · 팀과 Agent를 위한 시작점</p>
+      <p className="auth-bottom-caption">DevLink Workspace · 팀과 Agent를 위한 시작점 <a href="/?preview=team" style={{ marginLeft: 14, color: '#6b8f4e', textDecoration: 'underline', textUnderlineOffset: 3 }}>팀 디자인 미리보기 ↗</a></p>
     </section>
   </main>
 }
