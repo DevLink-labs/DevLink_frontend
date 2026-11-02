@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AgentsPanel from './components/AgentsPanel'
 import AuthPanel from './components/AuthPanel'
+import PageTitle from './components/PageTitle'
+import TeamSpaceLink from './components/TeamSpaceLink'
 import type { ConnectionState } from './components/AuthPanel'
 import TeamsPanel from './components/TeamsPanel'
 import { EmptyState, Icon } from './components/ui'
@@ -227,14 +229,15 @@ function App() {
   const statisticsReady = selectedTeam !== null && !workspaceLoading && !workspaceError
   const toast = notice && <div className={`toast toast-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}><span className="toast-icon"><Icon name={notice.kind === 'success' ? 'check' : 'shield'} size={17} /></span><span>{notice.message}</span><button type="button" className="icon-button" aria-label="알림 닫기" onClick={() => setNotice(null)}><Icon name="close" size={16} /></button></div>
 
-  if (booting) return <div className="boot-screen"><span className="brand-symbol">D<span /></span><h1>DevLink</h1><p className="muted">로그인 상태를 확인하고 있어요.</p><span className="loading-bar" /></div>
+  if (booting) return <div className="boot-screen"><PageTitle title="로그인 확인" /><span className="brand-symbol">D<span /></span><h1>DevLink</h1><p className="muted">로그인 상태를 확인하고 있어요.</p><span className="loading-bar" /></div>
   if (!user) return <><AuthPanel onAuthenticated={onAuthenticated} onNotice={onNotice} connectionState={connection} onRetryConnection={() => { setConnection('checking'); setSessionRevision((previous) => previous + 1) }} />{toast}</>
 
   return <div className="app-shell">
+    <PageTitle title={view === 'workspace' ? '팀과 Agent' : '사용 가이드'} />
     <aside className="sidebar">
       <a className="brand" href="/" aria-label="DevLink 홈"><span className="brand-symbol">D<span /></span><span>DevLink<span className="brand-dot">.</span></span></a>
       <div className="workspace-label">WORKSPACE <span className="workspace-version">MVP</span></div>
-      <nav className="main-nav" aria-label="주 메뉴"><button type="button" className={view === 'workspace' ? 'nav-item active' : 'nav-item'} onClick={() => setView('workspace')} aria-current={view === 'workspace' ? 'page' : undefined}><Icon name="grid" />팀과 Agent</button><button type="button" className={view === 'guide' ? 'nav-item active' : 'nav-item'} onClick={() => setView('guide')} aria-current={view === 'guide' ? 'page' : undefined}><Icon name="book" />사용 가이드</button><a className="nav-item" href="/?preview=team"><Icon name="eye" />팀 디자인 미리보기</a></nav>
+      <nav className="main-nav" aria-label="주 메뉴"><button type="button" className={view === 'workspace' ? 'nav-item active' : 'nav-item'} onClick={() => setView('workspace')} aria-current={view === 'workspace' ? 'page' : undefined}><Icon name="grid" />팀과 Agent</button><button type="button" className={view === 'guide' ? 'nav-item active' : 'nav-item'} onClick={() => setView('guide')} aria-current={view === 'guide' ? 'page' : undefined}><Icon name="book" />사용 가이드</button><a className="nav-item" href="/?preview=team" aria-label="팀 디자인 미리보기" title="팀 디자인 미리보기"><Icon name="eye" />팀 디자인 미리보기</a><TeamSpaceLink variant="navigation" className="nav-item" /><TeamSpaceLink variant="navigation" className="nav-item" edition={2} /><TeamSpaceLink variant="navigation" className="nav-item" edition={3} /></nav>
       <div className="sidebar-divider" />
       <div className="sidebar-team-heading"><span>내 팀</span><span>{teamsLoading ? '…' : teams.length}</span></div>
       <div className="sidebar-teams">{teams.map((team) => <button className={selectedTeamId === team.teamId ? 'team-nav-item selected' : 'team-nav-item'} key={team.teamId} type="button" onClick={() => { selectTeam(team.teamId); setView('workspace') }}><span className="team-letter">{team.name.slice(0, 1)}</span><span className="team-nav-name">{team.name}</span>{team.myRole === 'OWNER' && <span className="owner-dot" title="팀 소유자" />}<Icon name="chevron" size={14} /></button>)}{!teamsLoading && teams.length === 0 && <p className="sidebar-empty">팀을 만들거나<br />초대 코드로 참여해보세요.</p>}</div>
