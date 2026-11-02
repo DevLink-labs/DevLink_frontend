@@ -3,11 +3,16 @@ import type { CSSProperties, PointerEvent } from 'react'
 import { Icon, Modal } from '../ui'
 import { copyText } from '../../lib/utils'
 import SpatialStudio from './SpatialStudio'
+import RoseMainPreview from './RoseMainPreview'
+import SlateMainPreview from './SlateMainPreview'
+import MauveMainPreview from './MauveMainPreview'
+import CobaltMainPreview from './CobaltMainPreview'
+import ForestMainPreview from './ForestMainPreview'
+import DesignPreviewNavigation, { readDesignPreviewView } from './DesignPreviewNavigation'
+import type { DesignPreviewView } from './DesignPreviewNavigation'
 import { previewTeams } from './previewData'
 import type { PreviewAgent, PreviewMember } from './previewData'
 import './TeamDesignPreview.css'
-
-type PreviewView = 'gallery' | 'studio'
 
 function Avatar({ member, small = false }: { member: PreviewMember; small?: boolean }) {
   return <span className={`tp-avatar tp-color-${member.color} ${small ? 'tp-avatar-small' : ''}`} aria-hidden="true"><span>{member.initials}</span><i /><b /></span>
@@ -71,7 +76,7 @@ function MemberDetail({ member }: { member: PreviewMember }) {
 }
 
 export default function TeamDesignPreview() {
-  const [view, setView] = useState<PreviewView>(() => new URLSearchParams(window.location.search).get('view') === 'studio' ? 'studio' : 'gallery')
+  const [view, setView] = useState<DesignPreviewView>(readDesignPreviewView)
   const [teamId, setTeamId] = useState(previewTeams[0].id)
   const [selectedMemberId, setSelectedMemberId] = useState(previewTeams[0].members[0].id)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -87,11 +92,27 @@ export default function TeamDesignPreview() {
 
   useEffect(() => () => { copyAttempt.current++; if (copyTimer.current) clearTimeout(copyTimer.current) }, [])
 
-  function changeView(nextView: PreviewView) {
+  useEffect(() => {
+    const restoreView = () => {
+      setView(readDesignPreviewView())
+      copyAttempt.current++
+      if (copyTimer.current) clearTimeout(copyTimer.current)
+      setInviteOpen(false)
+      setCopied(false)
+      setCopyError(false)
+    }
+    window.addEventListener('popstate', restoreView)
+    return () => window.removeEventListener('popstate', restoreView)
+  }, [])
+
+  function changeView(nextView: DesignPreviewView) {
+    if (nextView === view) return
     setView(nextView)
+    closeInvite()
     const url = new URL(window.location.href)
     url.searchParams.set('view', nextView)
-    window.history.replaceState(null, '', url)
+    window.history.pushState(null, '', url)
+    window.scrollTo({ top: 0, behavior: 'auto' })
   }
 
   function changeTeam(nextTeamId: string) {
@@ -130,7 +151,20 @@ export default function TeamDesignPreview() {
     }
   }
 
-  return <div className={`team-preview ${calm ? 'tp-calm' : ''}`}>
+  if (view !== 'gallery' && view !== 'studio') return <div className="design-preview-browser">
+    <DesignPreviewNavigation view={view} onChange={changeView} />
+    <div id="design-preview-panel" role="tabpanel" aria-labelledby={`design-tab-${view}`} tabIndex={0}>
+      {view === 'rose' ? <RoseMainPreview />
+        : view === 'mauve' ? <MauveMainPreview />
+          : view === 'cobalt' ? <CobaltMainPreview />
+            : view === 'forest' ? <ForestMainPreview />
+              : <SlateMainPreview key={view} appearance={view === 'blanc' ? 'rose-blanc' : 'slate'} />}
+    </div>
+  </div>
+
+  return <div className="design-preview-browser">
+    <DesignPreviewNavigation view={view} onChange={changeView} />
+    <div id="design-preview-panel" role="tabpanel" aria-labelledby={`design-tab-${view}`} tabIndex={0} className={`team-preview ${calm ? 'tp-calm' : ''}`}>
     <aside className="tp-rail">
       <a className="tp-logo" href="/" aria-label="DevLink 워크스페이스로">D<span /></a>
       <nav aria-label="디자인 미리보기"><span className="tp-rail-line" /><button type="button" className={view === 'gallery' ? 'is-active' : ''} aria-label="Glass Deck 보기" aria-pressed={view === 'gallery'} title="Glass Deck" onClick={() => changeView('gallery')}><Icon name="grid" size={21} /></button><button type="button" className={view === 'studio' ? 'is-active' : ''} aria-label="Spatial Studio 보기" aria-pressed={view === 'studio'} title="Spatial Studio" onClick={() => changeView('studio')}><span className="tp-cube-icon" /></button></nav>
@@ -141,7 +175,7 @@ export default function TeamDesignPreview() {
       <header className="tp-topbar"><div className="tp-breadcrumb"><span>Workspace</span><Icon name="chevron" size={12} /><strong>팀 스페이스</strong></div><div className="tp-topbar-actions"><span className="tp-preview-label"><i />DESIGN PREVIEW</span><a href="/">워크스페이스로 <Icon name="arrow" size={15} /></a></div></header>
 
       <main className="tp-main">
-        <div className="tp-page-heading"><div><span className="tp-eyebrow">YOUR PEOPLE. YOUR POSSIBILITIES.</span><h1>함께라서, 더 멀리<span>.</span></h1><p>팀을 이루는 사람들과 그 곁의 Agent를 만나보세요.</p></div><div className="tp-preview-options"><div className="tp-view-switch" role="group" aria-label="팀 화면 디자인 선택"><span className={`tp-view-indicator ${view === 'studio' ? 'is-studio' : ''}`} aria-hidden="true" /><button type="button" className={view === 'gallery' ? 'is-active' : ''} aria-pressed={view === 'gallery'} onClick={() => changeView('gallery')}><span>01</span>Glass Deck</button><button type="button" className={view === 'studio' ? 'is-active' : ''} aria-pressed={view === 'studio'} onClick={() => changeView('studio')}><span>03</span>Spatial Studio</button></div><a className="tp-immersive-entry" href="/?preview=agents">에이전트 팀 보기<Icon name="arrow" size={13} /></a></div></div>
+        <div className="tp-page-heading"><div><span className="tp-eyebrow">YOUR PEOPLE. YOUR POSSIBILITIES.</span><h1>함께라서, 더 멀리<span>.</span></h1><p>팀을 이루는 사람들과 그 곁의 Agent를 만나보세요.</p></div><div className="tp-preview-options"><span className="dpn-current-design">{view === 'gallery' ? '01 / GLASS DECK' : '02 / SPATIAL STUDIO'}</span></div></div>
 
         <section className="tp-team-banner" aria-label="현재 팀 정보" key={team.id}>
           <div className="tp-team-identity"><div className="tp-team-emblem" aria-hidden="true"><span /><span /><span /><span /></div><div><div className="tp-team-caption">TEAM SPACE <span>#{team.id === 'orbit' ? '001' : '002'}</span></div><div className="tp-team-picker"><h2>{team.name}</h2><Icon name="chevron" size={15} /><select value={team.id} onChange={(event) => changeTeam(event.target.value)} aria-label="미리보기 팀 선택">{previewTeams.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><p>{team.description}</p><span className="tp-team-date">Est. {team.createdAt}</span></div></div>
@@ -164,5 +198,6 @@ export default function TeamDesignPreview() {
       <div className="tp-invite-ticket"><span className="tp-ticket-top"><Icon name="key" size={19} /><span>YOU'RE INVITED</span><span className="tp-ticket-star">✳</span></span><strong>{team.name}</strong><p>A space to build, together.</p><div className="tp-ticket-rule"><i /><span /><i /></div><label htmlFor="tp-invite-code">팀 초대 코드</label><input id="tp-invite-code" readOnly value={team.inviteCode} onFocus={(event) => event.currentTarget.select()} /><span className="tp-ticket-demo">디자인 미리보기용 코드입니다</span></div>
       <p className="tp-invite-copy-note" role="status">{copyError ? '복사하지 못했어요. 위 코드를 선택해 직접 복사해주세요.' : copied ? '초대 코드를 복사했어요.' : '코드를 복사해 함께할 동료에게 전달하세요.'}</p><button className="tp-copy-button" type="button" onClick={() => { void copyInvite() }}><Icon name={copied ? 'check' : 'copy'} size={17} />{copied ? '복사 완료' : '초대 코드 복사'}</button>
     </Modal>}
+    </div>
   </div>
 }

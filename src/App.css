@@ -85,7 +85,11 @@
 .password-field .icon-button { position: absolute; right: 6px; top: 6px; }
 .auth-submit { margin-top: 6px; width: 100%; min-height: 47px; justify-content: space-between; padding: 12px 17px; }
 .auth-footnote { margin-top: 26px; display: flex; justify-content: center; align-items: center; gap: 7px; color: #9aa4b2; font-size: 10px; }
-.auth-bottom-caption { position: absolute; bottom: 20px; font-size: 10px; color: #acb4c1; margin: 0; }
+.auth-bottom-caption { position: absolute; bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: calc(100% - 36px); font-size: 10px; color: #acb4c1; margin: 0; text-align: center; }
+.auth-preview-links { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 16px; }
+.auth-preview-links > a:not(.team-space-link) { display: inline-flex; align-items: center; gap: 6px; color: #6b8f4e; font-size: 10px; }
+.auth-preview-links > a:not(.team-space-link):hover { color: #436b2b; }
+.auth-layout .auth-form-side { padding-bottom: 160px; }
 .connection-help { background: #fff8ef; border: 1px solid #f0dfc7; padding: 12px; border-radius: 9px; margin-bottom: 18px; }
 .connection-help p { color: #9b7b4d; font-size: 11px; margin-bottom: 6px; }
 .connection-help .text-button { color: #9b7b4d; }
@@ -236,6 +240,13 @@
 .loading-bar { width: 110px; height: 3px; margin-top: 11px; border-radius: 3px; background: #dce8d1; overflow: hidden; }
 .loading-bar::after { content: ''; display: block; width: 40%; height: 100%; background: #8bb75e; animation: progress 1.2s ease-in-out infinite alternate; }
 @keyframes progress { to { transform: translateX(150%); } }
+
+@media (max-width: 600px) {
+  .app-shell .sidebar { flex-wrap: wrap; gap: 12px; }
+  .app-shell .main-nav { order: 3; width: 100%; margin-left: 0; justify-content: space-between; }
+  .app-shell .main-nav .nav-item { flex: 1; justify-content: center; }
+  .app-shell .sidebar-bottom { margin-left: auto; }
+}
 
 @media (min-width: 1600px) { .auth-story { padding-left: 75px; padding-right: 75px; } .auth-form-card { max-width: 400px; } }
 @media (max-width: 1150px) { .sidebar { width: 208px; padding-left: 13px; padding-right: 13px; } .main-shell { margin-left: 208px; } .topbar { padding: 0 25px; } .workspace-main { padding: 28px 25px 18px; } .page-stamp { display: none; } .stat-card { padding: 19px; } .stat-icon { width: 35px; height: 35px; } .member-list { grid-template-columns: 1fr; } .toast { left: calc(50% + 104px); } .auth-story { padding: 34px; } .auth-story-content { margin-top: 50px; } .network-team { left: 26px; width: 254px; } .network-agent-one, .network-agent-two { width: 177px; padding: 12px; gap: 7px; } .network-card-icon { width: 30px; height: 30px; } }

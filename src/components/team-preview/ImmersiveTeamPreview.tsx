@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Icon } from '../ui'
+import PageTitle from '../PageTitle'
+import TeamSpaceLink from '../TeamSpaceLink'
 import { copyText } from '../../lib/utils'
 import ImmersiveTeamScene from './ImmersiveTeamScene'
 import FocusedMemberDetails from './FocusedMemberDetails'
@@ -198,7 +200,8 @@ export default function ImmersiveTeamPreview() {
   }
 
   return <div className="itp-experience" ref={experienceRoot}>
-    <section className="itp-journey" ref={journey} aria-label="3D 팀 보기">
+    <PageTitle title="3D 팀 스페이스" />
+    <section className="itp-journey" ref={journey} aria-label="3D 팀 스페이스">
       <div className="itp-stage-sticky" ref={stickyStage}>
         <div className={`immersive-team-preview ${paused ? 'is-paused' : ''} ${exploded ? 'is-exploded' : ''} ${focusedMemberId ? 'is-focused' : ''}`} inert={!sceneInteractive}>
     <div className="itp-scene"><ImmersiveTeamScene teamName={team.name} members={team.members} selectedMemberId={member.id} focusedMemberId={focusedMemberId} scrollState={sceneScrollState} onSelectMember={selectMember} paused={paused} exploded={exploded} onAvailabilityChange={onAvailabilityChange} />
@@ -207,7 +210,7 @@ export default function ImmersiveTeamPreview() {
     </div>
     <div className="itp-ambient" aria-hidden="true"><i /><i /><i /></div>
     <div className="itp-ui">
-      <header className="itp-header"><a href="/" className="itp-brand" aria-label="DevLink 워크스페이스"><span className="itp-brand-symbol">D<i /></span><span className="itp-brand-word">DevLink</span></a><div className="itp-header-actions">{focusedMemberId && <button type="button" className="itp-overview-button" onClick={returnToOverview}><Icon name="arrow" size={17} />전체 팀 보기</button>}<button className="itp-dashboard-jump" type="button" onClick={showDashboard}>대시보드<Icon name="chevron" size={16} /></button><button type="button" className="itp-icon-button" onClick={() => setPaused(!paused)} aria-label={paused ? '애니메이션 재생' : '애니메이션 일시정지'} title={paused ? '애니메이션 재생' : '애니메이션 일시정지'} aria-pressed={paused}><MotionIcon paused={paused} /></button></div></header>
+      <header className="itp-header"><a href="/" className="itp-brand" aria-label="DevLink 워크스페이스"><span className="itp-brand-symbol">D<i /></span><span className="itp-brand-word">DevLink</span></a><div className="itp-header-actions"><TeamSpaceLink edition={2} /><TeamSpaceLink edition={3} />{focusedMemberId && <button type="button" className="itp-overview-button" onClick={returnToOverview}><Icon name="arrow" size={17} />전체 팀 보기</button>}<button className="itp-dashboard-jump" type="button" onClick={showDashboard}>대시보드<Icon name="chevron" size={16} /></button><button type="button" className="itp-icon-button" onClick={() => setPaused(!paused)} aria-label={paused ? '애니메이션 재생' : '애니메이션 일시정지'} title={paused ? '애니메이션 재생' : '애니메이션 일시정지'} aria-pressed={paused}><MotionIcon paused={paused} /></button></div></header>
       <div className="itp-main">
         <section className="itp-hero" key={team.id}><div className="itp-team-picker"><h1>{team.name}</h1><Icon name="chevron" size={20} /><select value={team.id} onChange={(event) => changeTeam(event.target.value)} aria-label="팀 선택">{immersivePreviewTeams.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div></section>
         <div className="itp-stats" aria-label={`팀원 ${team.members.length}명, 에이전트 ${agents.length}개`}><div><strong>{team.members.length}</strong><span>팀원</span></div><span className="itp-stat-line" /><div><strong>{agents.length}</strong><span>에이전트</span></div></div>

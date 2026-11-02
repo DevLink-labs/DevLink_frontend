@@ -3,6 +3,8 @@ import type { FormEvent } from 'react'
 import { api, ApiError } from '../lib/api'
 import type { User } from '../lib/api'
 import { Icon } from './ui'
+import PageTitle from './PageTitle'
+import TeamSpaceLink from './TeamSpaceLink'
 
 export type ConnectionState = 'checking' | 'online' | 'offline'
 
@@ -59,6 +61,7 @@ export default function AuthPanel({ onAuthenticated, onNotice, connectionState, 
   }
 
   return <main className="auth-layout">
+    <PageTitle title={mode === 'login' ? '로그인' : '회원가입'} />
     <section className="auth-story">
       <a className="brand" href="/" aria-label="DevLink 홈"><span className="brand-symbol">D<span /></span><span>DevLink<span className="brand-dot">.</span></span></a>
       <div className="auth-story-content">
@@ -95,7 +98,7 @@ export default function AuthPanel({ onAuthenticated, onNotice, connectionState, 
         </form>
         <div className="auth-footnote"><Icon name="shield" size={16} /><span>로그인 정보는 보안 세션으로 관리합니다.</span></div>
       </div>
-      <p className="auth-bottom-caption">DevLink Workspace · 팀과 Agent를 위한 시작점 <a href="/?preview=team" style={{ marginLeft: 14, color: '#6b8f4e', textDecoration: 'underline', textUnderlineOffset: 3 }}>팀 디자인 미리보기 ↗</a></p>
+      <div className="auth-bottom-caption"><span>DevLink Workspace · 팀과 Agent를 위한 시작점</span><nav className="auth-preview-links" aria-label="미리보기 페이지"><a href="/?preview=team">팀 디자인 미리보기<Icon name="arrow" size={13} /></a><TeamSpaceLink variant="auth" /><TeamSpaceLink variant="auth" edition={2} /><TeamSpaceLink variant="auth" edition={3} /></nav></div>
     </section>
   </main>
 }
