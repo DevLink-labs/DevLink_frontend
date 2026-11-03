@@ -30,13 +30,13 @@ const memberColors: Record<string, string> = {
 }
 
 export default function SpatialStudio({ members, selectedMemberId, onSelectMember, onInvite }: SpatialStudioProps) {
-  const [flatView, setFlatView] = useState(false)
+  const [flatView, setFlatView] = useState(true)
   const onlineAgents = members.flatMap((member) => member.agents).filter((agent) => agent.online).length
 
   return (
-    <section className={`tps-studio${flatView ? ' tps-studio-flat' : ''}`} aria-label="팀 3D 스튜디오">
+    <section className={`tps-studio${flatView ? ' tps-studio-flat' : ''}`} aria-label="팀 배치도">
       <div className="tps-toolbar">
-        <div className="tps-space-label"><span className="tps-live-light" /><span>우리 팀의 공간</span><span className="tps-space-number">01</span></div>
+        <div className="tps-space-label"><span>팀원 위치</span></div>
         <div className="tps-view-switch" role="group" aria-label="스튜디오 시점">
           <button type="button" aria-pressed={!flatView} className={!flatView ? 'tps-view-active' : ''} onClick={() => setFlatView(false)}><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m10 2 7 4v8l-7 4-7-4V6l7-4Z M3 6l7 4 7-4M10 10v8" /></svg>입체</button>
           <button type="button" aria-pressed={flatView} className={flatView ? 'tps-view-active' : ''} onClick={() => setFlatView(true)}><Icon name="grid" size={13} />평면</button>
@@ -44,22 +44,19 @@ export default function SpatialStudio({ members, selectedMemberId, onSelectMembe
       </div>
 
       <div className="tps-scene-viewport">
-        <div className="tps-room-heading" aria-hidden="true"><span>THE SHARED SPACE</span><strong>함께 만드는 곳.</strong><p>사람과 Agent, 하나의 팀으로.</p></div>
+
         <div className="tps-room-scene">
           <div className="tps-floor">
             <span className="tps-floor-outline" />
-            <div className="tps-architect-line tps-architect-line-one" />
-            <div className="tps-architect-line tps-architect-line-two" />
+
             <div className="tps-wall tps-wall-back"><span /><span /><span /></div>
             <div className="tps-wall tps-wall-side" />
-            <div className="tps-plant tps-plant-one"><i /><i /><i /></div>
-            <div className="tps-plant tps-plant-two"><i /><i /><i /></div>
 
             <div className="tps-team-table" aria-hidden="true">
               <span className="tps-table-edge" />
               <span className="tps-table-inlay" />
-              <span className="tps-table-ring" />
-              <div className="tps-hub"><span className="tps-hub-core"><Icon name="team" size={24} /></span><span className="tps-hub-name">ONE TEAM.</span></div>
+
+              <div className="tps-hub"><span className="tps-hub-core"><Icon name="team" size={24} /></span><span className="tps-hub-name">{members.length}명</span></div>
               <span className="tps-table-accent" />
             </div>
 
@@ -69,11 +66,11 @@ export default function SpatialStudio({ members, selectedMemberId, onSelectMembe
               const selected = member.id === selectedMemberId
               return (
                 <div key={member.id} className={`tps-station${selected ? ' tps-station-selected' : ''}`} style={{ left: position.left, top: position.top, '--tps-member-color': memberColors[member.color] ?? '#8d9e78' } as CSSProperties}>
-                  <span className="tps-station-shadow" />
+
                   <span className="tps-station-platform" />
                   <span className="tps-station-ring" />
                   <button type="button" className="tps-member" aria-pressed={selected} onClick={() => onSelectMember(member.id)} aria-label={`${member.name}, ${member.role === 'OWNER' ? '팀 소유자' : '팀원'}, Agent ${member.agents.length}개, 정보 보기`}>
-                    <span className="tps-member-figure"><span className="tps-figure-body" /><span className="tps-figure-head">{member.initials}</span>{member.role === 'OWNER' && <span className="tps-owner-star" aria-label="팀 소유자">✦</span>}</span>
+                    <span className="tps-member-figure"><span className="tps-figure-body" /><span className="tps-figure-head">{member.initials}</span></span>
                     <span className="tps-agent-device" aria-hidden="true"><Icon name="agent" size={14} /><span className={online ? 'tps-device-online' : ''} /></span>
                     <span className="tps-member-label"><strong>{member.name}</strong><span><i className={online ? 'tps-label-online' : ''} />Agent {member.agents.length}<span className="tps-label-divider">·</span>{online > 0 ? `${online} 연결` : '오프라인'}</span></span>
                     <span className="tps-member-selection" aria-hidden="true"><Icon name="arrow" size={12} /></span>
@@ -85,7 +82,7 @@ export default function SpatialStudio({ members, selectedMemberId, onSelectMembe
             <div className="tps-entry" aria-hidden="true"><span /><span /><span /></div>
           </div>
         </div>
-        <div className="tps-scene-coordinates" aria-hidden="true"><span>SPACE / 01</span><span>HUMAN + AGENT</span></div>
+
       </div>
 
       <div className="tps-compact-members" role="group" aria-label="스튜디오 팀원 선택">
