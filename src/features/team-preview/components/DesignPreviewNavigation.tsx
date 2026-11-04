@@ -1,0 +1,54 @@
+import { useEffect, useRef } from 'react'
+import type { KeyboardEvent } from 'react'
+import { Icon } from '../../../components/ui'
+import PageTitle from '../../../components/common/PageTitle'
+import TeamSpaceLink from '../../../components/common/TeamSpaceLink'
+import { designs } from '../data/designPreviewData'
+import type { DesignPreviewView } from '../data/designPreviewData'
+import '../styles/DesignPreviewNavigation.css'
+
+export default function DesignPreviewNavigation({ view, onChange }: { view: DesignPreviewView; onChange: (view: DesignPreviewView) => void }) {
+  const tabs = useRef<(HTMLButtonElement | null)[]>([])
+  const selectedIndex = Math.max(0, designs.findIndex((design) => design.id === view))
+  const selectedDesign = designs[selectedIndex]
+
+  useEffect(() => {
+    tabs.current[selectedIndex]?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
+  }, [selectedIndex])
+
+  function changeAdjacentDesign(direction: number) {
+    onChange(designs[(selectedIndex + direction + designs.length) % designs.length].id)
+  }
+
+  function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    let nextIndex = index
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % designs.length
+    else if (event.key === 'ArrowLeft') nextIndex = (index + designs.length - 1) % designs.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = designs.length - 1
+    else return
+    event.preventDefault()
+    onChange(designs[nextIndex].id)
+    tabs.current[nextIndex]?.focus()
+  }
+
+  return <header className="dpn-toolbar">
+    <PageTitle title={`팀 디자인 미리보기 · ${selectedDesign.name}`} />
+    <div className="dpn-intro"><span className="dpn-mark"><Icon name="eye" size={19} /></span><div><strong>디자인 미리보기</strong><span>DevLink design collection</span></div></div>
+    <div className="dpn-controls">
+      <select className="dpn-select" aria-label="디자인 시안 바로 선택" value={view} onChange={(event) => {
+        const design = designs.find((item) => item.id === event.target.value)
+        if (design) onChange(design.id)
+      }}>{designs.map((design) => <option key={design.id} value={design.id}>{design.caption} · {design.name}</option>)}</select>
+      <div className="dpn-stepper" role="group" aria-label="시안 순서대로 보기"><button type="button" onClick={() => changeAdjacentDesign(-1)} aria-label="이전 디자인 시안"><Icon name="chevron" size={14} /></button><span>{String(selectedIndex + 1).padStart(2, '0')}<i>/</i>{String(designs.length).padStart(2, '0')}</span><button type="button" onClick={() => changeAdjacentDesign(1)} aria-label="다음 디자인 시안"><Icon name="chevron" size={14} /></button></div>
+    </div>
+    <nav className="dpn-tabs" role="tablist" aria-label="디자인 시안 선택">
+      {designs.map((design, index) => <button key={design.id} ref={(element) => { tabs.current[index] = element }} type="button" role="tab" id={`design-tab-${design.id}`} aria-selected={view === design.id} aria-controls="design-preview-panel" tabIndex={view === design.id ? 0 : -1} className={`dpn-tab dpn-tab-${design.id} ${view === design.id ? 'is-active' : ''}`} onClick={() => onChange(design.id)} onKeyDown={(event) => navigateTabs(event, index)}>
+        <span className="dpn-swatches" aria-hidden="true">{design.colors.map((color) => <i key={color} style={{ background: color }} />)}</span>
+        <span className="dpn-tab-copy"><small>{design.caption}</small><strong>{design.name}</strong></span>
+        {(design.id === 'mauve' || design.id === 'cobalt' || design.id === 'forest') && <span className="dpn-new">NEW</span>}
+      </button>)}
+    </nav>
+    <div className="dpn-actions"><TeamSpaceLink /><TeamSpaceLink edition={2} /><TeamSpaceLink edition={3} /><a className="dpn-back" href="/" aria-label="워크스페이스로 돌아가기"><span>워크스페이스</span><Icon name="logout" size={17} /></a></div>
+  </header>
+}

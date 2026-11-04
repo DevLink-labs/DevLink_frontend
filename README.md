@@ -1,6 +1,21 @@
 # DevLink Frontend
 
-React · TypeScript · Vite로 만든 계정·팀·Agent 관리 화면입니다. 현재 백엔드 REST API를 직접 사용해 1차 MVP의 준비 과정을 확인할 수 있습니다.
+React · TypeScript · Vite · Tailwind CSS · TanStack Query · Axios로 만든 계정·팀·Agent 관리 화면입니다. 현재 백엔드 REST API를 직접 사용해 1차 MVP의 준비 과정을 확인할 수 있습니다.
+
+## 코드 구조
+
+- `app/`: 앱 진입점, 경로·미리보기 선택, 공통 Provider 구성
+- `layouts/`: 인증 화면과 워크스페이스의 공통 외곽 구성
+- `pages/`: 인증·워크스페이스·사용 가이드 화면 구성
+- `features/{auth,teams,agents}/`: 기능별 `api/`, `hooks/`, `components/`, `types.ts`
+- `features/workspace/`: 팀 선택과 워크스페이스 조회 조합, 통계 카드
+- `features/team-preview/`: 미리보기 컴포넌트·데이터·Three.js 도우미·스타일
+- `components/{ui,common}/`: 모달·아이콘·빈 상태와 공통 알림·페이지 제목
+- `lib/apiClient.ts`: Axios 설정, 응답 검증, 오류 변환, CSRF와 쓰기 요청 순서 관리
+- `lib/queryClient.ts`: 조회 캐시·재시도·포커스 갱신 기본 정책
+- `utils/`, `styles/`: 날짜·복사 도우미와 전역 스타일
+- 조회 키는 사용자·팀별로 구분하고, 변경 성공 시 관련 조회만 무효화합니다.
+- Tailwind Vite 플러그인과 테마·유틸리티를 적용하며 기존 상세 디자인 CSS를 함께 사용합니다.
 
 ## 구현 범위
 
@@ -68,7 +83,7 @@ VITE_API_BASE_URL=https://api.example.com
 
 ## 인증과 토큰 처리
 
-- 모든 API 요청에서 `credentials: include` 사용
+- 모든 API 요청에서 Axios `withCredentials: true` 사용
 - 상태 변경 요청 직전 CSRF 토큰 조회 후 응답의 헤더 이름·토큰으로 요청
 - 로그인·로그아웃으로 세션이 바뀌어도 다음 요청에서 CSRF 재조회
 - 새로고침 시 내 정보 API로 세션 복원
@@ -95,4 +110,4 @@ Agent 등록만으로 ONLINE이 되지는 않습니다. 실제 브로커의 접�
 
 ## 검증 상태
 
-이번 구현에서는 빌드·테스트·서버 실행·의존성 설치를 수행하지 않았습니다. 코드와 API 계약에 대한 정적 검토만 수행했습니다.
+이번 구조 정리에서는 빌드·서버 실행·의존성 설치를 수행하지 않았습니다. ESLint, TypeScript 타입 검사(`--noEmit`), 상대 import 경로 확인으로 정적으로 검증했습니다.

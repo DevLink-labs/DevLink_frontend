@@ -1,0 +1,27 @@
+import { lazy, Suspense } from 'react'
+import PageTitle from '../components/common/PageTitle'
+import Providers from './providers'
+import App from './App'
+
+const TeamDesignPreview = lazy(() => import('../features/team-preview/components/TeamDesignPreview'))
+const ImmersiveTeamPreview = lazy(() => import('../features/team-preview/components/ImmersiveTeamPreview'))
+const TeamObservatory = lazy(() => import('../features/team-preview/components/TeamObservatory'))
+const TeamNetworkPreview = lazy(() => import('../features/team-preview/components/TeamNetworkPreview'))
+
+const previewRoutes = [
+  { path: '/team-network', aliases: ['agents-3'], title: '3D 팀 스페이스 - 3', component: TeamNetworkPreview },
+  { path: '/team-observatory', aliases: ['agents-2'], title: '3D 팀 스페이스 - 2', component: TeamObservatory },
+  { path: '/team-orbit', aliases: ['orbit', 'agents'], title: '3D 팀 스페이스', component: ImmersiveTeamPreview },
+  { path: '/team-preview', aliases: ['team'], title: '팀 디자인 미리보기', component: TeamDesignPreview },
+]
+
+export default function AppRouter() {
+  const path = window.location.pathname.replace(/\/$/, '')
+  const preview = new URLSearchParams(window.location.search).get('preview')
+  const route = previewRoutes.find((route) => route.path === path || route.aliases.includes(preview ?? ''))
+  if (!route) return <Providers><App /></Providers>
+  const Preview = route.component
+  return <Suspense fallback={<div className="grid min-h-svh place-items-center bg-workspace text-ink" role="status" aria-label={`${route.title}를 준비하는 중`}><PageTitle title={route.title} />DevLink</div>}>
+    <Preview />
+  </Suspense>
+}
