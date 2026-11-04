@@ -51,10 +51,10 @@ export default function AgentsPanel({
   const active = useRef(true)
   const detailRequest = useRef(0)
   const [search, setSearch] = useState('')
-  const [registerOpen, setRegisterOpen] = useState(false)
+  const [formTarget, setFormTarget] = useState<Agent | 'register' | null>(null)
   const [form, setForm] = useState<AgentForm>(emptyForm)
-  const [registering, setRegistering] = useState(false)
-  const [registerError, setRegisterError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [detail, setDetail] = useState<DetailState | null>(null)
   const [tokenAgent, setTokenAgent] = useState<Agent | null>(null)
   const [issuedToken, setIssuedToken] = useState<string | null>(null)
@@ -71,6 +71,11 @@ export default function AgentsPanel({
   }, [])
 
   const query = search.trim().toLocaleLowerCase()
+  const editingAgent = formTarget === 'register' ? null : formTarget
+  const formChanged = !editingAgent
+    || form.name !== editingAgent.name
+    || form.projectName !== editingAgent.projectName
+    || form.roleDescription !== (editingAgent.roleDescription ?? '')
   const teamAgents = agents.filter((agent) => agent.teamId === team.teamId)
   const visibleAgents = teamAgents.filter((agent) =>
     [agent.name, agent.projectName, agent.roleDescription ?? '']
@@ -84,38 +89,62 @@ export default function AgentsPanel({
 
   function openRegister() {
     setForm(emptyForm)
-    setRegisterError(null)
-    setRegisterOpen(true)
+    setFormError(null)
+    setFormTarget('register')
   }
 
-  async function registerAgent(event: FormEvent<HTMLFormElement>) {
+  function openEdit(agent: Agent) {
+    if (agent.ownerUserId !== currentUserId) return
+    setForm({
+      name: agent.name,
+      projectName: agent.projectName,
+      roleDescription: agent.roleDescription ?? '',
+      toolType: agent.toolType,
+    })
+    setFormError(null)
+    setFormTarget(agent)
+  }
+
+  function closeForm() {
+    if (!saving) setFormTarget(null)
+  }
+
+  async function saveAgent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (registering) return
+    if (!formTarget || saving || !formChanged || (editingAgent && editingAgent.ownerUserId !== currentUserId)) return
     const name = form.name.trim()
     const projectName = form.projectName.trim()
     const roleDescription = form.roleDescription.trim()
     if (!name || !projectName) {
-      setRegisterError('Agent 이름과 프로젝트명을 입력해주세요.')
+      setFormError('Agent 이름과 프로젝트명을 입력해주세요.')
       return
     }
-    setRegistering(true)
-    setRegisterError(null)
+    setSaving(true)
+    setFormError(null)
     try {
-      await api.registerAgent(team.teamId, {
-        name, projectName, toolType: form.toolType,
-        ...(roleDescription ? { roleDescription } : {}),
-      })
+      if (editingAgent) {
+        await api.updateAgent(editingAgent.agentId, {
+          ...(form.name !== editingAgent.name ? { name } : {}),
+          ...(form.projectName !== editingAgent.projectName ? { projectName } : {}),
+          ...(form.roleDescription !== (editingAgent.roleDescription ?? '') ? { roleDescription } : {}),
+        })
+      } else {
+        await api.registerAgent(team.teamId, {
+          name, projectName, toolType: form.toolType,
+          ...(roleDescription ? { roleDescription } : {}),
+        })
+      }
       if (!active.current) return
-      setRegisterOpen(false)
+      setFormTarget(null)
       setForm(emptyForm)
-      onNotice('내 Agent를 팀에 등록했습니다.')
+      onNotice(editingAgent ? 'Agent 정보를 수정했습니다.' : '내 Agent를 팀에 등록했습니다.')
       onRefresh()
     } catch (error) {
       if (!active.current) return
-      setRegisterError(errorMessage(error))
+      setFormError(errorMessage(error))
       onError(error)
     } finally {
-      if (active.current) setRegistering(false)
+      if (active.current) setSaving(false)
     }
   }
 
@@ -289,6 +318,10 @@ export default function AgentsPanel({
                   <td>
                     {agent.ownerUserId === currentUserId ? (
                       <div className="section-actions">
+                        <button className="button button-secondary button-small" type="button" onClick={() => openEdit(agent)}
+                          disabled={deleting} aria-label={`${agent.name} 수정`}>
+                          수정
+                        </button>
                         <button className="button button-secondary button-small" type="button" onClick={() => openToken(agent)} disabled={deleting}>
                           <Icon name="key" size={15} /> 연결 토큰
                         </button>
@@ -325,43 +358,46 @@ export default function AgentsPanel({
         </Modal>
       )}
 
-      {registerOpen && (
-        <Modal title="내 Agent 등록" description={`${team.name} 팀에 등록할 Agent 정보를 입력해주세요.`}
-          busy={registering} onClose={() => { if (!registering) setRegisterOpen(false) }}>
-          <form className="form-stack" onSubmit={(event) => { void registerAgent(event) }}>
+      {formTarget && (
+        <Modal title={editingAgent ? 'Agent 정보 수정' : '내 Agent 등록'}
+          description={editingAgent ? `${editingAgent.name}의 정보를 수정합니다.` : `${team.name} 팀에 등록할 Agent 정보를 입력해주세요.`}
+          busy={saving} onClose={closeForm}>
+          <form className="form-stack" onSubmit={(event) => { void saveAgent(event) }}>
             <div className="field">
               <label htmlFor={`${fieldId}-name`}>Agent 이름 <span className="required-mark">*</span></label>
               <input id={`${fieldId}-name`} value={form.name} maxLength={100} required autoFocus
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
-                placeholder="예: 프론트엔드 Agent" disabled={registering} />
+                placeholder="예: 프론트엔드 Agent" disabled={saving} />
             </div>
-            <div className="form-row">
+            <div className={editingAgent ? undefined : 'form-row'}>
               <div className="field">
-                <label htmlFor={`${fieldId}-project`}>프로젝트명 <span className="required-mark">*</span></label>
+                <label htmlFor={`${fieldId}-project`}>
+                  {editingAgent ? '프로젝트 표시명' : '프로젝트명'} <span className="required-mark">*</span>
+                </label>
                 <input id={`${fieldId}-project`} value={form.projectName} maxLength={120} required
                   onChange={(event) => setForm({ ...form, projectName: event.target.value })}
-                  placeholder="예: DevLink Web" disabled={registering} />
+                  placeholder="예: DevLink Web" disabled={saving} />
               </div>
-              <div className="field">
+              {!editingAgent && <div className="field">
                 <label htmlFor={`${fieldId}-tool`}>사용 도구</label>
-                <select id={`${fieldId}-tool`} value={form.toolType} disabled={registering}
+                <select id={`${fieldId}-tool`} value={form.toolType} disabled={saving}
                   onChange={(event) => setForm({ ...form, toolType: event.target.value as AgentForm['toolType'] })}>
                   <option value="CODEX">Codex</option><option value="CLAUDE_CODE">Claude Code</option>
                 </select>
-              </div>
+              </div>}
             </div>
             <div className="field">
               <label htmlFor={`${fieldId}-role`}>담당 역할 <span className="muted">선택</span></label>
               <textarea id={`${fieldId}-role`} value={form.roleDescription} maxLength={255} rows={3}
                 onChange={(event) => setForm({ ...form, roleDescription: event.target.value })}
-                placeholder="예: 화면 구성과 사용자 인증 연동을 담당합니다." disabled={registering} />
+                placeholder="예: 화면 구성과 사용자 인증 연동을 담당합니다." disabled={saving} />
               <span className="field-hint">{form.roleDescription.length}/255자</span>
             </div>
-            {registerError && <p className="inline-error" role="alert">{registerError}</p>}
+            {formError && <p className="inline-error" role="alert">{formError}</p>}
             <div className="modal-footer">
-              <button className="button button-secondary" type="button" disabled={registering} onClick={() => setRegisterOpen(false)}>취소</button>
-              <button className="button button-primary" type="submit" disabled={registering}>
-                {registering ? '등록 중…' : 'Agent 등록'}
+              <button className="button button-secondary" type="button" disabled={saving} onClick={closeForm}>취소</button>
+              <button className="button button-primary" type="submit" disabled={saving || !formChanged}>
+                {editingAgent ? (saving ? '저장 중…' : '변경 사항 저장') : (saving ? '등록 중…' : 'Agent 등록')}
               </button>
             </div>
           </form>
