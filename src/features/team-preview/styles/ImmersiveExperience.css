@@ -13,8 +13,8 @@
   isolation: isolate;
   width: 100%;
   overflow-x: clip;
-  color: #263249;
-  background: #f5f7fb;
+  color: var(--color-ink, #1f2c39);
+  background: var(--color-workspace, #f8fafc);
   font-family: 'Pretendard', 'Inter', 'Segoe UI', 'Malgun Gothic', sans-serif;
 }
 .itp-journey { position: relative; z-index: 0; height: 200svh; background: #080e16; }
@@ -33,19 +33,37 @@
   transform: translate3d(0, calc(var(--itp-scroll) * -24px), 0);
   will-change: transform, opacity;
 }
-.itp-scroll-wash { position: absolute; z-index: 4; inset: 0; background: #f5f7fb; opacity: var(--itp-wash); pointer-events: none; will-change: opacity; }
+.itp-scroll-wash { position: absolute; z-index: 4; inset: 0; background: var(--color-workspace, #f8fafc); opacity: var(--itp-wash); pointer-events: none; will-change: opacity; }
 .itp-dashboard-section { position: relative; z-index: 3; min-height: 100svh; margin-top: -100svh; }
 .itp-dashboard-frame {
   position: relative;
   width: 100%;
   min-height: 100svh;
   border-radius: calc(30px * (1 - var(--itp-reveal))) calc(30px * (1 - var(--itp-reveal))) 0 0;
-  background: #f5f7fb;
+  background: var(--color-workspace, #f8fafc);
   box-shadow: 0 calc(-18px * (1 - var(--itp-reveal))) calc(75px * (1 - var(--itp-reveal))) rgb(5 18 21 / calc(.25 * (1 - var(--itp-reveal))));
   transform: scale(var(--itp-dashboard-scale));
   transform-origin: 50% 0;
   overflow: clip;
   will-change: transform, border-radius;
+}
+.itp-dashboard-frame .app-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.itp-dashboard-frame .sidebar {
+  position: sticky;
+  inset: 0 auto auto;
+  align-self: start;
+  height: 100svh;
+  overflow-y: auto;
+}
+.itp-dashboard-frame .main-shell { margin-left: 0; }
+@media (max-width: 720px) {
+  .itp-dashboard-frame .app-shell { display: block; }
+  .itp-dashboard-frame .sidebar { height: auto; }
+  .itp-dashboard-frame .main-nav { min-width: 0; }
+  .itp-dashboard-frame .main-nav .nav-item { padding-inline: 8px; }
 }
 .itp-overview-button, .itp-dashboard-jump {
   display: inline-flex;

@@ -3,18 +3,26 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 @import './workspace.css' layer(components);
 
-@theme {
+@theme static {
   --spacing: 4px;
-  --color-workspace: #f5f7fb;
-  --color-ink: #263249;
-  --color-brand: #7cc447;
+  --color-workspace: #f8fafc;
+  --color-ink: #1f2c39;
+  --color-brand: #d9eafd;
 }
 
 @layer base {
 :root {
+  --workspace-surface: #fff;
+  --workspace-accent: var(--color-brand);
+  --workspace-border: #bcccdc;
+  --workspace-outline: #9aa6b2;
+  --workspace-divider: #e3eaf1;
+  --workspace-muted: #5b6875;
+  --workspace-action: #3d4a57;
+  --workspace-focus: #61778b;
   font-family: 'Pretendard', 'Inter', 'Segoe UI', 'Malgun Gothic', sans-serif;
-  color: #263249;
-  background: #f5f7fb;
+  color: var(--color-ink);
+  background: var(--color-workspace);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -33,15 +41,15 @@ button, a { touch-action: manipulation; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .5; }
 a { color: inherit; text-decoration: none; }
-button:focus-visible, a:focus-visible { outline: 3px solid #7cc447; outline-offset: 3px; }
-input, select, textarea { width: 100%; min-width: 0; padding: 11px 13px; color: #263249; border: 1px solid #dde3ec; border-radius: 9px; background: #fff; transition: border-color .15s, box-shadow .15s; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: #69a345; box-shadow: 0 0 0 3px #b5e69730; }
-input:disabled, select:disabled, textarea:disabled { background: #f5f7fa; color: #8c96a6; }
-input::placeholder, textarea::placeholder { color: #a0a8b6; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--workspace-focus); outline-offset: 3px; }
+input, select, textarea { width: 100%; min-width: 0; padding: 11px 13px; color: var(--color-ink); border: 1px solid var(--workspace-border); border-radius: 9px; background: var(--workspace-surface); transition: border-color .15s, box-shadow .15s; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--workspace-focus); box-shadow: 0 0 0 3px var(--workspace-accent); }
+input:disabled, select:disabled, textarea:disabled { background: var(--color-workspace); color: var(--workspace-muted); }
+input::placeholder, textarea::placeholder { color: var(--workspace-muted); }
 textarea { resize: vertical; min-height: 100px; }
 h1, h2, h3, p { margin-top: 0; }
 button svg { flex-shrink: 0; }
-::selection { color: #162337; background: #cff6ad; }
+::selection { color: var(--color-ink); background: var(--workspace-accent); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }

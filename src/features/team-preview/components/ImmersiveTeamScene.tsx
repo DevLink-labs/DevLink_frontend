@@ -9,6 +9,7 @@ import type { PreviewMember } from '../data/previewData'
 interface ImmersiveTeamSceneProps {
   teamName: string
   members: PreviewMember[]
+  loading: boolean;
   selectedMemberId: string
   focusedMemberId: string | null
   scrollState: RefObject<{ progress: number }>
@@ -16,6 +17,7 @@ interface ImmersiveTeamSceneProps {
   onSelectMember: (id: string) => void
   paused: boolean
   exploded: boolean
+  topView: boolean;
   onAvailabilityChange: (available: boolean) => void
 }
 
@@ -25,6 +27,9 @@ const colors: Record<string, string> = {
 }
 
 const MOBILE_BREAKPOINT = 680
+const LABEL_SIDE_SWITCH_THRESHOLD = 20;
+const TOP_VIEW_POLAR = 0.025;
+const TEAM_REVEAL_SECONDS = 0.72;
 
 function createTeamSculpture() {
   const group = new THREE.Group()
@@ -42,12 +47,10 @@ function createTeamSculpture() {
 }
 
 function createMemberObject(color: THREE.Color) {
-  const group = new THREE.Group()
-  const prism = new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.7, 0.58, 3, 0.024), new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.34 }))
-  prism.castShadow = true
-  prism.receiveShadow = true
-  group.add(prism)
-  return group
+  const prism = new THREE.Mesh(new RoundedBoxGeometry(0.58, 0.7, 0.58, 3, 0.024), new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.34 }));
+  prism.castShadow = true;
+  prism.receiveShadow = true;
+  return prism;
 }
 
 function disposeObjectResources(root: THREE.Object3D) {
@@ -71,18 +74,18 @@ function disposeObjectResources(root: THREE.Object3D) {
   textures.forEach((texture) => texture.dispose())
 }
 
-export default function ImmersiveTeamScene({ teamName, members, selectedMemberId, focusedMemberId, scrollState, onRenderRequestChange, onSelectMember, paused, exploded, onAvailabilityChange }: ImmersiveTeamSceneProps) {
+export default function ImmersiveTeamScene({ teamName, members, loading, selectedMemberId, focusedMemberId, scrollState, onRenderRequestChange, onSelectMember, paused, exploded, topView, onAvailabilityChange }: ImmersiveTeamSceneProps) {
   const host = useRef<HTMLDivElement>(null)
   const labelsLayer = useRef<HTMLDivElement>(null)
   const teamLabel = useRef<HTMLDivElement>(null)
   const memberLabels = useRef(new Map<string, HTMLButtonElement>())
   const wake = useRef<() => void>(() => {})
-  const control = useRef({ selectedMemberId, focusedMemberId, scrollState, onSelectMember, paused, exploded, onAvailabilityChange })
+  const control = useRef({ teamName, members, loading, selectedMemberId, focusedMemberId, scrollState, onSelectMember, paused, exploded, topView, onAvailabilityChange });
 
   useEffect(() => {
-    control.current = { selectedMemberId, focusedMemberId, scrollState, onSelectMember, paused, exploded, onAvailabilityChange }
+    control.current = { teamName, members, loading, selectedMemberId, focusedMemberId, scrollState, onSelectMember, paused, exploded, topView, onAvailabilityChange };
     wake.current()
-  }, [selectedMemberId, focusedMemberId, scrollState, onSelectMember, paused, exploded, onAvailabilityChange, teamName])
+  }, [teamName, members, loading, selectedMemberId, focusedMemberId, scrollState, onSelectMember, paused, exploded, topView, onAvailabilityChange]);
 
   useEffect(() => {
     onRenderRequestChange(() => wake.current())
@@ -93,6 +96,7 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     const element = host.current
     const labelsElement = labelsLayer.current
     if (!element) return
+    const stage = element.closest<HTMLElement>(".immersive-team-preview");
     let renderer: THREE.WebGLRenderer
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
@@ -107,7 +111,7 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     renderer.toneMappingExposure = 1
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab'
     renderer.domElement.setAttribute('aria-hidden', 'true')
     element.appendChild(renderer.domElement)
@@ -130,8 +134,8 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     room.dispose()
     pmrem.dispose()
 
-    scene.add(new THREE.HemisphereLight('#ffffff', '#dce0e6', 1.6))
-    const key = new THREE.DirectionalLight('#ffffff', 2.4)
+    scene.add(new THREE.HemisphereLight("#ffffff", "#dce0e6", 1.4));
+    const key = new THREE.DirectionalLight("#ffffff", 2.6);
     key.position.set(-3, 8, 5)
     key.castShadow = true
     key.shadow.mapSize.set(1024, 1024)
@@ -152,6 +156,15 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     floor.receiveShadow = true
     world.add(floor)
 
+    const floorShadows = new THREE.Mesh(floor.geometry, new THREE.ShadowMaterial({
+      color: "#242832",
+      opacity: 0.24,
+      depthWrite: false,
+    }));
+    floorShadows.position.z = 0.002;
+    floorShadows.receiveShadow = true;
+    floor.add(floorShadows);
+
     const core = new THREE.Group()
     core.position.y = -0.1
     const teamHub = createTeamSculpture()
@@ -159,28 +172,47 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     core.add(teamHub)
     world.add(core)
 
-    const selectables: THREE.Mesh[] = []
-    const memberNodes = members.map((member, index) => {
-      const color = new THREE.Color(colors[member.color] ?? colors.sage)
-      const node = new THREE.Group()
-      const memberObject = createMemberObject(color)
-      memberObject.rotation.y = 0.28 + index * 0.17
-      memberObject.traverse((object) => {
-        if (object instanceof THREE.Mesh) { object.userData.memberId = member.id; selectables.push(object) }
-      })
-      node.add(memberObject)
-      const satellites = member.agents.map((agent, agentIndex) => {
-        const satellite = createAgentCompanion(agent.online, color, index * 2 + agentIndex)
-        satellite.group.position.set(Math.cos(agentIndex * 2.2) * 0.84, 0.1 + agentIndex * 0.13, Math.sin(agentIndex * 2.2) * 0.84)
-        satellite.group.traverse((object) => {
-          if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true }
-        })
-        node.add(satellite.group)
-        return satellite
-      })
-      world.add(node)
-      return { node, member, index, satellites, selection: 0 }
-    })
+    const loadingColor = new THREE.Color("#aebbc9");
+    const loadingCube = createMemberObject(loadingColor);
+    const loadingSpin = new THREE.Euler();
+    const loadingOrientation = new THREE.Quaternion();
+    const firstMemberOrientation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.28);
+    world.add(loadingCube);
+
+    const selectables: THREE.Mesh[] = [];
+    function createMemberNodes(teamMembers: PreviewMember[]) {
+      return teamMembers.map((member, index) => {
+        const color = new THREE.Color(colors[member.color] ?? colors.sage);
+        const node = new THREE.Group();
+        const memberObject = index === 0 ? loadingCube : createMemberObject(color);
+        memberObject.position.set(0, 0, 0);
+        memberObject.scale.setScalar(1);
+        memberObject.rotation.y = 0.28 + index * 0.17;
+        memberObject.userData.memberId = member.id;
+        selectables.push(memberObject);
+        node.add(memberObject);
+        const fadeMeshes: THREE.Mesh[] = index === 0 ? [] : [memberObject];
+        const fadeMaterials = new Set<THREE.Material>(index === 0 ? [] : [memberObject.material]);
+        const satellites = member.agents.map((agent, agentIndex) => {
+          const satellite = createAgentCompanion(agent.online, color, index * 2 + agentIndex);
+          satellite.group.position.set(Math.cos(agentIndex * 2.2) * 0.84, 0.1 + agentIndex * 0.13, Math.sin(agentIndex * 2.2) * 0.84);
+          satellite.group.traverse((object) => {
+            if (object instanceof THREE.Mesh) {
+              object.castShadow = true;
+              object.receiveShadow = true;
+              fadeMeshes.push(object);
+              for (const material of Array.isArray(object.material) ? object.material : [object.material]) fadeMaterials.add(material);
+            }
+          });
+          node.add(satellite.group);
+          return satellite;
+        });
+        world.add(node);
+        return { node, member, color, index, satellites, fadeMeshes, fadeMaterials, opacity: 1, selection: 0 };
+      });
+    }
+    let sceneMembers = control.current.members;
+    let memberNodes = createMemberNodes(sceneMembers);
 
     let disposed = false
     let contextLost = false
@@ -199,6 +231,10 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     let lastSelectedId = ''
     let lastRenderedScroll = -1
     let cameraInitialized = false
+    let teamReveal = control.current.loading ? 0 : 1;
+    let lastReveal = -1;
+    let loadingTime = 0;
+    let lastTeamName = control.current.teamName;
     let viewOffsetX = 0
     let viewOffsetY = 0
     let layoutDirty = true
@@ -213,12 +249,58 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     const companionPosition = new THREE.Vector3()
     const labelPoint = new THREE.Vector3()
     const labelCenter = new THREE.Vector3()
-    const labelPlacements = memberNodes.map((item) => ({ item, label: null as HTMLButtonElement | null, x: 0, y: 0, originalY: 0, halfWidth: 45, halfHeight: 20, visible: true }))
+    const createLabelPlacement = (item: (typeof memberNodes)[number]) => ({
+      item,
+      label: null as HTMLButtonElement | null,
+      side: 0,
+      x: 0,
+      y: 0,
+      originalY: 0,
+      halfWidth: 45,
+      halfHeight: 20,
+      visible: true,
+    });
+    let labelPlacements = memberNodes.map(createLabelPlacement);
     const labelLayout = { minY: 110, maxY: 500, panelLeft: 0, panelRight: 0, panelTop: 0, panelBottom: 0, hasPanel: false }
     const focusFrame = { left: 20, right: 800, top: 100, bottom: 600, width: 780, height: 500, centerX: 410, centerY: 350 }
     const teamBox = { x: 0, y: 0, halfWidth: 80, halfHeight: 25, visible: false }
     let observedPanel: HTMLElement | null = null
     const panelObserver = new ResizeObserver(() => { layoutDirty = true; start() })
+
+    function updateMembers(nextMembers: PreviewMember[]) {
+      if (sceneMembers === nextMembers) return;
+      const labelSides = new Map(labelPlacements.map((placement) => [placement.item.member.id, placement.side]));
+      world.add(loadingCube);
+      delete loadingCube.userData.memberId;
+      for (const { node } of memberNodes) {
+        world.remove(node);
+        disposeObjectResources(node);
+      }
+      selectables.length = 0;
+      sceneMembers = nextMembers;
+      memberNodes = createMemberNodes(sceneMembers);
+      labelPlacements = memberNodes.map((item) => ({ ...createLabelPlacement(item), side: labelSides.get(item.member.id) ?? 0 }));
+      layoutDirty = true;
+    }
+
+    function fadeMember(item: (typeof memberNodes)[number], opacity: number) {
+      if (item.opacity === opacity) return;
+      const fading = opacity < 1;
+      const transparencyChanged = fading !== (item.opacity < 1);
+      for (const material of item.fadeMaterials) {
+        material.opacity = opacity;
+        if (transparencyChanged) {
+          material.transparent = fading;
+          material.depthWrite = !fading;
+          material.needsUpdate = true;
+        }
+      }
+      for (const mesh of item.fadeMeshes) {
+        mesh.visible = opacity > 0;
+        mesh.castShadow = opacity >= 0.85;
+      }
+      item.opacity = opacity;
+    }
 
     function measureLabels() {
       const mobile = width <= MOBILE_BREAKPOINT
@@ -270,6 +352,7 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
       if (layoutDirty) measureLabels()
       const mobile = width <= MOBILE_BREAKPOINT
       const focused = control.current.focusedMemberId !== null
+      const canSelect = teamReveal >= 0.65 && control.current.scrollState.current.progress <= 0.12;
       const { minY, maxY } = labelLayout
       const teamElement = teamLabel.current
       teamBox.visible = control.current.focusedMemberId === null
@@ -292,7 +375,13 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
         const { halfWidth, halfHeight } = placement
         const screenX = (labelPoint.x * 0.5 + 0.5) * width
         const screenY = (-labelPoint.y * 0.5 + 0.5) * height
-        const side = screenX < (focused ? focusFrame.centerX : centerX) ? -1 : 1
+        const distanceFromCenter = screenX - centerX;
+        if (placement.side === 0) {
+          placement.side = !focused && distanceFromCenter < 0 ? -1 : 1;
+        } else if (!focused && distanceFromCenter * placement.side < -LABEL_SIDE_SWITCH_THRESHOLD) {
+          placement.side *= -1;
+        }
+        const side = placement.side;
         const minX = focused ? focusFrame.left + halfWidth + 6 : halfWidth + 14
         const maxX = focused ? focusFrame.right - halfWidth - 6 : width - halfWidth - 14
         const x = THREE.MathUtils.clamp(screenX + side * (halfWidth + (mobile ? 20 : 33)), minX, Math.max(minX, maxX))
@@ -303,8 +392,8 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
           }
         }
         label.dataset.side = side < 0 ? 'left' : 'right'
-        label.style.pointerEvents = control.current.scrollState.current.progress > 0.12 ? 'none' : ''
-        label.tabIndex = control.current.scrollState.current.progress > 0.12 ? -1 : 0
+        label.style.pointerEvents = canSelect ? "" : "none";
+        label.tabIndex = canSelect ? 0 : -1;
         placement.x = x
         placement.y = y
         placement.originalY = screenY
@@ -341,22 +430,77 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
       const blend = frozen ? 1 : 1 - Math.exp(-delta * 5)
       const progress = THREE.MathUtils.clamp(control.current.scrollState.current.progress, 0, 1)
       const focusId = control.current.focusedMemberId
-      if (lastFocusId !== focusId || lastSelectedId !== control.current.selectedMemberId) layoutDirty = true
+      const lookingDown = control.current.topView;
+      const loading = control.current.loading;
+      updateMembers(control.current.members);
+      if (lastFocusId !== focusId || lastSelectedId !== control.current.selectedMemberId || lastTeamName !== control.current.teamName) layoutDirty = true;
       lastSelectedId = control.current.selectedMemberId
+      lastTeamName = control.current.teamName;
       if (layoutDirty) measureLabels()
       if (!frozen) elapsed += delta
+      if (loading) {
+        teamReveal = 0;
+        if (!frozen) loadingTime += delta;
+      } else if (frozen || progress >= 0.12 || lastRenderedScroll >= 1) {
+        teamReveal = 1;
+      } else {
+        teamReveal = Math.min(1, teamReveal + delta / TEAM_REVEAL_SECONDS);
+      }
+      const reveal = teamReveal * teamReveal * (3 - 2 * teamReveal);
+      const loadingWeight = 1 - reveal;
+      if (lastReveal !== reveal) {
+        stage?.style.setProperty("--itp-team-reveal", String(reveal));
+        if (lastReveal === -1 || (lastReveal >= 0.25) !== (reveal >= 0.25)) {
+          stage?.style.setProperty("--itp-team-reveal-visibility", reveal >= 0.25 ? "visible" : "hidden");
+        }
+        lastReveal = reveal;
+      }
+      const orbitAngle = loadingTime * 0.47;
+      const loadingHeight = -0.1 + Math.sin(orbitAngle * 2) * 0.14;
+      if (loading) {
+        const spinTime = loadingTime * 0.78;
+        loadingSpin.set(
+          spinTime * 6.4 + Math.sin(spinTime * 2.7) * 0.65,
+          -spinTime * 8.1 + Math.sin(spinTime * 3.4 + 0.4) * 0.8,
+          spinTime * 4.9 + Math.sin(spinTime * 1.9 + 1.2) * 0.7,
+        );
+        loadingOrientation.setFromEuler(loadingSpin);
+      }
+      loadingCube.visible = memberNodes.length > 0 || loadingWeight > 0;
+      if (loadingCube.parent === world && loadingCube.visible) {
+        const angle = orbitAngle + 0.35;
+        loadingCube.position.set(Math.cos(angle) * 1.76, loadingHeight, Math.sin(angle) * 1.76);
+        loadingCube.quaternion.copy(loadingOrientation);
+        loadingCube.material.color.copy(loadingColor);
+        loadingCube.scale.setScalar(0.82 * loadingWeight);
+      }
       entrance = THREE.MathUtils.lerp(entrance, 1, frozen ? 1 : 1 - Math.exp(-delta * 2.4))
       expansion = THREE.MathUtils.lerp(expansion, control.current.exploded ? 1 : 0, blend)
       world.scale.setScalar((0.96 + entrance * 0.04) * (1 - progress * 0.14))
       world.position.y = -0.025 + entrance * 0.025 + progress * 0.16
       core.position.y = -0.1 + Math.sin(elapsed * 0.4) * 0.008
+      const phase = Math.atan2(Math.sin(orbitAngle), Math.cos(orbitAngle));
+      const memberRadius = 2.62 + expansion * 1.05;
       for (const item of memberNodes) {
         const selected = item.member.id === control.current.selectedMemberId
         item.selection = THREE.MathUtils.lerp(item.selection, selected ? 1 : 0, blend)
-        const angle = item.index / Math.max(members.length, 1) * Math.PI * 2 + 0.35
-        const radius = 2.62 + expansion * 1.05
-        item.node.position.set(Math.cos(angle) * radius, -0.12 + Math.sin(elapsed * 0.5 + item.index) * 0.006 + item.selection * 0.012, Math.sin(angle) * radius)
-        item.node.scale.setScalar(1 + item.selection * 0.035)
+        const firstMember = item.index === 0;
+        let angle = item.index / sceneMembers.length * Math.PI * 2 + 0.35;
+        let radius = memberRadius;
+        let height = -0.12 + Math.sin(elapsed * 0.5 + item.index) * 0.006 + item.selection * 0.012;
+        let scale = 1 + item.selection * 0.035;
+        if (firstMember) {
+          angle += phase * loadingWeight;
+          radius = THREE.MathUtils.lerp(1.76, radius, reveal);
+          height = THREE.MathUtils.lerp(loadingHeight, height, reveal);
+          scale = THREE.MathUtils.lerp(0.82, scale, reveal);
+          loadingCube.quaternion.slerpQuaternions(loadingOrientation, firstMemberOrientation, reveal);
+          loadingCube.material.color.lerpColors(loadingColor, item.color, reveal);
+        }
+        item.node.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+        item.node.scale.setScalar(scale);
+        const fadeStart = firstMember ? 0.2 : Math.min(0.1 + (item.index - 1) * 0.045, 0.3);
+        fadeMember(item, THREE.MathUtils.smoothstep(teamReveal, fadeStart, 1));
         item.satellites.forEach((satellite, satelliteIndex) => {
           const orbit = elapsed * 0.08 + satelliteIndex * 2.2 + item.index * 0.24
           satellite.group.position.set(Math.cos(orbit) * 0.84, 0.1 + Math.sin(elapsed * 0.7 + satellite.phase) * 0.008, Math.sin(orbit) * 0.84)
@@ -371,8 +515,10 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
         lastFocusId = focusId
       }
       const orientationBlend = frozen ? 1 : 1 - Math.exp(-delta * 10)
-      azimuth = THREE.MathUtils.lerp(azimuth, targetAzimuth + pointer.x * 0.045, orientationBlend)
-      polar = THREE.MathUtils.lerp(polar, targetPolar + pointer.y * 0.025 - progress * 0.14, orientationBlend)
+      const desiredAzimuth = targetAzimuth + (lookingDown ? 0 : pointer.x * 0.045);
+      const desiredPolar = lookingDown ? TOP_VIEW_POLAR : targetPolar + pointer.y * 0.025 - progress * 0.14;
+      azimuth = THREE.MathUtils.lerp(azimuth, desiredAzimuth, orientationBlend);
+      polar = THREE.MathUtils.lerp(polar, desiredPolar, orientationBlend);
       const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5))
       let radius: number
       if (focusedNode) {
@@ -387,8 +533,8 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
       } else {
         target.set(0, 0.05 + progress * 0.08, 0)
         const horizontalFit = (3.95 + expansion * 0.8) / (tangent * camera.aspect)
-        const verticalFit = 3.15 / tangent
-        radius = Math.max(11.4 + expansion * 1.1, horizontalFit, verticalFit)
+        const verticalFit = (lookingDown ? 3.95 + expansion * 1.05 : 3.15) / tangent;
+        radius = Math.max(11.4 + expansion * 1.1, horizontalFit, verticalFit) * (1 - loadingWeight * 0.14);
       }
       radius *= 1 + progress * 0.18
       orbitOffset.set(Math.sin(azimuth) * Math.sin(polar) * radius, Math.cos(polar) * radius, Math.cos(azimuth) * Math.sin(polar) * radius)
@@ -419,7 +565,9 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
         }
       }
       renderer.render(scene, camera)
-      updateLabels()
+      if (!loading && teamReveal >= 0.25) updateLabels();
+      else if (labelsElement) labelsElement.style.visibility = "hidden";
+      if (lastRenderedScroll === -1) control.current.onAvailabilityChange(true);
       lastRenderedScroll = progress
       if (frozen || progress >= 1) { renderer.setAnimationLoop(null); running = false }
     }
@@ -444,16 +592,15 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     const observer = new ResizeObserver(resize)
     observer.observe(element)
     resize()
-    control.current.onAvailabilityChange(true)
 
     function hit(event: PointerEvent) {
-      if (control.current.scrollState.current.progress > 0.12) return undefined
+      if (control.current.loading || teamReveal < 0.65 || control.current.scrollState.current.progress > 0.12) return undefined;
       const bounds = renderer.domElement.getBoundingClientRect()
       raycaster.setFromCamera(new THREE.Vector2((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1), camera)
-      return raycaster.intersectObjects(selectables, false)[0]?.object.userData.memberId as string | undefined
+      return raycaster.intersectObjects(selectables, false).find(({ object }) => object.visible)?.object.userData.memberId as string | undefined;
     }
     function down(event: PointerEvent) {
-      if (event.button !== 0 || control.current.scrollState.current.progress > 0.12) return
+      if (event.button !== 0 || control.current.loading || teamReveal < 0.65 || control.current.scrollState.current.progress > 0.12) return;
       pointerDown = { x: event.clientX, y: event.clientY, moved: false }
       renderer.domElement.setPointerCapture(event.pointerId)
       renderer.domElement.style.cursor = 'grabbing'
@@ -467,7 +614,9 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
         if (Math.abs(x) + Math.abs(y) > 4) pointerDown.moved = true
         if (pointerDown.moved) {
           targetAzimuth -= x * 0.004
-          targetPolar = THREE.MathUtils.clamp(targetPolar + y * 0.0025, 0.72, 1.36)
+          if (!control.current.topView) {
+            targetPolar = THREE.MathUtils.clamp(targetPolar - y * 0.0025, 0.72, 1.36);
+          }
           pointerDown.x = event.clientX
           pointerDown.y = event.clientY
         }
@@ -497,7 +646,7 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
     }
     function restored() {
       contextLost = false
-      control.current.onAvailabilityChange(true)
+      lastRenderedScroll = -1;
       start()
     }
     const canvas = renderer.domElement
@@ -512,6 +661,8 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
 
     return () => {
       disposed = true
+      stage?.style.removeProperty("--itp-team-reveal");
+      stage?.style.removeProperty("--itp-team-reveal-visibility");
       if (labelsElement) labelsElement.style.visibility = 'hidden'
       wake.current = () => {}
       renderer.setAnimationLoop(null)
@@ -531,11 +682,11 @@ export default function ImmersiveTeamScene({ teamName, members, selectedMemberId
       renderer.dispose()
       canvas.remove()
     }
-  }, [members])
+  }, []);
 
   return <div className="itp-canvas" ref={host} role="group" aria-label="팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 드래그로 회전하고 팀원 또는 이름을 선택할 수 있습니다.">
     <div className="itp-scene-labels" ref={labelsLayer} style={{ visibility: 'hidden' }} aria-label="팀과 팀원 이름">
-      <div className="itp-team-scene-label" ref={teamLabel} hidden={focusedMemberId !== null} style={{ visibility: focusedMemberId !== null ? 'hidden' : undefined }}>{teamName}</div>
+      {!loading && <div className="itp-team-scene-label" ref={teamLabel} hidden={focusedMemberId !== null} style={{ visibility: focusedMemberId !== null ? 'hidden' : undefined }}>{teamName}</div>}
       {members.map((member) => <button
         key={member.id}
         ref={(element) => { if (element) memberLabels.current.set(member.id, element); else memberLabels.current.delete(member.id) }}

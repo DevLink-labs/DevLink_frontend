@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import PageTitle from '../components/common/PageTitle'
-import TeamSpaceLink from '../components/common/TeamSpaceLink'
-import { Icon } from '../components/ui'
-import { useSession } from '../features/auth/hooks/useSession'
-import type { Team } from '../features/teams/types'
-import { API_BASE_URL } from '../lib/apiClient'
+import PageTitle from "@/components/common/PageTitle";
+import TeamSpaceLink from "@/components/common/TeamSpaceLink";
+import { Icon } from "@/components/ui";
+import { useSession } from "@/features/auth/hooks/useSession";
+import type { Team } from "@/features/teams/types";
+import { API_BASE_URL } from "@/lib/apiClient";
 
 export type WorkspaceView = 'workspace' | 'guide'
 
@@ -18,11 +18,12 @@ interface DashboardLayoutProps {
   workspaceLoading: boolean
   onSelectTeam: (teamId: number) => void
   onRefresh: () => void
+  onReturnToScene: () => void;
 }
 
 export default function DashboardLayout({
   children, view, onViewChange, teams, selectedTeamId, teamsLoading,
-  workspaceLoading, onSelectTeam, onRefresh,
+  workspaceLoading, onSelectTeam, onRefresh, onReturnToScene,
 }: DashboardLayoutProps) {
   const { user, connection, loggingOut, logout } = useSession()
   if (!user) return null
@@ -36,7 +37,7 @@ export default function DashboardLayout({
         <button type="button" className={view === 'workspace' ? 'nav-item active' : 'nav-item'} onClick={() => onViewChange('workspace')} aria-current={view === 'workspace' ? 'page' : undefined}><Icon name="grid" />팀과 Agent</button>
         <button type="button" className={view === 'guide' ? 'nav-item active' : 'nav-item'} onClick={() => onViewChange('guide')} aria-current={view === 'guide' ? 'page' : undefined}><Icon name="book" />사용 가이드</button>
         <a className="nav-item" href="/?preview=team" aria-label="팀 디자인 미리보기" title="팀 디자인 미리보기"><Icon name="eye" />팀 디자인 미리보기</a>
-        <TeamSpaceLink variant="navigation" className="nav-item" />
+        <button type="button" className="nav-item" onClick={onReturnToScene} aria-label="3D 팀 스페이스" title="3D 팀 스페이스"><Icon name="team" />3D 팀 스페이스</button>
         <TeamSpaceLink variant="navigation" className="nav-item" edition={2} />
         <TeamSpaceLink variant="navigation" className="nav-item" edition={3} />
       </nav>
