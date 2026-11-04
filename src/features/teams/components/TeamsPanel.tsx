@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { FormEvent, Ref } from "react";
 import type { Team, TeamMember } from '../types'
 import { useTeamMutations } from '../hooks/useTeams'
 import { copyText, formatDate } from '../../../utils'
@@ -16,6 +16,7 @@ export interface TeamsPanelProps {
   onRefresh: () => void
   onError: (error: unknown) => void
   onNotice: (message: string) => void
+  inviteButtonRef?: Ref<HTMLButtonElement>;
 }
 
 type TeamDialog =
@@ -35,6 +36,7 @@ export default function TeamsPanel({
   onRefresh,
   onError,
   onNotice,
+  inviteButtonRef,
 }: TeamsPanelProps) {
   const fieldId = useId()
   const active = useRef(true)
@@ -233,6 +235,7 @@ export default function TeamsPanel({
             </dl>
             {selectedTeam.myRole === 'OWNER' ? (
               <button
+                ref={inviteButtonRef}
                 className="button button-secondary button-small"
                 type="button"
                 disabled={pending || loading}

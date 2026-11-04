@@ -1,14 +1,14 @@
-.team-space-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; padding: 7px 11px; border: 1px solid #dce2e9; border-radius: 8px; color: #445168; background: #f3f6fa; font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap; transition: background .15s, border-color .15s, color .15s; }
-.team-space-link:hover { color: #263249; border-color: #b9c5d4; background: #eaf0f7; }
-.team-space-link:focus-visible { outline: 2px solid #7b8eaa; outline-offset: 3px; }
+.team-space-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; padding: 7px 11px; border: 1px solid var(--workspace-border); border-radius: 8px; color: var(--workspace-action); background: var(--color-workspace); font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap; transition: background .15s, border-color .15s, color .15s; }
+.team-space-link:hover { color: var(--color-ink); border-color: var(--workspace-outline); background: var(--workspace-accent); }
+.team-space-link:focus-visible { outline: 2px solid var(--workspace-focus); outline-offset: 3px; }
 .team-space-link > svg { flex-shrink: 0; }
 .team-space-link-edition-2 { border-color: #bed9d0; background: #edf6f2; color: #365e53; }
 .team-space-link-edition-2:hover { border-color: #83afa0; background: #dfefe8; color: #244b3e; }
 .team-space-link-edition-3 { border-color: #c9d0d9; background: #f0f2f5; color: #303b4a; }
 .team-space-link-edition-3:hover { border-color: #9eaab9; background: #e5eaf0; color: #1f2e42; }
-.team-space-link.team-space-link-navigation { justify-content: flex-start; gap: 12px; width: 100%; border: 0; padding: 12px 14px; background: transparent; color: #8fa1b7; font-size: 12px; font-weight: 400; }
+.team-space-link.team-space-link-navigation { justify-content: flex-start; gap: 12px; width: 100%; border: 0; padding: 12px 14px; background: transparent; color: var(--workspace-muted); font-size: 12px; font-weight: 400; }
 .team-space-link.team-space-link-navigation > svg { width: 20px; height: 20px; }
-.team-space-link.team-space-link-navigation:hover { background: #ffffff05; color: #ced8e3; }
+.team-space-link.team-space-link-navigation:hover { background: var(--color-workspace); color: var(--color-ink); }
 .team-space-link.team-space-link-auth { font-size: 10px; padding: 6px 9px; }
 .itp-header .team-space-link { min-height: 36px; }
 @media (max-width: 720px) {

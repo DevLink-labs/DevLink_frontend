@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
-import { Icon } from '../../../components/ui'
-import PageTitle from '../../../components/common/PageTitle'
-import TeamSpaceLink from '../../../components/common/TeamSpaceLink'
-import { copyText } from '../../../utils'
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { Team } from "@/features/teams/types";
+import type { PreviewMember } from "../data/previewData";
+import { Icon } from "@/components/ui";
+import PageTitle from "@/components/common/PageTitle";
+import TeamSpaceLink from "@/components/common/TeamSpaceLink";
+import { copyText } from "@/utils";
 import ImmersiveTeamScene from './ImmersiveTeamScene'
 import FocusedMemberDetails from './FocusedMemberDetails'
 import TeamWorkspaceDashboard from './TeamWorkspaceDashboard'
@@ -20,6 +22,122 @@ function SpreadIcon() {
   return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M4 4l5 5M20 4l-5 5M20 20l-5-5M4 20l5-5" /></svg>
 }
 
+function TopViewIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v10m-4-4 4 4 4-4M5 15v5h14v-5" />
+    </svg>
+  );
+}
+
+function SceneLoading({ message }: { message: string }) {
+  return (
+    <div className="itp-scene-message itp-scene-loading" role="status">
+      <span className="itp-loader" aria-hidden="true">
+        <span className="itp-loader-orbit"><i /></span>
+        <span className="itp-loader-float">
+          <span className="itp-loader-cube"><i /><i /><i /><i /><i /><i /></span>
+        </span>
+      </span>
+      <span className="itp-loader-caption">
+        <span className="itp-loader-kicker" aria-hidden="true">TEAM SPACE</span>
+        <strong>{message}</strong>
+        <span className="itp-loader-track" aria-hidden="true" />
+      </span>
+    </div>
+  );
+}
+
+function TeamPicker({ teamName, teams, selectedTeamId, onSelectTeam }: {
+  teamName: string;
+  teams: { id: string; name: string }[];
+  selectedTeamId: string;
+  onSelectTeam: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const listId = useId();
+  const picker = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const selectedTeam = list.current?.querySelector<HTMLButtonElement>("[aria-current='true']");
+    (selectedTeam ?? list.current?.querySelector("button"))?.focus();
+
+    function dismissOutside(event: PointerEvent) {
+      if (event.target instanceof Node && !picker.current?.contains(event.target)) setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", dismissOutside);
+    return () => document.removeEventListener("pointerdown", dismissOutside);
+  }, [open]);
+
+  function closePicker() {
+    setOpen(false);
+    trigger.current?.focus({ preventScroll: true });
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (open && event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closePicker();
+      return;
+    }
+
+    const step = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+    if (!open) {
+      if (step && teams.length > 0) {
+        event.preventDefault();
+        setOpen(true);
+      }
+      return;
+    }
+    if (!step && event.key !== "Home" && event.key !== "End") return;
+
+    const options = Array.from(list.current?.querySelectorAll("button") ?? []);
+    if (options.length === 0) return;
+    event.preventDefault();
+    const current = options.indexOf(event.target as HTMLButtonElement);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? options.length - 1
+      : current < 0 ? (step > 0 ? 0 : options.length - 1) : (current + step + options.length) % options.length;
+    options[next]?.focus();
+  }
+
+  return (
+    <div className="itp-team-picker" ref={picker} onKeyDown={handleKeyDown}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+      <h1>
+        {teams.length === 0 ? teamName : (
+          <button className="itp-team-picker-trigger" type="button" ref={trigger} aria-expanded={open}
+            aria-controls={open ? listId : undefined} aria-label={`팀 선택, 현재 팀 ${teamName}`} onClick={() => setOpen((current) => !current)}>
+            <span className="itp-team-picker-name">{teamName}</span>
+            <span className="itp-team-picker-chevron"><Icon name="chevron" size={16} /></span>
+          </button>
+        )}
+      </h1>
+      {open && (
+        <div className="itp-team-picker-panel">
+          <div className="itp-team-picker-heading"><span>참여 중인 팀</span><span>{teams.length}</span></div>
+          <ul className="itp-team-picker-list" id={listId} ref={list} aria-label="참여 중인 팀">
+            {teams.map((team) => (
+              <li key={team.id}>
+                <button type="button" className="itp-team-picker-option" aria-current={team.id === selectedTeamId ? true : undefined}
+                  onClick={() => { closePicker(); onSelectTeam(team.id); }}>
+                  <span className="itp-team-picker-initial" aria-hidden="true">{Array.from(team.name.trim())[0] ?? "?"}</span>
+                  <span className="itp-team-picker-option-name">{team.name}</span>
+                  {team.id === selectedTeamId && <span className="itp-team-picker-current"><Icon name="check" size={15} /><span className="itp-sr-only">현재 팀</span></span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MemberIcon({ size = 20 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="7.5" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></svg>
 }
@@ -28,14 +146,27 @@ const memberColors: Record<string, string> = {
   sage: '#858585', blue: '#6b6b6b', peach: '#a5a5a5',
   lavender: '#909090', sand: '#bdbdbd', mint: '#999999',
 }
+const loadingMembers: PreviewMember[] = [];
 
-export default function ImmersiveTeamPreview() {
+interface LiveWorkspace {
+  teams: Team[];
+  selectedTeam: Team | null;
+  members: PreviewMember[];
+  agentCount: number;
+  sceneStatus: "loading" | "error" | "empty" | "ready";
+  onSelectTeam: (teamId: number) => void;
+  onRetry: () => void;
+  onInvite?: () => void;
+  renderDashboard: (showScene: () => void) => ReactNode;
+}
+
+export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWorkspace }) {
   const [teamId, setTeamId] = useState(immersivePreviewTeams[0].id)
-  const [selectedMemberId, setSelectedMemberId] = useState(immersivePreviewTeams[0].members[0].id)
-  const [focusedMemberId, setFocusedMemberId] = useState<string | null>(null)
+  const [selection, setSelection] = useState<{ teamId: string; memberId: string; focused: boolean } | null>(null);
   const [paused, setPaused] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [exploded, setExploded] = useState(false)
-  const [availability, setAvailability] = useState<'loading' | 'ready' | 'unavailable'>('loading')
+  const [topView, setTopView] = useState(false);
+  const [availability, setAvailability] = useState<"loading" | "ready" | "unavailable">("loading");
   const [inviteOpen, setInviteOpen] = useState(false)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle')
   const [sceneInteractive, setSceneInteractive] = useState(true)
@@ -47,30 +178,46 @@ export default function ImmersiveTeamPreview() {
   const inviteDialog = useRef<HTMLDialogElement>(null)
   const copyAttempt = useRef(0)
   const team = immersivePreviewTeams.find((item) => item.id === teamId) ?? immersivePreviewTeams[0]
-  const member = team.members.find((item) => item.id === selectedMemberId) ?? team.members[0]
-  const agents = team.members.flatMap((item) => item.agents)
-  const color = memberColors[member.color] ?? memberColors.sage
+  const activeTeamId = workspace ? String(workspace.selectedTeam?.teamId ?? "") : team.id;
+  const sceneStatus = workspace?.sceneStatus ?? "ready";
+  const showTeam = sceneStatus === "ready";
+  const loadingTeam = sceneStatus === "loading";
+  const mountScene = loadingTeam || showTeam;
+  const loadingMessage = loadingTeam
+    ? "팀 정보를 불러오는 중이에요"
+    : showTeam && availability === "loading" ? "3D 공간을 준비하는 중이에요" : null;
+  const showTeamControls = showTeam && availability !== "loading";
+  const teamName = workspace ? workspace.selectedTeam?.name ?? "DevLink 워크스페이스" : team.name;
+  const members = workspace ? workspace.members : team.members;
+  const teamOptions = workspace
+    ? workspace.teams.map((item) => ({ id: String(item.teamId), name: item.name }))
+    : immersivePreviewTeams;
+  const activeSelection = selection?.teamId === activeTeamId ? selection : null;
+  const selectedMember = members.find((item) => item.id === activeSelection?.memberId);
+  const member = selectedMember ?? members[0];
+  const focusedMemberId = showTeam && activeSelection?.focused && selectedMember ? selectedMember.id : null;
+  const agentCount = workspace?.agentCount ?? members.reduce((count, item) => count + item.agents.length, 0);
+  const color = memberColors[member?.color] ?? memberColors.sage;
 
   const onRenderRequestChange = useCallback((requestRender: () => void) => {
     sceneScrollState.current.requestRender = requestRender
   }, [])
 
   const onAvailabilityChange = useCallback((available: boolean) => {
-    setAvailability(available ? 'ready' : 'unavailable')
-  }, [])
+    setAvailability(available ? "ready" : "unavailable");
+  }, []);
 
   const selectMember = useCallback((id: string) => {
-    setSelectedMemberId(id)
-    setFocusedMemberId(id)
-  }, [])
+    setTopView(false);
+    setSelection({ teamId: activeTeamId, memberId: id, focused: true });
+  }, [activeTeamId]);
 
   const selectDashboardMember = useCallback((id: string) => {
-    setSelectedMemberId(id)
-    setFocusedMemberId(null)
-  }, [])
+    setSelection({ teamId: activeTeamId, memberId: id, focused: false });
+  }, [activeTeamId]);
 
   const returnToOverview = useCallback(() => {
-    setFocusedMemberId(null)
+    setSelection((current) => current?.focused ? { ...current, focused: false } : current);
   }, [])
 
   useEffect(() => {
@@ -159,12 +306,19 @@ export default function ImmersiveTeamPreview() {
   }
 
   function showDashboard() {
-    scrollToSection(dashboardSection.current)
+    dashboardSection.current?.focus({ preventScroll: true });
+    scrollToSection(dashboardSection.current);
   }
 
   function showScene() {
-    returnToOverview()
-    scrollToSection(journey.current)
+    returnToOverview();
+    journey.current?.focus({ preventScroll: true });
+    scrollToSection(journey.current);
+  }
+
+  function toggleTopView() {
+    returnToOverview();
+    setTopView((current) => !current);
   }
 
   function focusMemberFromDashboard(id: string) {
@@ -173,16 +327,26 @@ export default function ImmersiveTeamPreview() {
   }
 
   function openInvite() {
+    if (workspace) {
+      workspace.onInvite?.();
+      return;
+    }
     setCopyStatus('idle')
     setInviteOpen(true)
   }
 
   function changeTeam(id: string) {
+    if (id === activeTeamId) return;
+    if (workspace) {
+      setSelection(null);
+      setExploded(false);
+      workspace.onSelectTeam(Number(id));
+      return;
+    }
     const nextTeam = immersivePreviewTeams.find((item) => item.id === id)
-    if (!nextTeam || nextTeam.id === teamId) return
+    if (!nextTeam) return;
     setTeamId(id)
-    selectDashboardMember(nextTeam.members[0].id)
-    setAvailability('loading')
+    setSelection(null);
     setExploded(false)
     closeInvite()
   }
@@ -204,33 +368,98 @@ export default function ImmersiveTeamPreview() {
   }
 
   return <div className="itp-experience" ref={experienceRoot}>
-    <PageTitle title="3D 팀 스페이스" />
-    <section className="itp-journey" ref={journey} aria-label="3D 팀 스페이스">
+    {!workspace && <PageTitle title="3D 팀 스페이스" />}
+    <section className="itp-journey" ref={journey} aria-label="3D 팀 스페이스" tabIndex={-1}>
       <div className="itp-stage-sticky" ref={stickyStage}>
-        <div className={`immersive-team-preview ${paused ? 'is-paused' : ''} ${exploded ? 'is-exploded' : ''} ${focusedMemberId ? 'is-focused' : ''}`} inert={!sceneInteractive}>
-    <div className="itp-scene"><ImmersiveTeamScene teamName={team.name} members={team.members} selectedMemberId={member.id} focusedMemberId={focusedMemberId} scrollState={sceneScrollState} onRenderRequestChange={onRenderRequestChange} onSelectMember={selectMember} paused={paused} exploded={exploded} onAvailabilityChange={onAvailabilityChange} />
-      {availability === 'loading' && <div className="itp-loading-overlay" role="status"><span className="itp-loader" /><span>공간을 준비하는 중</span></div>}
-      {availability === 'unavailable' && <div className="itp-fallback"><div className="itp-fallback-core"><span className="itp-fallback-hub-model" aria-hidden="true"><i /><i /><i /></span><span className="itp-fallback-team-name">{team.name}</span></div><div className="itp-fallback-members">{team.members.map((item, index) => <button key={item.id} type="button" className={member.id === item.id ? 'is-active' : ''} onClick={() => selectMember(item.id)} aria-label={`${item.name} 선택`} aria-pressed={member.id === item.id} style={{ '--itp-index': index, '--itp-count': team.members.length, '--itp-member-color': memberColors[item.color] } as CSSProperties}><span className="itp-fallback-node" aria-hidden="true"><i /><i /><i /></span><span className="itp-fallback-companions" aria-hidden="true">{item.agents.map((agent) => <span key={agent.id} className={`itp-fallback-companion ${agent.online ? 'is-online' : ''}`}><i /><i /><b /></span>)}</span><strong>{item.name}</strong></button>)}</div><span className="itp-fallback-note">이 환경에서는 기본 그래픽으로 표시해요</span></div>}
+        <div className={`immersive-team-preview ${paused ? 'is-paused' : ''} ${exploded ? 'is-exploded' : ''} ${focusedMemberId ? 'is-focused' : ''} ${loadingMessage ? "is-loading" : ""}`} inert={!sceneInteractive}>
+    <div className="itp-scene">
+      {mountScene && (
+        <ImmersiveTeamScene
+          teamName={teamName}
+          members={loadingTeam ? loadingMembers : members}
+          loading={loadingTeam}
+          selectedMemberId={member?.id ?? ""}
+          focusedMemberId={focusedMemberId}
+          scrollState={sceneScrollState}
+          onRenderRequestChange={onRenderRequestChange}
+          onSelectMember={selectMember}
+          paused={paused}
+          exploded={exploded}
+          topView={topView}
+          onAvailabilityChange={onAvailabilityChange}
+        />
+      )}
+      {mountScene && availability !== "unavailable" && (
+        <div className="itp-scene-handoff-status" role={loadingMessage ? "status" : undefined} aria-hidden={!loadingMessage}>
+          <span className="itp-loader-kicker" aria-hidden="true">TEAM SPACE</span>
+          <strong>{loadingMessage ?? "팀 정보를 불러오는 중이에요"}</strong>
+        </div>
+      )}
+      {loadingMessage && availability === "unavailable" && <SceneLoading message={loadingMessage} />}
+      {sceneStatus === "empty" && (
+        <div className="itp-scene-message" role="status">
+          <strong>아직 참여한 팀이 없어요</strong>
+          <span>대시보드에서 팀을 만들거나 초대 코드로 참여할 수 있어요.</span>
+        </div>
+      )}
+      {sceneStatus === "error" && (
+        <div className="itp-scene-message">
+          <strong role="alert">팀 정보를 불러오지 못했어요</strong>
+          <button type="button" className="itp-dashboard-jump" onClick={workspace?.onRetry}>다시 불러오기</button>
+        </div>
+      )}
+      {showTeam && availability === 'unavailable' && <div className="itp-fallback"><div className="itp-fallback-core"><span className="itp-fallback-hub-model" aria-hidden="true"><i /><i /><i /></span><span className="itp-fallback-team-name">{teamName}</span></div><div className="itp-fallback-members">{members.map((item, index) => <button key={item.id} type="button" className={member?.id === item.id ? 'is-active' : ''} onClick={() => selectMember(item.id)} aria-label={`${item.name} 선택`} aria-pressed={member?.id === item.id} style={{ '--itp-index': index, '--itp-count': members.length, '--itp-member-color': memberColors[item.color] } as CSSProperties}><span className="itp-fallback-node" aria-hidden="true"><i /><i /><i /></span><span className="itp-fallback-companions" aria-hidden="true">{item.agents.map((agent) => <span key={agent.id} className={`itp-fallback-companion ${agent.online ? 'is-online' : ''}`}><i /><i /><b /></span>)}</span><strong>{item.name}</strong></button>)}</div><span className="itp-fallback-note">이 환경에서는 기본 그래픽으로 표시해요</span></div>}
     </div>
     <div className="itp-ambient" aria-hidden="true"><i /><i /><i /></div>
     <div className="itp-ui">
       <header className="itp-header"><a href="/" className="itp-brand" aria-label="DevLink 워크스페이스"><span className="itp-brand-symbol">D<i /></span><span className="itp-brand-word">DevLink</span></a><div className="itp-header-actions"><TeamSpaceLink edition={2} /><TeamSpaceLink edition={3} />{focusedMemberId && <button type="button" className="itp-overview-button" onClick={returnToOverview}><Icon name="arrow" size={17} />전체 팀 보기</button>}<button className="itp-dashboard-jump" type="button" onClick={showDashboard}>대시보드<Icon name="chevron" size={16} /></button><button type="button" className="itp-icon-button" onClick={() => setPaused(!paused)} aria-label={paused ? '애니메이션 재생' : '애니메이션 일시정지'} title={paused ? '애니메이션 재생' : '애니메이션 일시정지'} aria-pressed={paused}><MotionIcon paused={paused} /></button></div></header>
-      <div className="itp-main">
-        <section className="itp-hero" key={team.id}><div className="itp-team-picker"><h1>{team.name}</h1><Icon name="chevron" size={20} /><select value={team.id} onChange={(event) => changeTeam(event.target.value)} aria-label="팀 선택">{immersivePreviewTeams.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div></section>
-        <div className="itp-stats" aria-label={`팀원 ${team.members.length}명, 에이전트 ${agents.length}개`}><div><strong>{team.members.length}</strong><span>팀원</span></div><span className="itp-stat-line" /><div><strong>{agents.length}</strong><span>에이전트</span></div></div>
-        {focusedMemberId && <FocusedMemberDetails key={`${team.id}-${member.id}`} member={member} teamName={team.name} color={color} onClose={returnToOverview} onOpenDashboard={showDashboard} />}
+      {showTeamControls && <div className={`itp-main${availability === "ready" ? " itp-team-reveal" : ""}`}>
+        <section className="itp-hero" key={activeTeamId}>
+          <TeamPicker teamName={teamName} teams={teamOptions} selectedTeamId={activeTeamId}
+            onSelectTeam={(id) => {
+              if (id === activeTeamId) return;
+              journey.current?.focus({ preventScroll: true });
+              changeTeam(id);
+            }} />
+        </section>
+        <div className="itp-stats" aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개`}><div><strong>{members.length}</strong><span>팀원</span></div><span className="itp-stat-line" /><div><strong>{agentCount}</strong><span>에이전트</span></div></div>
+        {focusedMemberId && member && <FocusedMemberDetails key={`${activeTeamId}-${member.id}`} member={member} teamName={teamName} color={color} onClose={returnToOverview} onOpenDashboard={showDashboard} />}
         <p className="itp-sr-only">팀원을 선택하면 카메라가 이동합니다. 전체 팀 보기 버튼이나 Escape 키로 돌아올 수 있습니다. 아래로 스크롤하면 팀 대시보드가 나타납니다.</p>
-      </div>
-      <div className="itp-bottom"><div className="itp-orbit-controls"><button type="button" className="itp-icon-button" onClick={() => setExploded(!exploded)} aria-label={exploded ? '모아 보기' : '펼쳐 보기'} title={exploded ? '모아 보기' : '펼쳐 보기'} aria-pressed={exploded}><SpreadIcon /></button><span className="itp-bottom-note">드래그하여 둘러보기</span></div><div className="itp-dock" role="group" aria-label="팀원 선택">{team.members.map((item) => <button type="button" className={`itp-member ${member.id === item.id ? 'is-active' : ''}`} key={item.id} style={{ '--itp-member-color': memberColors[item.color] } as CSSProperties} aria-pressed={member.id === item.id} aria-label={`${item.name} 선택`} onClick={() => selectMember(item.id)}><span className="itp-member-avatar" aria-hidden="true"><MemberIcon /></span><span className="itp-member-name">{item.name}</span><span className="itp-member-dot" /></button>)}</div><button type="button" className="itp-invite-trigger" onClick={openInvite} aria-label="팀원 초대" title="팀원 초대"><Icon name="plus" size={23} /></button></div>
+      </div>}
+      {showTeamControls && <div className={`itp-bottom${availability === "ready" ? " itp-team-reveal" : ""}`}>
+        {availability === "ready" && <div className="itp-orbit-controls">
+          <button type="button" className="itp-icon-button" onClick={() => setExploded(!exploded)} aria-label={exploded ? "모아 보기" : "펼쳐 보기"} title={exploded ? "모아 보기" : "펼쳐 보기"} aria-pressed={exploded}><SpreadIcon /></button>
+          <button type="button" className="itp-icon-button" onClick={toggleTopView} aria-label="위에서 보기" title={topView ? "기본 각도로 돌아가기" : "위에서 보기"} aria-pressed={topView}>
+            <TopViewIcon />
+          </button>
+          <span className="itp-bottom-note">드래그하여 둘러보기</span>
+        </div>}
+        {members.length > 0 && (
+          <div className="itp-dock" role="group" aria-label="팀원 선택">
+            {members.map((item) => (
+              <button type="button" className={`itp-member ${member?.id === item.id ? "is-active" : ""}`} key={item.id}
+                style={{ "--itp-member-color": memberColors[item.color] } as CSSProperties}
+                aria-pressed={member?.id === item.id} aria-label={`${item.name} 선택`} onClick={() => selectMember(item.id)}>
+                <span className="itp-member-avatar" aria-hidden="true"><MemberIcon /></span>
+                <span className="itp-member-name">{item.name}</span>
+                <span className="itp-member-dot" />
+              </button>
+            ))}
+          </div>
+        )}
+        {(!workspace || workspace.onInvite) && (
+          <button type="button" className="itp-invite-trigger" onClick={openInvite} aria-label="팀원 초대" title="팀원 초대"><Icon name="plus" size={23} /></button>
+        )}
+      </div>}
       <button type="button" className="itp-scroll-prompt" onClick={showDashboard}><span>아래로 스크롤</span><Icon name="chevron" size={17} /></button>
     </div>
         </div>
         <div className="itp-scroll-wash" aria-hidden="true" />
       </div>
     </section>
-    <section className="itp-dashboard-section" id="team-dashboard" ref={dashboardSection} aria-label="팀 대시보드">
-      <div className="itp-dashboard-frame"><TeamWorkspaceDashboard key={team.id} team={team} teams={immersivePreviewTeams} selectedMemberId={member.id} onSelectTeam={changeTeam} onSelectMember={selectDashboardMember} onFocusMember={focusMemberFromDashboard} onInvite={openInvite} onReturnToScene={showScene} /></div>
+    <section className="itp-dashboard-section" id="team-dashboard" ref={dashboardSection} aria-label="팀 대시보드" tabIndex={-1}>
+      <div className="itp-dashboard-frame">{workspace ? workspace.renderDashboard(showScene) : member && <TeamWorkspaceDashboard key={team.id} team={team} teams={immersivePreviewTeams} selectedMemberId={member.id} onSelectTeam={changeTeam} onSelectMember={selectDashboardMember} onFocusMember={focusMemberFromDashboard} onInvite={openInvite} onReturnToScene={showScene} />}</div>
     </section>
-    <dialog ref={inviteDialog} className="itp-invite-dialog" aria-labelledby="itp-invite-title" onCancel={(event) => { event.preventDefault(); closeInvite() }} onClick={(event) => { if (event.target === event.currentTarget) closeInvite() }}><div className="itp-invite-heading"><h2 id="itp-invite-title">{team.name}</h2><button type="button" className="itp-icon-button" onClick={closeInvite} aria-label="초대 카드 닫기"><Icon name="close" size={19} /></button></div><label htmlFor="itp-invite-code">초대 코드</label><input id="itp-invite-code" value={team.inviteCode} readOnly onFocus={(event) => event.currentTarget.select()} /><button type="button" className="itp-copy" onClick={() => { void copyInvite() }}><Icon name={copyStatus === 'copied' ? 'check' : 'copy'} size={16} />{copyStatus === 'copied' ? '복사 완료' : '초대 코드 복사'}</button><p className="itp-invite-note" role="status">{copyStatus === 'error' ? '코드를 선택해 직접 복사해주세요.' : '미리보기용 초대 코드'}</p></dialog>
+    {!workspace && <dialog ref={inviteDialog} className="itp-invite-dialog" aria-labelledby="itp-invite-title" onCancel={(event) => { event.preventDefault(); closeInvite() }} onClick={(event) => { if (event.target === event.currentTarget) closeInvite() }}><div className="itp-invite-heading"><h2 id="itp-invite-title">{team.name}</h2><button type="button" className="itp-icon-button" onClick={closeInvite} aria-label="초대 카드 닫기"><Icon name="close" size={19} /></button></div><label htmlFor="itp-invite-code">초대 코드</label><input id="itp-invite-code" value={team.inviteCode} readOnly onFocus={(event) => event.currentTarget.select()} /><button type="button" className="itp-copy" onClick={() => { void copyInvite() }}><Icon name={copyStatus === 'copied' ? 'check' : 'copy'} size={16} />{copyStatus === 'copied' ? '복사 완료' : '초대 코드 복사'}</button><p className="itp-invite-note" role="status">{copyStatus === 'error' ? '코드를 선택해 직접 복사해주세요.' : '미리보기용 초대 코드'}</p></dialog>}
   </div>
 }
