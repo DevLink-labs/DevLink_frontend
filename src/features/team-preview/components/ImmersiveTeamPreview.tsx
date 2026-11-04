@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { Team } from "@/features/teams/types";
 import type { PreviewMember } from "../data/previewData";
 import { Icon } from "@/components/ui";
@@ -78,7 +78,7 @@ function TeamPicker({ teamName, teams, selectedTeamId, onSelectTeam }: {
     trigger.current?.focus({ preventScroll: true });
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (open && event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();

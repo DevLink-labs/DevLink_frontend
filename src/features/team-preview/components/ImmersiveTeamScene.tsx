@@ -455,13 +455,14 @@ export default function ImmersiveTeamScene({ teamName, members, loading, selecte
         }
         lastReveal = reveal;
       }
-      const orbitAngle = loadingTime * 0.43;
+      const orbitAngle = loadingTime * 0.47;
       const loadingHeight = -0.1 + Math.sin(orbitAngle * 2) * 0.14;
       if (loading) {
+        const spinTime = loadingTime * 0.78;
         loadingSpin.set(
-          loadingTime * 6.4 + Math.sin(loadingTime * 2.7) * 0.65,
-          -loadingTime * 8.1 + Math.sin(loadingTime * 3.4 + 0.4) * 0.8,
-          loadingTime * 4.9 + Math.sin(loadingTime * 1.9 + 1.2) * 0.7,
+          spinTime * 6.4 + Math.sin(spinTime * 2.7) * 0.65,
+          -spinTime * 8.1 + Math.sin(spinTime * 3.4 + 0.4) * 0.8,
+          spinTime * 4.9 + Math.sin(spinTime * 1.9 + 1.2) * 0.7,
         );
         loadingOrientation.setFromEuler(loadingSpin);
       }
