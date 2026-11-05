@@ -75,6 +75,8 @@ export default function DashboardLayout({
 
   if (!user) return null;
 
+  const profileName = user.nickname || user.name;
+  const profileEmail = user.email;
   const selectedTeam = teams.find((team) => team.teamId === selectedTeamId);
   const selectedTask = taskList.find((task) => task.taskId === selectedTaskId);
   const pageLabel = viewLabels[view];
@@ -128,7 +130,7 @@ export default function DashboardLayout({
       </section>
       <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined}><Icon name="eye" size={18} /><span>디자인용 페이지</span><Icon name="chevron" size={14} /></button></div>
       <div className="sidebar-bottom"><div className="sidebar-profile">
-        <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-label="내 프로필과 설정 열기"><span className="avatar">{(user.nickname || user.name).slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{user.nickname || user.name}</strong><span title={user.email}>{user.email}</span></span></button>
+        <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-label="내 프로필과 설정 열기"><span className="avatar">{profileName.slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{profileName}</strong><span title={profileEmail}>{profileEmail}</span></span></button>
         <button type="button" className={`icon-button${view === "settings" || view === "guide" ? " is-selected" : ""}`} onClick={() => changeView("settings")} aria-label="설정" title="설정"><SettingsIcon /></button>
         <button type="button" className="icon-button" onClick={logout} disabled={loggingOut} aria-label={loggingOut ? "로그아웃 처리 중" : "로그아웃"} title="로그아웃"><Icon name="logout" size={17} /></button>
       </div></div>
