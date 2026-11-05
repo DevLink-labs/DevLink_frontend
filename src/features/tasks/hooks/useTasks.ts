@@ -21,6 +21,8 @@ export function useTeamTasks(userId: number, teamId: number | null, autoRefresh 
     queryFn: ({ signal }) => getAllTeamTasks(teamId!, signal),
     enabled: teamId !== null,
     staleTime: 15_000,
+    refetchOnWindowFocus: autoRefresh,
+    refetchOnReconnect: autoRefresh,
     refetchInterval: autoRefresh ? 30_000 : false,
   });
 }
@@ -36,6 +38,8 @@ export function useTaskDetail(
     queryFn: ({ signal }) => taskApi.getTaskDetail(teamId!, taskId!, signal),
     enabled: teamId !== null && taskId !== null,
     staleTime: 10_000,
+    refetchOnWindowFocus: autoRefresh,
+    refetchOnReconnect: autoRefresh,
     refetchInterval: autoRefresh ? 20_000 : false,
   });
 }

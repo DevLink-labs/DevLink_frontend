@@ -33,16 +33,17 @@
 .task-conversation .tc-latest-marker { margin: 27px 0 0; }
 .task-conversation .tc-events { display: flex; flex-direction: column; gap: 25px; list-style: none; margin: 26px 0; padding: 0; }
 .task-conversation .tc-message-row { display: flex; align-items: flex-start; gap: 10px; width: 100%; }
-.task-conversation .tc-requester { flex-direction: row-reverse; }
+.task-conversation .tc-receiver { flex-direction: row-reverse; }
 .task-conversation .tc-agent-avatar { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--workspace-border, #dce3eb); color: var(--workspace-action, #53677c); background: var(--workspace-surface, #fff); }
 .task-conversation .tc-requester > .tc-agent-avatar { background: var(--color-ink, #1f2c39); color: #fff; border-color: var(--color-ink, #1f2c39); }
 .task-conversation .tc-message-content { display: flex; flex-direction: column; align-items: flex-start; max-width: min(78%, 640px); min-width: 0; }
-.task-conversation .tc-requester .tc-message-content { align-items: flex-end; }
+.task-conversation .tc-receiver .tc-message-content { align-items: flex-end; }
 .task-conversation .tc-message-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; margin: 0 0 8px; font-size: 9px; color: var(--workspace-muted, #768493); }
 .task-conversation .tc-message-meta strong { font-size: 11px; font-weight: 650; color: var(--color-ink, #1f2c39); overflow-wrap: anywhere; }
-.task-conversation .tc-requester .tc-message-meta { justify-content: flex-end; }
+.task-conversation .tc-receiver .tc-message-meta { justify-content: flex-end; }
 .task-conversation .tc-bubble { min-width: 110px; max-width: 100%; padding: 15px 18px 17px; border: 1px solid var(--workspace-border, #dce3eb); border-radius: 3px 13px 13px 13px; background: var(--workspace-surface, #fff); color: var(--color-ink, #1f2c39); box-shadow: 0 2px 4px #1f2c3903; }
-.task-conversation .tc-requester .tc-bubble { border-radius: 13px 3px 13px 13px; color: #f8fafc; background: var(--color-ink, #1f2c39); border-color: var(--color-ink, #1f2c39); }
+.task-conversation .tc-requester .tc-bubble { color: #f8fafc; background: var(--color-ink, #1f2c39); border-color: var(--color-ink, #1f2c39); }
+.task-conversation .tc-receiver .tc-bubble { border-radius: 13px 3px 13px 13px; }
 .task-conversation .tc-message-kind { display: block; margin-bottom: 8px; font-size: 9px; font-weight: 700; opacity: .65; }
 .task-conversation .tc-message-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; tab-size: 2; font-size: 12px; line-height: 1.95; }
 .task-conversation .tc-message-time { display: block; margin-top: 7px; font-size: 9px; color: var(--workspace-muted, #768493); }
