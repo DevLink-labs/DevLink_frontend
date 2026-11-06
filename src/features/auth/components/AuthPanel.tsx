@@ -165,10 +165,12 @@ export default function AuthPanel({
                 id={`${id}-email`}
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => setEmail(event.currentTarget.value.toLowerCase())}
                 required
                 maxLength={255}
                 autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
                 placeholder="you@example.com"
                 disabled={busy}
               />
