@@ -7,7 +7,6 @@ import { useAuthMutations } from "../hooks/useAuthMutations";
 import type { ConnectionState } from "../hooks/useSession";
 import { Icon } from "../../../components/ui";
 import PageTitle from "../../../components/common/PageTitle";
-import TeamSpaceLink from "../../../components/common/TeamSpaceLink";
 
 export default function AuthPanel({
   onAuthenticated,
@@ -68,7 +67,9 @@ export default function AuthPanel({
     } catch (caught) {
       setError(
         caught instanceof ApiError
-          ? caught.message
+          ? caught.status === 0 || caught.code === "INVALID_API_RESPONSE"
+            ? "연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+            : caught.message
           : "요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.",
       );
     } finally {
@@ -81,47 +82,11 @@ export default function AuthPanel({
     <AuthLayout>
       <PageTitle title={mode === "login" ? "로그인" : "회원가입"} />
       <section className="auth-form-side">
-        <div className={`connection-indicator connection-${connectionState}`} role="status">
-          <span className="status-dot" />
-          {connectionState === "online"
-            ? "서버 연결됨"
-            : connectionState === "checking"
-              ? "서버 확인 중"
-              : "서버 연결 확인 필요"}
-        </div>
         <div className="auth-form-card">
-          <span className="eyebrow">WELCOME TO DEVLINK</span>
-          <h2>{mode === "login" ? "다시 만나 반가워요" : "새로운 협업을 시작하세요"}</h2>
-          <p className="muted">
-            {mode === "login"
-              ? "로그인하고 팀의 개발 공간으로 이동하세요."
-              : "기본 정보를 입력하면 계정을 만들 수 있어요."}
-          </p>
-          <div className="auth-tabs" role="tablist" aria-label="계정 메뉴">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "login"}
-              className={mode === "login" ? "active" : ""}
-              onClick={() => changeMode("login")}
-              disabled={busy}
-            >
-              로그인
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "signup"}
-              className={mode === "signup" ? "active" : ""}
-              onClick={() => changeMode("signup")}
-              disabled={busy}
-            >
-              회원가입
-            </button>
-          </div>
+          <h2>{mode === "login" ? "로그인" : "회원가입"}</h2>
           {connectionState === "offline" && (
             <div className="connection-help">
-              <p>서버에 연결하지 못했습니다. 백엔드 실행 상태와 API 주소를 확인해주세요.</p>
+              <p>연결하지 못했습니다. 잠시 후 다시 시도해주세요.</p>
               <button className="text-button" type="button" onClick={onRetryConnection}>
                 다시 확인 <Icon name="refresh" size={14} />
               </button>
@@ -210,25 +175,18 @@ export default function AuthPanel({
             )}
             <button className="button button-primary auth-submit" disabled={busy} type="submit">
               {busy ? "처리 중…" : mode === "login" ? "로그인" : "계정 만들기"}
-              {!busy && <Icon name="arrow" size={19} />}
             </button>
           </form>
-          <div className="auth-footnote">
-            <Icon name="shield" size={16} />
-            <span>로그인 정보는 보안 세션으로 관리합니다.</span>
+          <div className="auth-mode-switch">
+            <span>{mode === "login" ? "계정이 없으신가요?" : "이미 계정이 있으신가요?"}</span>
+            <button
+              type="button"
+              onClick={() => changeMode(mode === "login" ? "signup" : "login")}
+              disabled={busy}
+            >
+              {mode === "login" ? "회원가입" : "로그인"}
+            </button>
           </div>
-        </div>
-        <div className="auth-bottom-caption">
-          <span>DevLink Workspace · 팀과 Agent를 위한 시작점</span>
-          <nav className="auth-preview-links" aria-label="미리보기 페이지">
-            <a href="/?preview=team">
-              팀 디자인 미리보기
-              <Icon name="arrow" size={13} />
-            </a>
-            <TeamSpaceLink variant="auth" />
-            <TeamSpaceLink variant="auth" edition={2} />
-            <TeamSpaceLink variant="auth" edition={3} />
-          </nav>
         </div>
       </section>
     </AuthLayout>
