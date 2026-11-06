@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로봇 3D 프리뷰 · DevLink</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #1f2c39; background: #f8fafc; font: 14px/1.5 system-ui, sans-serif; }
+      main { min-height: 100svh; display: grid; grid-template-rows: auto minmax(360px, 1fr) auto; }
+      header { padding: 24px 32px 16px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+      h1 { margin: 4px 0; font-size: 25px; letter-spacing: -.8px; }
+      p { margin: 0; color: #586875; }
+      .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #586875; }
+      nav { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+      button, a { padding: 10px 14px; border: 1px solid #bcccdc; border-radius: 12px; color: inherit; background: white; font: inherit; text-decoration: none; cursor: pointer; }
+      button:hover, a:hover { background: #d9eafd; }
+      button:focus-visible, a:focus-visible { outline: 3px solid #9aa6b2; outline-offset: 3px; }
+      #stage { position: relative; min-height: 360px; height: calc(100svh - 200px); overflow: hidden; background: #ece7e0; }
+      canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+      canvas:active { cursor: grabbing; }
+      .labels { position: absolute; inset: auto 0 22px; display: flex; justify-content: center; gap: clamp(50px, 17vw, 220px); pointer-events: none; }
+      .labels span { padding: 7px 14px; background: #f8fafce8; border: 1px solid #d7dfe6; border-radius: 999px; }
+      .labels i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #789b87; }
+      .labels span:last-child i { background: #9aa6b2; }
+      footer { padding: 17px 32px; color: #586875; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; }
+      #error { position: absolute; inset: 0; place-content: center; text-align: center; padding: 32px; }
+      #error:not([hidden]) { display: grid; }
+      @media(max-width: 640px) { header { padding: 18px; } h1 { font-size: 22px; } nav { gap: 5px; } button, a { padding: 8px 10px; } #stage { height: calc(100svh - 250px); } footer { padding: 14px 18px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <span class="eyebrow">DEVLINK · DESIGN PREVIEW</span>
+          <h1>작은 AI 동료, 가까이 보기</h1>
+          <p>드래그로 회전하고, 마우스 휠로 확대해 보세요.</p>
+        </div>
+        <nav aria-label="로봇 보기 설정">
+          <button type="button" id="front">정면</button>
+          <button type="button" id="angle">입체</button>
+          <button type="button" id="side">측면</button>
+          <button type="button" id="reset">처음으로</button>
+          <a href="/team-orbit">팀 공간에서 보기 ↗</a>
+        </nav>
+      </header>
+      <section id="stage" aria-label="온라인과 오프라인 로봇 3D 미리보기">
+        <p id="error" role="alert" hidden>이 브라우저에서는 3D 화면을 표시할 수 없습니다. WebGL을 지원하는 브라우저에서 열어 주세요.</p>
+        <div class="labels"><span><i></i>온라인</span><span><i></i>오프라인</span></div>
+      </section>
+      <footer><span>실제 팀 공간에 적용된 로봇 모델을 그대로 표시하는 임시 프리뷰입니다.</span><span>드래그 회전 · 휠 확대/축소</span></footer>
+    </main>
+    <script type="module" src="/src/features/team-preview/robot-preview.ts"></script>
+  </body>
+</html>
