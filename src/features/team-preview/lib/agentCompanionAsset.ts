@@ -2,6 +2,10 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 const AGENT_MODEL_SIZE = 0.38
+const AGENT_MODELS = [
+  { file: 'mascot1.glb', rotationY: Math.PI / 2 },
+  { file: 'mascot2.glb', rotationY: 0 },
+] as const
 const FACE_REFERENCE_SHADOW = new THREE.Color('#5c6e88')
 const FACE_REFERENCE_HIGHLIGHT = new THREE.Color('#a5b9d8')
 
@@ -14,7 +18,7 @@ export interface AgentCompanion {
 }
 
 export interface AgentCompanionAsset {
-  create: (online: boolean, variant: number) => AgentCompanion
+  create: (online: boolean, variant: number, agentId: string) => AgentCompanion
   dispose: () => void
 }
 
@@ -75,38 +79,60 @@ function disposeModel(root: THREE.Object3D) {
   root.clear()
 }
 
-export async function loadAgentCompanionAsset(): Promise<AgentCompanionAsset> {
+async function loadModelTemplate(file: string, rotationY: number): Promise<THREE.Group> {
   const gltf = await new GLTFLoader().loadAsync(
-    `${import.meta.env.BASE_URL}models/mascot.glb`,
+    `${import.meta.env.BASE_URL}models/${file}`,
   )
-  matchFaceReferenceColors(gltf.scene)
   const template = new THREE.Group()
   const oriented = new THREE.Group()
-  oriented.rotation.y = Math.PI / 2
+  oriented.rotation.y = rotationY
   oriented.add(gltf.scene)
   template.add(oriented)
 
-  const bounds = new THREE.Box3().setFromObject(template)
-  const size = bounds.getSize(new THREE.Vector3())
-  const largestDimension = Math.max(size.x, size.y, size.z)
-  if (bounds.isEmpty() || !Number.isFinite(largestDimension) || largestDimension <= 0) {
+  try {
+    matchFaceReferenceColors(gltf.scene)
+    const bounds = new THREE.Box3().setFromObject(template)
+    const size = bounds.getSize(new THREE.Vector3())
+    const largestDimension = Math.max(size.x, size.y, size.z)
+    if (bounds.isEmpty() || !Number.isFinite(largestDimension) || largestDimension <= 0) {
+      throw new Error('Agent 모델의 크기를 확인하지 못했습니다.')
+    }
+    oriented.position.sub(bounds.getCenter(new THREE.Vector3()))
+    template.scale.setScalar(AGENT_MODEL_SIZE / largestDimension)
+    return template
+  } catch (error) {
     disposeModel(template)
-    throw new Error('Agent 모델의 크기를 확인하지 못했습니다.')
+    throw error
   }
-  oriented.position.sub(bounds.getCenter(new THREE.Vector3()))
-  template.scale.setScalar(AGENT_MODEL_SIZE / largestDimension)
+}
+
+export async function loadAgentCompanionAsset(): Promise<AgentCompanionAsset> {
+  const results = await Promise.allSettled(AGENT_MODELS.map(({ file, rotationY }) => loadModelTemplate(file, rotationY)))
+  const templates = results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])
+  const failure = results.find((result) => result.status === 'rejected')
+  if (failure?.status === 'rejected') {
+    templates.forEach(disposeModel)
+    throw failure.reason
+  }
 
   const instances = new Set<AgentCompanion>()
+  const modelAssignments = new Map<string, number>()
   let disposed = false
 
   return {
-    create(online, variant) {
+    create(online, variant, agentId) {
       if (disposed) throw new Error('이미 해제된 Agent 모델입니다.')
+      // Agent별 최초 무작위 배정 유지, 데이터 갱신 시 모델 교체 방지
+      let modelIndex = modelAssignments.get(agentId)
+      if (modelIndex === undefined) {
+        modelIndex = Math.floor(Math.random() * templates.length)
+        modelAssignments.set(agentId, modelIndex)
+      }
       const group = new THREE.Group()
       const body = new THREE.Group()
-      const model = template.clone(true)
+      const model = templates[modelIndex].clone(true)
       const materials = new Map<THREE.Material, THREE.Material>()
-      group.name = 'AgentMascot'
+      group.name = `AgentMascot-${AGENT_MODELS[modelIndex].file}`
       body.add(model)
       group.add(body)
 
@@ -186,7 +212,8 @@ export async function loadAgentCompanionAsset(): Promise<AgentCompanionAsset> {
       if (disposed) return
       disposed = true
       instances.forEach((companion) => companion.dispose())
-      disposeModel(template)
+      templates.forEach(disposeModel)
+      modelAssignments.clear()
     },
   }
 }
