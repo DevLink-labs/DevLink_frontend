@@ -5,12 +5,15 @@ import type { Team, TeamMember } from '../../teams/types'
 import { useAgent, useAgentMutations } from '../hooks/useAgents'
 import { copyText, formatDate } from '../../../utils'
 import { EmptyState, Icon, Modal } from '../../../components/ui'
+import { getDesktopApi } from "@/features/desktop-setup/api/desktopApi";
+import ProjectConnectView from "@/features/desktop-setup/components/ProjectConnectView";
 
 interface AgentsPanelProps {
   team: Team
   agents: Agent[]
   members: TeamMember[]
   currentUserId: number
+  currentUserEmail: string
   loading: boolean
   onRefresh: () => void
   onError: (error: unknown) => void
@@ -40,9 +43,10 @@ function toolName(toolType: Agent['toolType']): string {
 }
 
 export default function AgentsPanel({
-  team, agents, members, currentUserId, loading, onRefresh, onError, onNotice,
+  team, agents, members, currentUserId, currentUserEmail, loading, onRefresh, onError, onNotice,
 }: AgentsPanelProps) {
   const fieldId = useId()
+  const desktop = getDesktopApi();
   const active = useRef(true)
   const mutations = useAgentMutations(currentUserId, team.teamId)
   const [search, setSearch] = useState('')
@@ -249,6 +253,11 @@ export default function AgentsPanel({
           <p className="muted">담당 프로젝트와 역할을 한곳에서 확인하세요.</p>
         </div>
         <div className="section-actions">
+          {desktop?.setup && desktop.getStatus && (
+            <ProjectConnectView setup={desktop.setup} getStatus={desktop.getStatus}
+              account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}
+              teamName={team.name} onRefreshAgents={onRefresh} />
+          )}
           <button className="icon-button" type="button" onClick={onRefresh} disabled={loading}
             aria-label="Agent 목록 새로고침" title="목록 새로고침">
             <Icon name="refresh" size={18} />

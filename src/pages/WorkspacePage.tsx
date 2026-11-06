@@ -141,7 +141,7 @@ export default function WorkspacePage({ user }: { user: User }) {
             {view === "agents" && <div>
               <div className="workspace-view-heading"><p className="overview-eyebrow">AGENT MANAGEMENT</p><h1>팀의 Agent를 연결하세요<span className="heading-dot">.</span></h1><p>담당 영역과 프로젝트, 접속 상태를 확인하고 내 Agent를 관리하세요.</p></div>
               {selectedTeam ? <AgentsPanel key={selectedTeam.teamId} team={selectedTeam} agents={agents} members={members}
-                currentUserId={user.userId} loading={workspaceLoading || !!workspaceError}
+                currentUserId={user.userId} currentUserEmail={user.email} loading={workspaceLoading || !!workspaceError}
                 onRefresh={refreshWorkspace} onError={onError} onNotice={notify} />
                 : <section className="workspace-selection-empty"><EmptyState title={teamsLoading ? "팀 정보를 불러오고 있어요" : "첫 번째 팀을 준비해보세요"} description="팀을 만들거나 초대 코드로 참여하면, 이곳에서 팀의 Agent를 관리할 수 있어요." icon={<Icon name="team" size={28} />} /><button type="button" className="button button-primary" onClick={() => setView("teams")}>팀 관리로 이동<Icon name="arrow" size={15} /></button></section>}
             </div>}

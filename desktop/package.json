@@ -1,0 +1,14 @@
+{
+  "name": "devlink-desktop",
+  "productName": "DevLink",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron ."
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0"
+  }
+}
