@@ -197,7 +197,7 @@ export default function ImmersiveTeamScene({ teamName, members, loading, selecte
         const fadeMeshes: THREE.Mesh[] = index === 0 ? [] : [memberObject];
         const fadeMaterials = new Set<THREE.Material>(index === 0 ? [] : [memberObject.material]);
         const satellites: AgentCompanion[] = asset ? member.agents.map((agent, agentIndex) => {
-          const satellite = asset.create(agent.online, index * 2 + agentIndex);
+          const satellite = asset.create(agent.online, index * 2 + agentIndex, agent.id);
           satellite.group.position.set(Math.cos(agentIndex * 2.2) * 0.84, 0.1 + agentIndex * 0.13, Math.sin(agentIndex * 2.2) * 0.84);
           satellite.group.rotation.y = -agentIndex * 2.2;
           satellite.group.traverse((object) => {
