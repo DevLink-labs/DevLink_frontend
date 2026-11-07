@@ -126,7 +126,7 @@ export default function WorkspacePage({ user }: { user: User }) {
         >
             {workspaceError && ["workspace", "agents", "teams"].includes(view) && <div className="workspace-error" role="alert"><Icon name="shield" /><p>{workspaceError}</p><button type="button" className="button button-secondary button-small" onClick={refreshAll}>다시 불러오기</button></div>}
             {view === "workspace" && <WorkspaceOverviewView
-              user={user} teams={teams} team={selectedTeam} members={members} agents={agents}
+              teams={teams} team={selectedTeam} members={members} agents={agents}
               teamsLoading={teamsLoading} workspaceLoading={workspaceLoading} workspaceError={!!workspaceError}
               tasks={tasks} tasksLoading={tasksLoading} tasksError={tasksError} onSelectTask={selectTask}
               onManageTeams={() => setView("teams")} onManageAgents={() => setView("agents")}
@@ -151,7 +151,6 @@ export default function WorkspacePage({ user }: { user: User }) {
             {view === "guide" && <GuidePage />}
             {view === "settings" && <WorkspaceSettingsView user={user} autoRefresh={autoRefresh} onAutoRefreshChange={changeAutoRefresh} loggingOut={loggingOut} onLogout={() => { void logout(); }} onGuide={() => setView("guide")} />}
             {view === "design" && <WorkspaceDesignView />}
-            <footer className="page-footer"><span>DevLink Workspace</span><span>팀 · Agent · 대화 기록</span></footer>
         </DashboardLayout>
       ),
     }} />

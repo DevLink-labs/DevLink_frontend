@@ -18,9 +18,6 @@ function MotionIcon({ paused }: { paused: boolean }) {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paused ? <path d="m9 5 11 7-11 7V5Z" /> : <><path d="M8 5v14M16 5v14" /></>}</svg>
 }
 
-function SpreadIcon() {
-  return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M4 4l5 5M20 4l-5 5M20 20l-5-5M4 20l5-5" /></svg>
-}
 
 function TopViewIcon() {
   return (
@@ -164,7 +161,6 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   const [teamId, setTeamId] = useState(immersivePreviewTeams[0].id)
   const [selection, setSelection] = useState<{ teamId: string; memberId: string; focused: boolean } | null>(null);
   const [paused, setPaused] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  const [exploded, setExploded] = useState(false)
   const [topView, setTopView] = useState(false);
   const [availability, setAvailability] = useState<"loading" | "ready" | "unavailable">("loading");
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -339,7 +335,6 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
     if (id === activeTeamId) return;
     if (workspace) {
       setSelection(null);
-      setExploded(false);
       workspace.onSelectTeam(Number(id));
       return;
     }
@@ -347,7 +342,6 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
     if (!nextTeam) return;
     setTeamId(id)
     setSelection(null);
-    setExploded(false)
     closeInvite()
   }
 
@@ -371,7 +365,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
     {!workspace && <PageTitle title="3D 팀 스페이스" />}
     <section className="itp-journey" ref={journey} aria-label="3D 팀 스페이스" tabIndex={-1}>
       <div className="itp-stage-sticky" ref={stickyStage}>
-        <div className={`immersive-team-preview ${paused ? 'is-paused' : ''} ${exploded ? 'is-exploded' : ''} ${focusedMemberId ? 'is-focused' : ''} ${loadingMessage ? "is-loading" : ""}`} inert={!sceneInteractive}>
+        <div className={`immersive-team-preview ${paused ? 'is-paused' : ''} ${focusedMemberId ? 'is-focused' : ''} ${loadingMessage ? "is-loading" : ""}`} inert={!sceneInteractive}>
     <div className="itp-scene">
       {mountScene && (
         <ImmersiveTeamScene
@@ -384,7 +378,6 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
           onRenderRequestChange={onRenderRequestChange}
           onSelectMember={selectMember}
           paused={paused}
-          exploded={exploded}
           topView={topView}
           onAvailabilityChange={onAvailabilityChange}
         />
@@ -423,12 +416,11 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
             }} />
         </section>
         <div className="itp-stats" aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개`}><div><strong>{members.length}</strong><span>팀원</span></div><span className="itp-stat-line" /><div><strong>{agentCount}</strong><span>에이전트</span></div></div>
-        {focusedMemberId && member && <FocusedMemberDetails key={`${activeTeamId}-${member.id}`} member={member} teamName={teamName} color={color} onClose={returnToOverview} onOpenDashboard={showDashboard} />}
+        {focusedMemberId && member && <FocusedMemberDetails key={`${activeTeamId}-${member.id}`} member={member} color={color} onClose={returnToOverview} onOpenDashboard={showDashboard} />}
         <p className="itp-sr-only">팀원을 선택하면 카메라가 이동합니다. 전체 팀 보기 버튼이나 Escape 키로 돌아올 수 있습니다. 아래로 스크롤하면 팀 대시보드가 나타납니다.</p>
       </div>}
       {showTeamControls && <div className={`itp-bottom${availability === "ready" ? " itp-team-reveal" : ""}`}>
         {availability === "ready" && <div className="itp-orbit-controls">
-          <button type="button" className="itp-icon-button" onClick={() => setExploded(!exploded)} aria-label={exploded ? "모아 보기" : "펼쳐 보기"} title={exploded ? "모아 보기" : "펼쳐 보기"} aria-pressed={exploded}><SpreadIcon /></button>
           <button type="button" className="itp-icon-button" onClick={toggleTopView} aria-label="위에서 보기" title={topView ? "기본 각도로 돌아가기" : "위에서 보기"} aria-pressed={topView}>
             <TopViewIcon />
           </button>
