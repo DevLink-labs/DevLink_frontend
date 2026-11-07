@@ -416,7 +416,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
             }} />
         </section>
         <div className="itp-stats" aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개`}><div><strong>{members.length}</strong><span>팀원</span></div><span className="itp-stat-line" /><div><strong>{agentCount}</strong><span>에이전트</span></div></div>
-        {focusedMemberId && member && <FocusedMemberDetails key={`${activeTeamId}-${member.id}`} member={member} teamName={teamName} color={color} onClose={returnToOverview} onOpenDashboard={showDashboard} />}
+        {focusedMemberId && member && <FocusedMemberDetails key={`${activeTeamId}-${member.id}`} member={member} color={color} onClose={returnToOverview} onOpenDashboard={showDashboard} />}
         <p className="itp-sr-only">팀원을 선택하면 카메라가 이동합니다. 전체 팀 보기 버튼이나 Escape 키로 돌아올 수 있습니다. 아래로 스크롤하면 팀 대시보드가 나타납니다.</p>
       </div>}
       {showTeamControls && <div className={`itp-bottom${availability === "ready" ? " itp-team-reveal" : ""}`}>

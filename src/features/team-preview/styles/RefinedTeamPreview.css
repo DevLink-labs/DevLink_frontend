@@ -66,12 +66,7 @@
 .itp-member-inspector .imi-scroll { scrollbar-color: #c0c1c4 #f7f8fb; }
 .itp-member-inspector .imi-scroll::-webkit-scrollbar-track { background: #f7f8fb; }
 .itp-member-inspector .imi-scroll::-webkit-scrollbar-thumb { border-color: #f7f8fb; background: #c0c1c4; }
-.itp-member-inspector .imi-member-section > h3,
 .itp-member-inspector .imi-section-heading > h3 { color: #424346; }
-.itp-member-inspector .imi-member-meta dt,
-.itp-member-inspector .imi-agent-meta dt { color: #65707f; }
-.itp-member-inspector .imi-member-meta dd,
-.itp-member-inspector .imi-agent-meta dd { color: #404144; }
 .itp-member-inspector .imi-summary { border-color: #e5e6e9; background: #f7f8fb; }
 .itp-member-inspector .imi-summary > div + div { border-color: #e3e4e7; }
 .itp-member-inspector .imi-summary strong { color: #505154; }
@@ -79,16 +74,13 @@
 .itp-member-inspector .imi-summary small { color: #65707f; }
 .itp-member-inspector .imi-section-heading > span { color: #727376; border-color: #e3e4e7; background: #f4f5f8; }
 .itp-member-inspector .imi-agent-card { border-color: #e5e6e9; background: #fbfcff; box-shadow: none; }
-.itp-member-inspector .imi-agent-icon { color: #797a7d; border-color: #e4e5e8; background: #f2f3f6; }
 .itp-member-inspector .imi-agent-heading > h4 { color: #434447; }
 .itp-member-inspector .imi-status { color: #65707f; }
 .itp-member-inspector .imi-status > i { background: #acadb0; }
 .itp-member-inspector .imi-status.is-online { color: #566071; }
 .itp-member-inspector .imi-status.is-online > i { background: #566071; box-shadow: none; }
-.itp-member-inspector .imi-agent-description { border-color: #e6e7ea; }
-.itp-member-inspector .imi-agent-description > h5 { color: #65707f; }
-.itp-member-inspector .imi-agent-description > p { color: #5a5b5e; }
-.itp-member-inspector .imi-status-note { color: #65707f; }
+.itp-member-inspector .imi-tool-badge { color: #3d4a57; border-color: #c9d9e9; background: #e7f0fa; }
+.itp-member-inspector .imi-agent-description { color: #404c59; }
 .itp-member-inspector .imi-empty { color: #65707f; border-color: #e5e6e9; background: #fafbfe; }
 .itp-member-inspector .imi-footer { border-color: #e5e6e9; background: #fbfcff; }
 .itp-member-inspector .imi-dashboard-button { color: #fff; border-color: #292f3a; background: #292f3a; box-shadow: none; }

@@ -100,10 +100,10 @@ export default function DashboardLayout({
     const searchId = `${fieldId}-${mobile ? "mobile" : "desktop"}-chat-search`;
     return <>
       <div className="dashboard-sidebar-brand">
-        <a className="brand" href="/" aria-label="DevLink 홈"><span className="brand-symbol">D</span><span>DevLink<span className="dashboard-brand-dot">.</span></span></a>
+        <a className="brand" href="/" aria-label="DevLink 홈"><span className="brand-symbol">D</span><span>DevLink</span></a>
         {mobile && <button type="button" className="icon-button" aria-label="메뉴 닫기" onClick={() => setMenuOpen(false)}><Icon name="close" /></button>}
       </div>
-      <span className="dashboard-nav-label">WORKSPACE</span>
+      <span className="dashboard-nav-label">워크스페이스</span>
       <nav className="main-nav" aria-label="주 메뉴">
         <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-current={view === "workspace" ? "page" : undefined}><Icon name="grid" size={19} /><span>대시보드</span></button>
         <button type="button" className={`nav-item${view === "agents" ? " active" : ""}`} onClick={() => changeView("agents")} aria-current={view === "agents" ? "page" : undefined}><Icon name="agent" size={19} /><span>Agent</span></button>
@@ -121,11 +121,11 @@ export default function DashboardLayout({
             const time = task.lastActivityAt ?? task.createdAt;
             const active = view === "conversation" && selectedTaskId === task.taskId;
             return <button className={`dashboard-chat-item${active ? " is-selected" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} title={taskTitle(task)} disabled={!onSelectTask}>
-              <span className="dashboard-chat-title"><span className={`dashboard-task-dot dashboard-task-${task.status.toLowerCase()}`} aria-label={taskStatusLabels[task.status]} /><strong>{taskTitle(task)}</strong></span>
+              <span className="dashboard-chat-title"><strong>{taskTitle(task)}</strong><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
               <span className="dashboard-chat-meta"><span>{task.requesterAgent.name}<span aria-hidden="true"> → </span>{task.receiverAgent.name}</span><time dateTime={time} title={formatTaskTime(time)}>{chatTime(time)}</time></span>
             </button>;
           })}
-          {visibleTasks.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : query ? "검색 결과가 없어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p>{!tasksLoading && !query && selectedTeamId !== null && <span>Agent의 작업 대화가 이곳에 모입니다.</span>}</div>}
+          {visibleTasks.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : query ? "검색 결과가 없어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p></div>}
         </div>
       </section>
       <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined}><Icon name="eye" size={18} /><span>디자인용 페이지</span><Icon name="chevron" size={14} /></button></div>
@@ -145,10 +145,10 @@ export default function DashboardLayout({
       <header className="topbar">
         <div className="dashboard-topbar-context">
           <button type="button" className="icon-button dashboard-mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label="워크스페이스 메뉴 열기" aria-haspopup="dialog" aria-expanded={menuOpen}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
-          <div className="breadcrumb"><span>Workspace</span><Icon name="chevron" size={12} /><strong>{pageLabel}</strong></div>
+          <div className="breadcrumb"><span>워크스페이스</span><Icon name="chevron" size={12} /><strong>{pageLabel}</strong></div>
         </div>
+        <label className="dashboard-team-picker" htmlFor={`${fieldId}-team`}><Icon name="team" size={16} /><span className="dashboard-team-label">현재 팀</span><select aria-label="현재 팀 변경" id={`${fieldId}-team`} value={selectedTeamId ?? ""} onChange={(event) => { setSearch(""); onSelectTeam(Number(event.target.value)); }} disabled={teamsLoading || teams.length === 0} title={selectedTeam?.name ?? "현재 팀 선택"}>{teams.length === 0 && <option value="">{teamsLoading ? "팀 불러오는 중" : "참여 중인 팀 없음"}</option>}{teams.map((team) => <option key={team.teamId} value={team.teamId}>{team.name}</option>)}</select></label>
         <div className="topbar-actions">
-          <label className="dashboard-team-picker" htmlFor={`${fieldId}-team`}><Icon name="team" size={16} /><span className="dashboard-sr-only">현재 팀</span><select id={`${fieldId}-team`} value={selectedTeamId ?? ""} onChange={(event) => { setSearch(""); onSelectTeam(Number(event.target.value)); }} disabled={teamsLoading || teams.length === 0} title={selectedTeam?.name ?? "현재 팀 선택"}>{teams.length === 0 && <option value="">{teamsLoading ? "팀 불러오는 중" : "참여 중인 팀 없음"}</option>}{teams.map((team) => <option key={team.teamId} value={team.teamId}>{team.name}</option>)}</select></label>
           {connection !== "online" && <span className={`connection-indicator connection-${connection}`} title={API_BASE_URL || "로컬 개발 프록시"} role="status"><span className="status-dot" />{connection === "checking" ? "확인 중" : "연결 확인 필요"}</span>}
           <button type="button" className="dashboard-return-scene" onClick={onReturnToScene} aria-label="3D 팀 스페이스로 돌아가기" title="3D 팀 스페이스로 돌아가기"><span className="dashboard-scene-mark" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" /></svg></span><span>3D 팀 스페이스</span></button>
           <button type="button" className="icon-button dashboard-refresh" onClick={onRefresh} aria-label="전체 새로고침" title="전체 새로고침" disabled={teamsLoading || workspaceLoading || tasksLoading}><Icon name="refresh" size={18} /></button>

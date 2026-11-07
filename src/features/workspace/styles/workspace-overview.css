@@ -1,19 +1,13 @@
-.workspace-dashboard .overview-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 4px 0 27px; }
+.workspace-dashboard .overview-heading { margin: 4px 0 20px; }
 .workspace-dashboard .overview-eyebrow { margin: 0 0 8px; color: var(--workspace-muted); font-size: 9px; font-weight: 650; letter-spacing: 1.8px; }
-.workspace-dashboard .overview-heading h1 { margin: 0 0 9px; color: var(--color-ink); font-size: clamp(23px, 2.5vw, 31px); font-weight: 700; letter-spacing: -1.2px; line-height: 1.35; }
-.workspace-dashboard .overview-heading h1 > span { color: var(--workspace-outline); }
-.workspace-dashboard .overview-heading p:last-child { margin: 0; color: var(--workspace-muted); font-size: 12px; }
-.workspace-dashboard .overview-team-pill { display: inline-flex; align-items: center; gap: 8px; max-width: 210px; padding: 9px 13px; border: 1px solid var(--workspace-border); border-radius: 8px; background: var(--workspace-surface); font-size: 11px; overflow-wrap: anywhere; }
-.workspace-dashboard .overview-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 33px; }
-.workspace-dashboard .overview-stats .stat-card { padding: 20px 17px; min-height: 120px; border-radius: 11px; }
-.workspace-dashboard .overview-stats .stat-icon { width: 35px; height: 35px; }
-.workspace-dashboard .overview-stats .stat-value { font-size: 30px; }
-.workspace-dashboard .overview-stats .stat-label { font-size: 11px; }
-.workspace-dashboard .overview-stats .stat-card p { font-size: 10px; }
+.workspace-dashboard .overview-heading h1 { margin: 0; color: var(--color-ink); font-size: 24px; font-weight: 650; letter-spacing: -.6px; line-height: 1.4; }
+.workspace-dashboard .overview-stats { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 0 0 28px; padding-bottom: 18px; border-bottom: 1px solid var(--workspace-divider); }
+.workspace-dashboard .overview-stats > div { display: flex; align-items: baseline; gap: 8px; }
+.workspace-dashboard .overview-stats dt { color: var(--workspace-muted); font-size: 12px; }
+.workspace-dashboard .overview-stats dd { margin: 0; color: var(--color-ink); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .workspace-dashboard .overview-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .workspace-dashboard .overview-section-heading > div { display: flex; align-items: center; min-width: 0; gap: 8px; }
 .workspace-dashboard .overview-section-heading h2 { margin: 0; color: var(--color-ink); font-size: 14px; font-weight: 650; letter-spacing: -.3px; }
-.workspace-dashboard .overview-section-index { color: var(--workspace-outline); font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
 .workspace-dashboard .overview-count { display: inline-grid; place-items: center; min-width: 23px; height: 20px; border-radius: 5px; background: var(--workspace-accent); color: var(--workspace-action); font-size: 10px; }
 .workspace-dashboard .overview-task-filter select { padding: 6px 26px 6px 10px; min-height: 32px; font-size: 11px; border-color: var(--workspace-divider); border-radius: 7px; }
 .workspace-dashboard .overview-task-panel { overflow: hidden; margin-bottom: 27px; border: 1px solid var(--workspace-divider); border-radius: 11px; background: var(--workspace-surface); }
@@ -44,7 +38,6 @@
 .workspace-dashboard .overview-team-symbol, .workspace-dashboard .overview-agent-symbol { display: grid; place-items: center; flex-shrink: 0; width: 46px; height: 46px; border: 1px solid var(--workspace-divider); border-radius: 11px; background: var(--color-workspace); color: var(--workspace-action); }
 .workspace-dashboard .overview-team-identity > div { flex: 1; min-width: 0; }
 .workspace-dashboard .overview-team-identity h3 { margin: 0; font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
-.workspace-dashboard .overview-team-identity p { margin: 3px 0 0; font-size: 10px; color: var(--workspace-muted); }
 .workspace-dashboard .overview-role { padding: 3px 7px; border-radius: 4px; background: var(--workspace-accent); color: var(--workspace-action); font-size: 9px; }
 .workspace-dashboard .overview-member-stack { display: flex; align-items: center; padding-left: 4px; min-height: 36px; margin-bottom: 24px; }
 .workspace-dashboard .overview-member-avatar { display: grid; place-items: center; width: 32px; height: 32px; margin-left: -4px; border: 2px solid var(--workspace-surface); border-radius: 50%; background: var(--workspace-accent); color: var(--workspace-action); font-size: 10px; }
@@ -65,17 +58,12 @@
 .workspace-dashboard .overview-agent-presence > i { width: 5px; height: 5px; border-radius: 50%; background: var(--workspace-border); }
 .workspace-dashboard .overview-agent-presence.is-online { color: var(--workspace-action); }
 .workspace-dashboard .overview-agent-presence.is-online > i { background: var(--workspace-action); }
-.workspace-dashboard .overview-guide-banner { display: flex; align-items: center; gap: 14px; border: 1px dashed var(--workspace-border); border-radius: 11px; padding: 19px 22px; background: color-mix(in srgb, var(--workspace-accent) 20%, var(--color-workspace)); }
-.workspace-dashboard .overview-guide-icon { display: grid; place-items: center; width: 36px; height: 36px; color: var(--workspace-focus); }
-.workspace-dashboard .overview-guide-banner > div { min-width: 0; flex: 1; }
-.workspace-dashboard .overview-guide-banner strong { font-size: 12px; font-weight: 600; }
-.workspace-dashboard .overview-guide-banner p { color: var(--workspace-muted); font-size: 10px; margin: 3px 0 0; }
+.workspace-dashboard .overview-guide-banner { display: flex; justify-content: flex-end; padding-top: 4px; }
 .workspace-dashboard .overview-create-team { margin-top: 0; width: 100%; }
 .workspace-dashboard .overview-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 170px; padding: 28px; color: var(--workspace-muted); font-size: 12px; }
 .workspace-dashboard .overview-inline-error { display: flex; align-items: center; gap: 13px; padding: 28px; color: var(--workspace-muted); }
 .workspace-dashboard .overview-inline-error > div { flex: 1; }
 .workspace-dashboard .overview-inline-error strong { color: var(--color-ink); font-size: 12px; }
 .workspace-dashboard .overview-inline-error p { margin: 4px 0 0; font-size: 11px; }
-@media (min-width: 1600px) { .workspace-dashboard .overview-stats .stat-card { padding: 24px; } }
-@media (max-width: 1180px) { .workspace-dashboard .overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .workspace-dashboard .overview-team-grid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 720px) { .workspace-dashboard .overview-heading { margin: 2px 0 22px; gap: 12px; align-items: flex-start; } .workspace-dashboard .overview-team-pill { max-width: 125px; padding: 7px 9px; font-size: 10px; } .workspace-dashboard .overview-heading p:last-child { font-size: 11px; } .workspace-dashboard .overview-eyebrow { font-size: 8px; letter-spacing: 1.2px; } .workspace-dashboard .overview-stats { gap: 9px; margin-bottom: 26px; } .workspace-dashboard .overview-stats .stat-card { padding: 16px 13px; min-height: 112px; } .workspace-dashboard .overview-stats .stat-icon { width: 29px; height: 29px; } .workspace-dashboard .overview-stats .stat-icon > svg { width: 19px; } .workspace-dashboard .overview-task-table th, .workspace-dashboard .overview-task-table td { padding: 12px 13px; } .workspace-dashboard .overview-task-table td:first-child { min-width: 190px; } .workspace-dashboard .overview-guide-banner { flex-wrap: wrap; padding: 16px; gap: 10px; } .workspace-dashboard .overview-guide-banner > div { flex-basis: calc(100% - 50px); } .workspace-dashboard .overview-guide-banner > button { margin-left: 46px; } .workspace-dashboard .overview-team-card, .workspace-dashboard .overview-agent-card { padding: 17px; } .workspace-dashboard .overview-inline-error { flex-wrap: wrap; padding: 20px; } }
+@media (max-width: 1180px) { .workspace-dashboard .overview-team-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 720px) { .workspace-dashboard .overview-heading { margin: 2px 0 22px; gap: 12px; align-items: flex-start; } .workspace-dashboard .overview-eyebrow { font-size: 8px; letter-spacing: 1.2px; } .workspace-dashboard .overview-stats { gap: 9px; margin-bottom: 26px; } .workspace-dashboard .overview-task-table th, .workspace-dashboard .overview-task-table td { padding: 12px 13px; } .workspace-dashboard .overview-task-table td:first-child { min-width: 190px; } .workspace-dashboard .overview-team-card, .workspace-dashboard .overview-agent-card { padding: 17px; } .workspace-dashboard .overview-inline-error { flex-wrap: wrap; padding: 20px; } }
