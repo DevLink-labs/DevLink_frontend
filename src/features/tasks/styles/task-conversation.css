@@ -10,11 +10,6 @@
 .task-conversation .tc-team-name svg, .task-conversation .tc-participants > svg { flex-shrink: 0; }
 .task-conversation .tc-team-name > span, .task-conversation .tc-participants > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .task-conversation .tc-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.task-conversation .tc-status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 6px; background: var(--color-workspace, #f8fafc); color: var(--workspace-muted, #768493); font-size: 10px; font-weight: 650; white-space: nowrap; }
-.task-conversation .tc-status > span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.task-conversation .tc-status[data-status="IN_PROGRESS"] { color: #3f78a9; background: #eef5fe; }
-.task-conversation .tc-status[data-status="COMPLETED"] { color: #56805f; background: #edf7ef; }
-.task-conversation .tc-status[data-status="FAILED"], .task-conversation .tc-status[data-status="REJECTED"] { color: #aa6e54; background: #fcf2ec; }
 .task-conversation .tc-participants { display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
 .task-conversation .tc-participants > span { min-width: 0; }
 .task-conversation .tc-participant-divider { flex-shrink: 0; }
@@ -106,7 +101,6 @@
 @media (max-width: 440px) {
   .task-conversation .tc-header { padding: 10px 12px; gap: 8px; }
   .task-conversation .tc-heading h2 { font-size: 15px; }
-  .task-conversation .tc-status { padding: 4px 6px; font-size: 9px; }
   .task-conversation .tc-timeline { padding-inline: 12px; }
   .task-conversation .tc-agent-avatar { width: 27px; height: 27px; border-radius: 8px; }
   .task-conversation .tc-message-row { gap: 7px; }

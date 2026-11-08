@@ -226,8 +226,8 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
           </div>
         </div>
         <div className="tc-header-actions">
-          {detail && <span className="tc-status" data-status={detail.status}><span />{taskStatusLabels[detail.status]}</span>}
-          <button type="button" className="icon-button" onClick={refresh} disabled={refreshing && !accessError} aria-label="대화 기록 새로고침" title="대화 기록 새로고침"><Icon name="refresh" size={17} className={refreshing ? 'tc-spinning' : ''} /></button>
+          {detail && <span className={`dashboard-task-badge dashboard-task-${detail.status.toLowerCase()}`}>{taskStatusLabels[detail.status]}</span>}
+          <button type="button" className="icon-button refresh-button" onClick={refresh} disabled={refreshing && !accessError} aria-label="대화 기록 새로고침" title="대화 기록 새로고침" aria-busy={refreshing}><Icon name="refresh" size={18} /></button>
         </div>
       </header>
 

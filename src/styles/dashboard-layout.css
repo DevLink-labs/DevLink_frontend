@@ -118,7 +118,6 @@ div.workspace-dashboard.app-shell {
   .workspace-dashboard .topbar-actions { grid-column: 2; grid-row: 1; gap: 8px; }
   .workspace-dashboard .dashboard-team-picker { grid-column: 1 / -1; grid-row: 2; }
   .workspace-dashboard .dashboard-return-scene { width: 32px; height: 32px; padding: 0; }
-  .workspace-dashboard .dashboard-refresh { width: 28px; height: 30px; }
   .workspace-dashboard .connection-indicator { font-size: 0; gap: 0; }
   .workspace-dashboard .connection-indicator .status-dot { width: 6px; height: 6px; }
   .workspace-dashboard .workspace-main { padding: 25px 18px 20px; }

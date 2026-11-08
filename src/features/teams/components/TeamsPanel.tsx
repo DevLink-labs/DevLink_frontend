@@ -197,14 +197,15 @@ export default function TeamsPanel({
             ))}
           </select>
           <button
-            className="icon-button"
+            className="icon-button refresh-button"
             type="button"
             onClick={onRefresh}
             aria-label="팀 정보 새로고침"
             title="팀 정보 새로고침"
+            aria-busy={loading}
             disabled={loading || pending || !selectedTeam}
           >
-            <Icon name="refresh" size={17} />
+            <Icon name="refresh" size={18} />
           </button>
         </div>
       )}

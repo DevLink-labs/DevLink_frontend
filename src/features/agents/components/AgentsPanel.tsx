@@ -249,7 +249,7 @@ export default function AgentsPanel({
           <p className="muted">담당 프로젝트와 역할을 한곳에서 확인하세요.</p>
         </div>
         <div className="section-actions">
-          <button className="icon-button" type="button" onClick={onRefresh} disabled={loading}
+          <button className="icon-button refresh-button" type="button" onClick={onRefresh} disabled={loading} aria-busy={loading}
             aria-label="Agent 목록 새로고침" title="목록 새로고침">
             <Icon name="refresh" size={18} />
           </button>

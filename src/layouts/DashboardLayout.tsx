@@ -141,7 +141,7 @@ export default function DashboardLayout({
         <div className="topbar-actions">
           {connection !== "online" && <span className={`connection-indicator connection-${connection}`} title={API_BASE_URL || "로컬 개발 프록시"} role="status"><span className="status-dot" />{connection === "checking" ? "확인 중" : "연결 확인 필요"}</span>}
           <button type="button" className="dashboard-return-scene" onClick={onReturnToScene} aria-label="3D 팀 스페이스로 돌아가기" title="3D 팀 스페이스로 돌아가기"><span className="dashboard-scene-mark" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" /></svg></span><span>3D 팀 스페이스</span></button>
-          <button type="button" className="icon-button dashboard-refresh" onClick={onRefresh} aria-label="전체 새로고침" title="전체 새로고침" disabled={teamsLoading || workspaceLoading || tasksLoading}><Icon name="refresh" size={18} /></button>
+          <button type="button" className="icon-button refresh-button dashboard-refresh" onClick={onRefresh} aria-label="전체 새로고침" title="전체 새로고침" disabled={teamsLoading || workspaceLoading || tasksLoading} aria-busy={teamsLoading || workspaceLoading || tasksLoading}><Icon name="refresh" size={18} /></button>
         </div>
       </header>
       <main className="workspace-main">{children}</main>
