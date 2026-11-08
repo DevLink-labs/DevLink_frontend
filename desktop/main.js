@@ -4,6 +4,8 @@ const { registerSetupHandlers } = require("./setup-ipc");
 
 const webOrigin = app.isPackaged ? "https://devlink.ai.kr" : "http://localhost:5173";
 
+if (process.platform === "win32") app.setAppUserModelId("kr.ai.devlink.desktop");
+
 function openExternal(url) {
   const target = URL.parse(url);
   if (target && ["http:", "https:"].includes(target.protocol) && !target.username && !target.password) {
@@ -15,6 +17,7 @@ function createWindow() {
   const window = new BrowserWindow({
     width: 1280,
     height: 800,
+    icon: path.join(__dirname, "assets", "devlink.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

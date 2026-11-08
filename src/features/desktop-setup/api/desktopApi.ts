@@ -40,7 +40,7 @@ export interface DesktopSetupApi {
 
 interface DesktopApi {
   version: string;
-  getStatus?: () => Promise<DesktopStatus>;
+  getStatus?: (account: SetupAccount) => Promise<DesktopStatus>;
   setup?: DesktopSetupApi;
 }
 

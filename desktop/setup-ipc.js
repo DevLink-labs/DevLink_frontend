@@ -3,6 +3,7 @@ const { randomUUID } = require("node:crypto");
 const { realpath, stat } = require("node:fs/promises");
 const path = require("node:path");
 const { checkSession, detectTools, loadDevelopmentPaths, runSetup, runStatus } = require("./setup-runner");
+const { prepareAccountProfile, resolveAccountPaths } = require("./setup-profiles");
 
 function samePath(actual, expected) {
   if (typeof actual !== "string" || !path.isAbsolute(actual)) return false;
@@ -21,6 +22,13 @@ function matchesProject(data, selection) {
 
 function validId(value) {
   return Number.isSafeInteger(value) && value > 0;
+}
+
+function validateAccount(account) {
+  if (!validId(account?.userId) || !validId(account?.teamId) || typeof account?.email !== "string"
+    || !/^[^\s@]+@[^\s@]+$/.test(account.email) || account.email.length > 255) {
+    throw new Error("현재 로그인 계정과 팀을 확인해주세요.");
+  }
 }
 
 function registerSetupHandlers(window, webOrigin) {
@@ -61,12 +69,13 @@ function registerSetupHandlers(window, webOrigin) {
   });
   window.on("close", (event) => { if (busy) event.preventDefault(); });
 
-  handle("status", () => runStatus());
+  handle("status", async (_frame, account) => {
+    validateAccount(account);
+    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), account);
+    return runStatus(paths);
+  });
   handle("pickFolder", (frame, account) => exclusive(async () => {
-    if (!validId(account?.userId) || !validId(account?.teamId) || typeof account?.email !== "string"
-      || !/^[^\s@]+@[^\s@]+$/.test(account.email) || account.email.length > 255) {
-      throw new Error("현재 로그인 계정과 팀을 확인해주세요.");
-    }
+    validateAccount(account);
 
     selection = undefined;
     const version = documentVersion;
@@ -81,11 +90,12 @@ function registerSetupHandlers(window, webOrigin) {
     if (!name || name.length > 100 || !(await stat(project)).isDirectory()) {
       throw new Error("이름이 1~100자인 프로젝트 폴더를 선택해주세요.");
     }
-    const tools = await detectTools(await loadDevelopmentPaths());
+    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), account);
+    const tools = await detectTools(paths);
     if (version !== documentVersion) return null;
 
     selection = {
-      id: randomUUID(), project, name, tools,
+      id: randomUUID(), project, name, tools, paths,
       userId: String(account.userId), teamId: String(account.teamId), email: account.email,
     };
     return { id: selection.id, name, tools };
@@ -105,10 +115,15 @@ function registerSetupHandlers(window, webOrigin) {
     current.targetPath = tool === "claude-code"
       ? path.join(current.project, ".mcp.json")
       : path.join(current.project, ".codex", "config.toml");
-    const paths = await loadDevelopmentPaths();
+    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), current);
+    if (!samePath(paths.config, current.paths.config) || paths.serverUrl !== current.paths.serverUrl) {
+      throw new Error("서버 또는 연결 프로필이 변경됐습니다. 프로젝트 폴더를 다시 선택해주세요.");
+    }
+    await prepareAccountProfile(paths);
     if (password === undefined) {
       const session = await checkSession(paths);
-      if (!session || ["logged_out", "expired"].includes(session.state)) {
+      if (!session || ["logged_out", "expired"].includes(session.state)
+        || (session.authenticated === true && String(session.user?.userId) !== current.userId)) {
         current.needsPassword = true;
         return { state: "password" };
       }
@@ -127,7 +142,7 @@ function registerSetupHandlers(window, webOrigin) {
       project: { path: current.project, name: current.name },
       tool: { type: tool },
       agent: { action: "create", name: current.name },
-      mcp: { mode: "apply", targetPath: current.targetPath },
+      mcp: { mode: "replace", targetPath: current.targetPath },
     };
     const result = await runSetup(paths, input, password, (progress) => {
       if (selection !== current || frame.detached || frame.origin !== webOrigin) return;
@@ -158,7 +173,7 @@ function registerSetupHandlers(window, webOrigin) {
 
   handle("checkSetup", (_frame, id) => exclusive(async () => {
     const current = requireSelection(id);
-    const paths = await loadDevelopmentPaths();
+    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), current);
     if (!current.manualConfig || !samePath(paths.config, current.manualConfig.config)
       || paths.serverUrl !== current.manualConfig.serverUrl) {
       throw new Error("같은 테스트 프로필로 연결을 다시 시작해주세요.");

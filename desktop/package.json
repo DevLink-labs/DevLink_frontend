@@ -7,6 +7,12 @@
   "scripts": {
     "dev": "electron ."
   },
+  "build": {
+    "appId": "kr.ai.devlink.desktop",
+    "win": {
+      "icon": "assets/devlink.ico"
+    }
+  },
   "devDependencies": {
     "electron": "45.2.3",
     "electron-builder": "26.18.0"

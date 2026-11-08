@@ -10,7 +10,7 @@ if (process.isMainFrame && window.location.origin === origin) {
   contextBridge.exposeInMainWorld("devlinkDesktop", {
     version: appArgument("version"),
     ...(origin === "http://localhost:5173" && {
-      getStatus: () => ipcRenderer.invoke("devlink:status"),
+      getStatus: (account) => ipcRenderer.invoke("devlink:status", account),
       setup: {
         pickFolder: (account) => ipcRenderer.invoke("devlink:pickFolder", account),
         run: (id, tool, password) => ipcRenderer.invoke("devlink:setup", id, tool, password),

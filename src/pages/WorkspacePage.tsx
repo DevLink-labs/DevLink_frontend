@@ -21,7 +21,7 @@ import GuidePage from "./GuidePage";
 
 const memberColors = ["sage", "blue", "peach", "lavender", "sand", "mint"];
 
-export default function WorkspacePage({ user }: { user: User }) {
+export default function WorkspacePage({ user, initialTeamId }: { user: User; initialTeamId?: number }) {
   const [view, setView] = useState<WorkspaceView>('workspace')
   const [conversation, setConversation] = useState<{ teamId: number; taskId: number } | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(() => {
@@ -34,7 +34,7 @@ export default function WorkspacePage({ user }: { user: User }) {
   const inviteButton = useRef<HTMLButtonElement>(null);
   const { onError, logout, loggingOut } = useSession()
   const notify = useNotice()
-  const workspace = useWorkspace(user.userId)
+  const workspace = useWorkspace(user.userId, initialTeamId)
   const { teams, selectedTeamId, selectedTeam, members, agents, teamsLoading,
     workspaceLoading, workspaceError, sceneStatus, selectTeam, refreshAll, refreshWorkspace } = workspace;
   const tasksQuery = useTeamTasks(user.userId, selectedTeamId, autoRefresh);

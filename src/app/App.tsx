@@ -3,7 +3,7 @@ import PageTitle from "@/components/common/PageTitle";
 import { useSession } from "@/features/auth/hooks/useSession";
 import AuthPage from "@/pages/AuthPage";
 
-const WorkspacePage = lazy(() => import("@/pages/WorkspacePage"));
+const WorkspaceEntryPage = lazy(() => import("@/pages/WorkspaceEntryPage"));
 
 export default function App() {
   const { user, booting } = useSession()
@@ -14,7 +14,7 @@ export default function App() {
   if (!user) return <AuthPage />;
   return (
     <Suspense fallback={<div className="boot-screen" role="status"><PageTitle title="워크스페이스" /><span className="brand-symbol">D</span><p className="muted">워크스페이스를 준비하고 있어요.</p></div>}>
-      <WorkspacePage key={user.userId} user={user} />
+      <WorkspaceEntryPage key={user.userId} user={user} />
     </Suspense>
   );
 }
