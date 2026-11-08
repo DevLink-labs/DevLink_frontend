@@ -3,7 +3,9 @@ const { randomUUID } = require("node:crypto");
 const { realpath, stat } = require("node:fs/promises");
 const path = require("node:path");
 const { checkSession, detectTools, loadDevelopmentPaths, runSetup, runStatus } = require("./setup-runner");
-const { prepareAccountProfile, resolveAccountPaths } = require("./setup-profiles");
+const { listTeamProfiles, prepareAccountProfile, resolveProjectPaths } = require("./setup-profiles");
+
+const notReady = { exitCode: 0, result: { data: { connection: { setupReady: false } } } };
 
 function samePath(actual, expected) {
   if (typeof actual !== "string" || !path.isAbsolute(actual)) return false;
@@ -71,8 +73,16 @@ function registerSetupHandlers(window, webOrigin) {
 
   handle("status", async (_frame, account) => {
     validateAccount(account);
-    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), account);
-    return runStatus(paths);
+    // 현재 팀에 연결된 프로젝트 중 하나라도 준비되면 연결됨
+    for (const paths of await listTeamProfiles(await loadDevelopmentPaths(), account)) {
+      const status = await runStatus(paths);
+      const data = status.result?.data;
+      if (status.exitCode === 0 && data?.connection?.setupReady === true
+        && data.userId === String(account.userId) && data.teamId === String(account.teamId)) {
+        return status;
+      }
+    }
+    return notReady;
   });
   handle("pickFolder", (frame, account) => exclusive(async () => {
     validateAccount(account);
@@ -90,7 +100,7 @@ function registerSetupHandlers(window, webOrigin) {
     if (!name || name.length > 100 || !(await stat(project)).isDirectory()) {
       throw new Error("이름이 1~100자인 프로젝트 폴더를 선택해주세요.");
     }
-    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), account);
+    const paths = await resolveProjectPaths(await loadDevelopmentPaths(), account, project);
     const tools = await detectTools(paths);
     if (version !== documentVersion) return null;
 
@@ -115,7 +125,7 @@ function registerSetupHandlers(window, webOrigin) {
     current.targetPath = tool === "claude-code"
       ? path.join(current.project, ".mcp.json")
       : path.join(current.project, ".codex", "config.toml");
-    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), current);
+    const paths = await resolveProjectPaths(await loadDevelopmentPaths(), current, current.project);
     if (!samePath(paths.config, current.paths.config) || paths.serverUrl !== current.paths.serverUrl) {
       throw new Error("서버 또는 연결 프로필이 변경됐습니다. 프로젝트 폴더를 다시 선택해주세요.");
     }
@@ -168,12 +178,20 @@ function registerSetupHandlers(window, webOrigin) {
       return { state: "manual", targetPath: current.targetPath, snippet: manual.snippet };
     }
 
+    if (error?.code === "SETUP_PROFILE_CONFLICT") {
+      return {
+        state: "error",
+        code: error.code,
+        message: "이 폴더는 이 PC에서 다른 AI 도구나 설정으로 이미 연결돼 있습니다. 처음 연결한 AI 도구로 다시 시도해주세요.",
+      };
+    }
+
     return { state: "error", code: error?.code, message: error?.message ?? "프로젝트를 연결하지 못했습니다." };
   }));
 
   handle("checkSetup", (_frame, id) => exclusive(async () => {
     const current = requireSelection(id);
-    const paths = await resolveAccountPaths(await loadDevelopmentPaths(), current);
+    const paths = await resolveProjectPaths(await loadDevelopmentPaths(), current, current.project);
     if (!current.manualConfig || !samePath(paths.config, current.manualConfig.config)
       || paths.serverUrl !== current.manualConfig.serverUrl) {
       throw new Error("같은 테스트 프로필로 연결을 다시 시작해주세요.");
