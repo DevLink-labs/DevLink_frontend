@@ -1,5 +1,5 @@
-.workspace-dashboard .overview-heading { margin: 4px 0 20px; }
-.workspace-dashboard .overview-heading h1 { margin: 0; color: var(--color-ink); font-size: 24px; font-weight: 650; letter-spacing: -.6px; line-height: 1.4; }
+.workspace-dashboard .overview-heading { margin: 4px 0 24px; }
+.workspace-dashboard .overview-heading h1 { margin: 0; color: var(--color-ink); font-size: 30px; font-weight: 750; letter-spacing: -.8px; line-height: 1.25; }
 .workspace-dashboard .overview-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 28px; border: 1px solid var(--workspace-divider); border-radius: 10px; background: color-mix(in srgb, var(--workspace-accent) 20%, var(--workspace-surface)); overflow: hidden; }
 .workspace-dashboard .overview-stats > div { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; min-height: 112px; padding: 20px 24px; border-right: 1px solid var(--workspace-divider); }
 .workspace-dashboard .overview-stats > div:last-child { border-right: 0; }
@@ -71,4 +71,4 @@
   .workspace-dashboard .overview-stats > div:nth-child(2n) { border-right: 0; }
   .workspace-dashboard .overview-stats > div:nth-child(-n + 2) { border-bottom: 1px solid var(--workspace-divider); }
 }
-@media (max-width: 720px) { .workspace-dashboard .overview-heading { margin: 2px 0 22px; gap: 12px; align-items: flex-start; } .workspace-dashboard .overview-stats { margin-bottom: 26px; } .workspace-dashboard .overview-stats > div { min-height: 98px; padding: 16px 18px; gap: 8px; } .workspace-dashboard .overview-stats dd { font-size: 28px; } .workspace-dashboard .overview-task-table th, .workspace-dashboard .overview-task-table td { padding: 12px 13px; } .workspace-dashboard .overview-task-table td:first-child { min-width: 190px; } .workspace-dashboard .overview-team-card, .workspace-dashboard .overview-agent-card { padding: 17px; } .workspace-dashboard .overview-inline-error { flex-wrap: wrap; padding: 20px; } }
+@media (max-width: 720px) { .workspace-dashboard .overview-heading { margin: 2px 0 22px; gap: 12px; align-items: flex-start; } .workspace-dashboard .overview-heading h1 { font-size: 26px; } .workspace-dashboard .overview-stats { margin-bottom: 26px; } .workspace-dashboard .overview-stats > div { min-height: 98px; padding: 16px 18px; gap: 8px; } .workspace-dashboard .overview-stats dd { font-size: 28px; } .workspace-dashboard .overview-task-table th, .workspace-dashboard .overview-task-table td { padding: 12px 13px; } .workspace-dashboard .overview-task-table td:first-child { min-width: 190px; } .workspace-dashboard .overview-team-card, .workspace-dashboard .overview-agent-card { padding: 17px; } .workspace-dashboard .overview-inline-error { flex-wrap: wrap; padding: 20px; } }
