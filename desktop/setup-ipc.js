@@ -33,7 +33,7 @@ function validateAccount(account) {
   }
 }
 
-function registerSetupHandlers(window, webOrigin) {
+function registerSetupHandlers(window, webOrigin, loadPaths = loadDevelopmentPaths) {
   let selection;
   let busy = false;
   let documentVersion = 0;
@@ -73,15 +73,23 @@ function registerSetupHandlers(window, webOrigin) {
 
   handle("status", async (_frame, account) => {
     validateAccount(account);
+    let firstError;
     // 현재 팀에 연결된 프로젝트 중 하나라도 준비되면 연결됨
-    for (const paths of await listTeamProfiles(await loadDevelopmentPaths(), account)) {
-      const status = await runStatus(paths);
+    for (const paths of await listTeamProfiles(await loadPaths(), account)) {
+      let status;
+      try {
+        status = await runStatus(paths);
+      } catch (error) {
+        firstError ??= error;
+        continue;
+      }
       const data = status.result?.data;
       if (status.exitCode === 0 && data?.connection?.setupReady === true
         && data.userId === String(account.userId) && data.teamId === String(account.teamId)) {
         return status;
       }
     }
+    if (firstError) throw firstError;
     return notReady;
   });
   handle("pickFolder", (frame, account) => exclusive(async () => {
@@ -100,7 +108,7 @@ function registerSetupHandlers(window, webOrigin) {
     if (!name || name.length > 100 || !(await stat(project)).isDirectory()) {
       throw new Error("이름이 1~100자인 프로젝트 폴더를 선택해주세요.");
     }
-    const paths = await resolveProjectPaths(await loadDevelopmentPaths(), account, project);
+    const paths = await resolveProjectPaths(await loadPaths(), account, project);
     const tools = await detectTools(paths);
     if (version !== documentVersion) return null;
 
@@ -125,7 +133,7 @@ function registerSetupHandlers(window, webOrigin) {
     current.targetPath = tool === "claude-code"
       ? path.join(current.project, ".mcp.json")
       : path.join(current.project, ".codex", "config.toml");
-    const paths = await resolveProjectPaths(await loadDevelopmentPaths(), current, current.project);
+    const paths = await resolveProjectPaths(await loadPaths(), current, current.project);
     if (!samePath(paths.config, current.paths.config) || paths.serverUrl !== current.paths.serverUrl) {
       throw new Error("서버 또는 연결 프로필이 변경됐습니다. 프로젝트 폴더를 다시 선택해주세요.");
     }
@@ -191,7 +199,7 @@ function registerSetupHandlers(window, webOrigin) {
 
   handle("checkSetup", (_frame, id) => exclusive(async () => {
     const current = requireSelection(id);
-    const paths = await resolveProjectPaths(await loadDevelopmentPaths(), current, current.project);
+    const paths = await resolveProjectPaths(await loadPaths(), current, current.project);
     if (!current.manualConfig || !samePath(paths.config, current.manualConfig.config)
       || paths.serverUrl !== current.manualConfig.serverUrl) {
       throw new Error("같은 테스트 프로필로 연결을 다시 시작해주세요.");

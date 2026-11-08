@@ -54,3 +54,43 @@ Windows 권한 검사를 통과하려면 사용자 전용 폴더에 프로젝트
 프로젝트를 연결하면 지원 버전의 Codex·Claude Code 설정에서 DevLink 항목을 선택한 계정의 프로필로 갱신합니다. 기존 파일은 CLI가 비공개 백업으로 보존하고, 다른 MCP 서버와 프로젝트 설정은 유지합니다. 적용 직전 파일이 변경되면 덮어쓰지 않고 중단합니다. 같은 프로젝트에서 계정을 바꾼 뒤에는 AI 도구를 다시 열어 변경된 연결 정보를 사용합니다. 미검증 도구 버전은 기존과 같이 수동 설정 안내를 표시합니다.
 
 계정별 프로필 및 데스크톱 IPC 회귀 테스트는 저장소 루트에서 `node --test desktop/tests/setup-profiles.test.cjs`로 실행합니다.
+
+## Windows 설치 파일
+
+Node 24 x64에서 최신 CLI 릴리스 빌드와 MCP의 `dist`를 준비한 뒤 `desktop`에서 실행합니다. 프론트 웹 빌드는 이 과정에 포함하지 않습니다.
+
+```powershell
+# DevLink_client/rust에서 먼저 실행
+cargo build --release --locked -p devlink-cli
+# DevLink_client/packages/mcp-server에서 먼저 실행
+npm ci
+npm run build
+# DevLink_frontend/desktop에서 실행
+npm ci
+npm run dist:win
+```
+
+기존 연결 프로그램이 `target/release/devlink.exe`를 사용 중이면 별도 Cargo 출력 폴더로 빌드하고, `DEVLINK_VENDOR_CLI_PATH` 환경 변수로 해당 실행 파일을 지정할 수 있습니다. 이 변수는 설치 파일을 준비할 때만 사용합니다. `prepare:vendor`는 실행 중인 공식 Node 24의 `node.exe`, CLI, MCP의 운영 의존성을 `vendor`에 모으고 MCP 초기화 응답을 확인합니다. 결과는 `desktop/dist/DevLink-Setup-<버전>.exe`이며 바이너리와 `vendor`는 Git에 추가하지 않습니다.
+
+설치본은 `process.resourcesPath` 아래의 `bin/devlink.exe`, `bin/mcp-server/dist/index.js`, `node/node.exe`를 사용합니다. 서버는 `wss://api.devlink.ai.kr/`, 프로필은 사용자 홈의 `.devlink/desktop/accounts/...`를 사용합니다. 개발용 `.env.local`과 테스트 계정 프로필은 설치본에 포함하지 않습니다. 배포 화면(`https://devlink.ai.kr`)의 최상위 프레임에만 연결 API를 제공하며, main에서도 호출 출처를 확인합니다.
+
+데스크톱 실행 파일명은 `DevLinkDesktop.exe`입니다. 설치 프로그램의 실행 중 앱 검사에서 CLI인 `devlink.exe`를 함께 종료하지 않도록 구분합니다. 서로 다른 Agent의 프로젝트 연결 프로그램은 동시에 실행할 수 있지만, 같은 Agent의 중복 실행과 실행 중 토큰 변경은 거부합니다. 구버전 CLI가 같은 계정으로 실행 중이면 해당 연결을 한 번 중지한 뒤 새 CLI로 다시 시작해야 합니다.
+
+업데이트·제거 시 설치본 소유의 실행 중인 연결 프로그램을 프로젝트별로 중지하고, 동봉한 Node에서 실행 중인 MCP도 종료합니다. 일부를 종료하지 못하거나 동봉 런타임이 없어도 설치·제거를 중단하지 않습니다. 제거는 사용 중인 파일만 남기고 완료하며, 업데이트는 사용 중인 파일이 있으면 기존 설치를 복원한 뒤 중단합니다. 업데이트 전 실행 중이던 프로필은 다음 앱 실행에서 다시 시작합니다. 실패한 재시작은 다음 실행에서 다시 시도합니다. 프로젝트 설정의 런타임 경로는 설치 위치로 유지하며, 업데이트 후 AI 도구를 다시 열어주세요. 제거해도 사용자 홈의 프로필과 자격 파일은 보존합니다.
+
+배포 설정은 [Electron의 격리·보안 지침](https://www.electronjs.org/docs/latest/tutorial/security)과 [electron-builder의 NSIS 훅](https://www.electron.build/nsis/)을 기준으로 구성합니다. 코드 서명과 자동 업데이트는 이번 범위에 포함하지 않습니다.
+
+## 연결 검증
+
+```powershell
+# desktop에서 회귀 테스트
+npm test
+# 로컬 서버 127.0.0.1:8080, Vite localhost:5173, vendor를 준비한 뒤 실행
+npm run verify:connection
+# 설치 파일 생성 후 실제 설치·실행 중 업데이트·제거도 검증
+npm run verify:installer
+```
+
+실제 Electron의 프로젝트 연결 화면과 CLI를 사용해 새 연결, 재연결, 두 번째 프로젝트, 다른 팀, 직접 적용 후 확인·재실행, 여러 연결 프로그램의 중지·복원을 확인합니다. 직접 적용 경로만 미검증 버전을 출력하는 테스트 Host를 사용합니다. AI 작업이나 모델 호출은 실행하지 않습니다. 테스트 전용 계정과 팀을 로컬 서버에 생성하고, 임시 프로필·설치 후보 폴더는 검증 후 삭제합니다. 화면과 검사 결과는 `dist/verification`에 남깁니다. 이 검사는 깨끗한 Windows 계정에서의 실제 설치·업데이트·제거 수용 검사를 대체하지 않습니다.
+
+폴더 선택 대화상자의 반환값은 테스트 프로젝트로 고정하고 나머지 화면·IPC·CLI·로컬 서버는 실제 구현을 사용합니다. `verify:installer`는 기존 DevLink 설치와 `.devlink/desktop` 프로필이 없을 때만 실행합니다. `Programs` 아래의 임시 위치에 실제 NSIS 설치 파일을 설치하고 업데이트·제거 훅을 확인합니다. 제거 후 프로필과 자격 파일이 보존되는지 검사한 다음 테스트가 만든 프로필과 임시 설치만 정리합니다. 로컬 서버에 생성한 테스트 계정·팀·Agent 데이터는 남습니다.

@@ -6,6 +6,7 @@ const {
   mkdir,
   readFile,
   readdir,
+  realpath,
   rm,
   writeFile,
 } = require("node:fs/promises");
@@ -192,6 +193,7 @@ async function ipcFixture(t) {
   const calls = [];
   const inputs = new Map();
   const notReady = new Set();
+  const statusErrors = new Map();
   let picked = f.root;
   let authenticatedUser = 5;
   let setupError = {
@@ -207,6 +209,7 @@ async function ipcFixture(t) {
     }),
     runStatus: async (paths) => {
       calls.push({ kind: "status", config: paths.config });
+      if (statusErrors.has(paths.config)) throw statusErrors.get(paths.config);
       const input = inputs.get(paths.config);
       return {
         exitCode: 0,
@@ -276,6 +279,7 @@ async function ipcFixture(t) {
     ...f,
     calls,
     notReady,
+    statusErrors,
     pick: (folder) => {
       picked = folder;
     },
@@ -337,7 +341,7 @@ test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필
   f.calls.length = 0;
   const status = await f.invoke("status", accountB);
   assert.equal(status.result.data.connection.setupReady, true);
-  assert.equal(status.result.data.projectPath, f.other);
+  assert.equal(status.result.data.projectPath, await realpath(f.other));
   assert.ok(f.calls.every((call) => [first, second].includes(call.config)));
 
   f.notReady.add(second);
@@ -348,6 +352,25 @@ test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필
     true,
   );
   assert.deepEqual(f.calls.map((call) => call.config), [otherTeam]);
+});
+
+test("팀 상태 조회는 한 프로필이 실패해도 준비된 다른 프로필을 확인한다", async (t) => {
+  const f = await ipcFixture(t);
+  for (const folder of [f.root, f.other]) {
+    f.pick(folder);
+    const selection = await f.invoke("pickFolder", accountB);
+    await f.invoke("setup", selection.id, "codex");
+  }
+  const profiles = await listTeamProfiles(f.paths, accountB);
+  const failure = new Error("CLI timeout");
+  f.statusErrors.set(profiles[0].config, failure);
+  f.calls.length = 0;
+  const status = await f.invoke("status", accountB);
+  assert.equal(status.result.data.connection.setupReady, true);
+  assert.deepEqual(f.calls.map((call) => call.config), profiles.map((profile) => profile.config));
+
+  f.notReady.add(profiles[1].config);
+  await assert.rejects(f.invoke("status", accountB), (error) => error === failure);
 });
 
 test("프로필 충돌은 원래 오류 코드와 함께 도구 확인 안내를 돌려준다", async (t) => {
