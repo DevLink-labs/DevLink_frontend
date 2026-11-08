@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui";
 import { useSession } from "@/features/auth/hooks/useSession";
 import type { Team } from "@/features/teams/types";
 import type { TaskListItem } from "@/features/tasks/types";
-import { taskTitle, taskStatusLabels, formatTaskTime } from "@/features/tasks/utils/taskPresentation";
+import { taskTitle, taskStatusLabels } from "@/features/tasks/utils/taskPresentation";
 import { API_BASE_URL } from "@/lib/apiClient";
 import "@/styles/dashboard-layout.css";
 
@@ -38,18 +38,6 @@ const viewLabels: Record<WorkspaceView, string> = {
   settings: "설정",
   design: "디자인용 페이지",
 };
-
-function chatTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const today = new Date();
-  const sameDay = date.getFullYear() === today.getFullYear()
-    && date.getMonth() === today.getMonth()
-    && date.getDate() === today.getDate();
-  return new Intl.DateTimeFormat("ko-KR", sameDay
-    ? { hour: "2-digit", minute: "2-digit", hour12: false }
-    : { month: "2-digit", day: "2-digit" }).format(date);
-}
 
 function SettingsIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9.3 3-.6 2.3-2 .9-2.2-.7L3 8l1.6 1.7v2.6L3 14l1.5 2.5 2.2-.7 2 .9.6 2.3h3.4l.6-2.3 2-.9 2.2.7L19 14l-1.6-1.7V9.7L19 8l-1.5-2.5-2.2.7-2-.9-.6-2.3Z" transform="translate(1 1)" /><circle cx="12" cy="12" r="3" /></svg>;
@@ -107,11 +95,9 @@ export default function DashboardLayout({
         {tasksError && <div className="dashboard-chat-error" role="status"><p>채팅을 불러오지 못했어요.</p><button type="button" onClick={onRefresh} disabled={tasksLoading}>다시 불러오기</button></div>}
         <div className="dashboard-chat-list">
           {taskList.map((task) => {
-            const time = task.lastActivityAt ?? task.createdAt;
             const active = view === "conversation" && selectedTaskId === task.taskId;
             return <button className={`dashboard-chat-item${active ? " is-selected" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} title={taskTitle(task)} disabled={!onSelectTask}>
               <span className="dashboard-chat-title"><strong>{taskTitle(task)}</strong><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
-              <span className="dashboard-chat-meta"><span>{task.requesterAgent.name}<span aria-hidden="true"> → </span>{task.receiverAgent.name}</span><time dateTime={time} title={formatTaskTime(time)}>{chatTime(time)}</time></span>
             </button>;
           })}
           {taskList.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p></div>}
