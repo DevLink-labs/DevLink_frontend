@@ -112,7 +112,7 @@ export default function DashboardLayout({
     </>;
   }
 
-  return <div className="workspace-dashboard app-shell min-h-screen">
+  return <div className={`workspace-dashboard app-shell min-h-screen${view === "conversation" ? " is-conversation" : ""}`}>
     <PageTitle title={view === "conversation" && selectedTask ? taskTitle(selectedTask) : pageLabel} />
     <aside className="sidebar" aria-label="워크스페이스 메뉴">{sidebarContent()}</aside>
     <dialog ref={menuDialog} className="dashboard-menu-dialog" aria-label="워크스페이스 메뉴" onKeyDown={(event) => { if (event.key === "Escape") event.stopPropagation(); }} onCancel={(event) => { event.preventDefault(); setMenuOpen(false); }} onClick={(event) => { if (event.target === event.currentTarget) setMenuOpen(false); }}><div className="dashboard-mobile-sidebar">{sidebarContent(true)}</div></dialog>

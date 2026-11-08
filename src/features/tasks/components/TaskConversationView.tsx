@@ -68,7 +68,7 @@ function EventMessage({ event, detail, eventsById }: {
     <li className={`tc-message-row ${requester ? 'tc-requester' : 'tc-receiver'}`} data-event-id={event.eventId}>
       <span className="tc-agent-avatar" aria-hidden="true"><Icon name="agent" size={18} /></span>
       <div className="tc-message-content">
-        <div className="tc-message-meta"><strong>{author.name}</strong><span>{requester ? '요청 Agent' : '수신 Agent'}</span></div>
+        <div className="tc-message-meta"><strong>{author.name}</strong></div>
         <div className="tc-bubble">
           <span className="tc-message-kind">{eventLabels[event.eventType]}</span>
           {event.questionEventId && (
@@ -211,9 +211,18 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
         <div className="tc-heading">
           {onBack && <button type="button" className="icon-button tc-back" onClick={onBack} aria-label="작업 목록으로 돌아가기"><Icon name="arrow" size={18} /></button>}
           <div>
-            <span className="tc-eyebrow">TASK CONVERSATION <span>#{taskId}</span></span>
-            <h2>{detail ? taskTitle(detail) : `작업 #${taskId}`}</h2>
-            {detail && <p className="tc-team-name"><Icon name="team" size={13} />{detail.teamName}</p>}
+            <h2 title={detail ? taskTitle(detail) : `작업 #${taskId}`}>{detail ? taskTitle(detail) : `작업 #${taskId}`}</h2>
+            {detail && (
+              <div className="tc-context">
+                <p className="tc-team-name" title={`팀 · ${detail.teamName}`}><Icon name="team" size={13} /><span>팀 · {detail.teamName}</span></p>
+                <div className="tc-participants" aria-label="대화 참여 Agent">
+                  <Icon name="agent" size={13} />
+                  <span title={detail.requesterAgent.name}>{detail.requesterAgent.name}</span>
+                  <span className="tc-participant-divider" aria-hidden="true">·</span>
+                  <span title={detail.receiverAgent.name}>{detail.receiverAgent.name}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="tc-header-actions">
@@ -221,15 +230,6 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
           <button type="button" className="icon-button" onClick={refresh} disabled={refreshing && !accessError} aria-label="대화 기록 새로고침" title="대화 기록 새로고침"><Icon name="refresh" size={17} className={refreshing ? 'tc-spinning' : ''} /></button>
         </div>
       </header>
-
-      {detail && (
-        <div className="tc-participants">
-          <div><span className="tc-participant-icon tc-participant-requester"><Icon name="agent" size={16} /></span><span><small>요청 Agent</small><strong>{detail.requesterAgent.name}</strong></span></div>
-          <Icon name="arrow" size={15} />
-          <div><span className="tc-participant-icon"><Icon name="agent" size={16} /></span><span><small>수신 Agent</small><strong>{detail.receiverAgent.name}</strong></span></div>
-          <RecordTime className="tc-created-time" value={detail.createdAt} />
-        </div>
-      )}
 
       {error && (detail || latestHistory) && <div className="tc-refresh-error" role="alert"><span>{errorMessage(error)}</span><button type="button" onClick={refresh} disabled={refreshing}>다시 시도</button></div>}
 
@@ -250,7 +250,7 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
               <div className="tc-message-row tc-requester tc-initial-request">
                 <span className="tc-agent-avatar" aria-hidden="true"><Icon name="agent" size={18} /></span>
                 <div className="tc-message-content">
-                  <div className="tc-message-meta"><strong>{detail.requesterAgent.name}</strong><span>요청 Agent</span></div>
+                  <div className="tc-message-meta"><strong>{detail.requesterAgent.name}</strong></div>
                   <div className="tc-bubble"><span className="tc-message-kind">최초 작업 요청</span><p className="tc-message-text">{latestHistory.prompt}</p></div>
                   <RecordTime className="tc-message-time" value={detail.createdAt} />
                 </div>
@@ -267,7 +267,6 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
         </div>
         {(newEvents > 0 || awayFromLatest) && detail && latestHistory && <button type="button" className="tc-latest-button" onClick={goToLatest}><span aria-live="polite">{newEvents > 0 ? `새 기록 ${newEvents}개 · 최신으로 이동` : '최신 기록으로 이동'}</span><Icon name="arrow" size={14} /></button>}
       </div>
-      <footer className="tc-footer"><Icon name="eye" size={14} /><span>Agent 사이에 오간 기록을 확인하는 공간입니다.</span><details className="tc-time-help"><summary>시간 표시 기준</summary><p>질문·답변은 내 기기의 시간대로 표시합니다. 작업 생성과 상태 변경은 서버에 기록된 시각을 표시하므로 기준이 다를 수 있습니다.</p></details><span className="tc-readonly-label">읽기 전용</span></footer>
     </section>
   )
 }

@@ -88,6 +88,10 @@ div.workspace-dashboard.app-shell {
 .workspace-dashboard .dashboard-scene-mark { display: inline-flex; color: var(--workspace-focus); }
 .workspace-dashboard .connection-indicator { font-size: 9px; }
 .workspace-dashboard .workspace-main { max-width: 1540px; padding: 34px 34px 24px; }
+.workspace-dashboard.is-conversation .main-shell { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
+.workspace-dashboard.is-conversation .topbar { flex-shrink: 0; }
+.workspace-dashboard.is-conversation .workspace-main { display: flex; flex: 1; width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0; }
+.workspace-dashboard.is-conversation .workspace-main > .workspace-selection-empty { flex: 1; margin: 0; border: 0; border-radius: 0; }
 .workspace-dashboard .dashboard-mobile-menu-button { display: none; }
 .workspace-dashboard .dashboard-menu-dialog { width: min(320px, calc(100vw - 28px)); max-width: none; height: 100dvh; max-height: none; margin: 0 auto 0 0; padding: 0; border: 0; border-right: 1px solid var(--workspace-divider); background: var(--workspace-surface); color: var(--color-ink); }
 .workspace-dashboard .dashboard-menu-dialog::backdrop { background: #1f2c3955; backdrop-filter: blur(3px); }
