@@ -15,7 +15,7 @@
   overflow-x: clip;
   color: var(--color-ink, #1f2c39);
   background: var(--color-workspace, #f8fafc);
-  font-family: 'Pretendard', 'Inter', 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-family: var(--font-sans);
 }
 .itp-journey { position: relative; z-index: 0; height: 200svh; background: #080e16; }
 .itp-stage-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #080e16; }
