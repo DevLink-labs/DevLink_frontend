@@ -21,7 +21,7 @@ import GuidePage from "./GuidePage";
 
 const memberColors = ["sage", "blue", "peach", "lavender", "sand", "mint"];
 
-export default function WorkspacePage({ user }: { user: User }) {
+export default function WorkspacePage({ user, initialTeamId }: { user: User; initialTeamId?: number }) {
   const [view, setView] = useState<WorkspaceView>('workspace')
   const [conversation, setConversation] = useState<{ teamId: number; taskId: number } | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(() => {
@@ -34,7 +34,7 @@ export default function WorkspacePage({ user }: { user: User }) {
   const inviteButton = useRef<HTMLButtonElement>(null);
   const { onError, logout, loggingOut } = useSession()
   const notify = useNotice()
-  const workspace = useWorkspace(user.userId)
+  const workspace = useWorkspace(user.userId, initialTeamId)
   const { teams, selectedTeamId, selectedTeam, members, agents, teamsLoading,
     workspaceLoading, workspaceError, sceneStatus, selectTeam, refreshAll, refreshWorkspace } = workspace;
   const tasksQuery = useTeamTasks(user.userId, selectedTeamId, autoRefresh);
@@ -141,7 +141,7 @@ export default function WorkspacePage({ user }: { user: User }) {
             {view === "agents" && <div>
               <div className="workspace-view-heading"><h1>Agent 관리</h1></div>
               {selectedTeam ? <AgentsPanel key={selectedTeam.teamId} team={selectedTeam} agents={agents} members={members}
-                currentUserId={user.userId} loading={workspaceLoading || !!workspaceError}
+                currentUserId={user.userId} currentUserEmail={user.email} loading={workspaceLoading || !!workspaceError}
                 onRefresh={refreshWorkspace} onError={onError} onNotice={notify} />
                 : <section className="workspace-selection-empty"><EmptyState title={teamsLoading ? "팀 정보 불러오는 중" : "참여 중인 팀 없음"} description="팀을 만들거나 초대 코드로 참여하면, 이곳에서 팀의 Agent를 관리할 수 있어요." icon={<Icon name="team" size={28} />} /><button type="button" className="button button-primary" onClick={() => setView("teams")}>팀 관리로 이동<Icon name="arrow" size={15} /></button></section>}
             </div>}

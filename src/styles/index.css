@@ -3,6 +3,7 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 @import './workspace.css' layer(components);
 @import './auth.css' layer(components);
+@import './onboarding.css' layer(components);
 
 @theme static {
   --font-sans: "Pretendard Variable", "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
