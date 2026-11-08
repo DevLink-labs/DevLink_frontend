@@ -1,10 +1,10 @@
-.workspace-dashboard .overview-heading { margin: 4px 0 20px; }
-.workspace-dashboard .overview-eyebrow { margin: 0 0 8px; color: var(--workspace-muted); font-size: 9px; font-weight: 650; letter-spacing: 1.8px; }
-.workspace-dashboard .overview-heading h1 { margin: 0; color: var(--color-ink); font-size: 24px; font-weight: 650; letter-spacing: -.6px; line-height: 1.4; }
-.workspace-dashboard .overview-stats { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 0 0 28px; padding-bottom: 18px; border-bottom: 1px solid var(--workspace-divider); }
-.workspace-dashboard .overview-stats > div { display: flex; align-items: baseline; gap: 8px; }
-.workspace-dashboard .overview-stats dt { color: var(--workspace-muted); font-size: 12px; }
-.workspace-dashboard .overview-stats dd { margin: 0; color: var(--color-ink); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.workspace-dashboard .overview-heading { margin: 4px 0 24px; }
+.workspace-dashboard .overview-heading h1 { margin: 0; color: var(--color-ink); font-size: 30px; font-weight: 750; letter-spacing: -.8px; line-height: 1.25; }
+.workspace-dashboard .overview-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 28px; border: 1px solid var(--workspace-divider); border-radius: 10px; background: color-mix(in srgb, var(--workspace-accent) 20%, var(--workspace-surface)); overflow: hidden; }
+.workspace-dashboard .overview-stats > div { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; min-height: 112px; padding: 20px 24px; border-right: 1px solid var(--workspace-divider); }
+.workspace-dashboard .overview-stats > div:last-child { border-right: 0; }
+.workspace-dashboard .overview-stats dt { color: var(--workspace-muted); font-size: 12px; font-weight: 500; }
+.workspace-dashboard .overview-stats dd { margin: 0; color: var(--workspace-focus); font-size: 32px; font-weight: 650; letter-spacing: -.8px; line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .workspace-dashboard .overview-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .workspace-dashboard .overview-section-heading > div { display: flex; align-items: center; min-width: 0; gap: 8px; }
 .workspace-dashboard .overview-section-heading h2 { margin: 0; color: var(--color-ink); font-size: 14px; font-weight: 650; letter-spacing: -.3px; }
@@ -66,4 +66,9 @@
 .workspace-dashboard .overview-inline-error strong { color: var(--color-ink); font-size: 12px; }
 .workspace-dashboard .overview-inline-error p { margin: 4px 0 0; font-size: 11px; }
 @media (max-width: 1180px) { .workspace-dashboard .overview-team-grid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 720px) { .workspace-dashboard .overview-heading { margin: 2px 0 22px; gap: 12px; align-items: flex-start; } .workspace-dashboard .overview-eyebrow { font-size: 8px; letter-spacing: 1.2px; } .workspace-dashboard .overview-stats { gap: 9px; margin-bottom: 26px; } .workspace-dashboard .overview-task-table th, .workspace-dashboard .overview-task-table td { padding: 12px 13px; } .workspace-dashboard .overview-task-table td:first-child { min-width: 190px; } .workspace-dashboard .overview-team-card, .workspace-dashboard .overview-agent-card { padding: 17px; } .workspace-dashboard .overview-inline-error { flex-wrap: wrap; padding: 20px; } }
+@media (max-width: 1000px) {
+  .workspace-dashboard .overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-dashboard .overview-stats > div:nth-child(2n) { border-right: 0; }
+  .workspace-dashboard .overview-stats > div:nth-child(-n + 2) { border-bottom: 1px solid var(--workspace-divider); }
+}
+@media (max-width: 720px) { .workspace-dashboard .overview-heading { margin: 2px 0 22px; gap: 12px; align-items: flex-start; } .workspace-dashboard .overview-heading h1 { font-size: 26px; } .workspace-dashboard .overview-stats { margin-bottom: 26px; } .workspace-dashboard .overview-stats > div { min-height: 98px; padding: 16px 18px; gap: 8px; } .workspace-dashboard .overview-stats dd { font-size: 28px; } .workspace-dashboard .overview-task-table th, .workspace-dashboard .overview-task-table td { padding: 12px 13px; } .workspace-dashboard .overview-task-table td:first-child { min-width: 190px; } .workspace-dashboard .overview-team-card, .workspace-dashboard .overview-agent-card { padding: 17px; } .workspace-dashboard .overview-inline-error { flex-wrap: wrap; padding: 20px; } }

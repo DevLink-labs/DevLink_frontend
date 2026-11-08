@@ -11,7 +11,7 @@
   color: var(--itp-white);
   color-scheme: dark;
   background: #080e16;
-  font-family: 'Inter', 'Pretendard', 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-family: var(--font-sans);
 }
 .immersive-team-preview *, .immersive-team-preview *::before, .immersive-team-preview *::after { box-sizing: border-box; }
 .immersive-team-preview button, .immersive-team-preview a, .immersive-team-preview select { -webkit-tap-highlight-color: transparent; }
@@ -424,7 +424,7 @@
   .itp-member:hover, .itp-icon-button:hover, .itp-invite-trigger:hover, .itp-copy:hover, .itp-invite-trigger:hover > svg { transform: none; }
 }
 
-.immersive-team-preview { --itp-muted: #b6c5ba; min-height: 780px; font-family: 'Pretendard', 'Inter', 'Segoe UI', 'Malgun Gothic', sans-serif; }
+.immersive-team-preview { --itp-muted: #b6c5ba; min-height: 780px; font-family: var(--font-sans); }
 .itp-canvas { z-index: 0; }
 .itp-canvas > canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .itp-brand { font-size: 22px; }

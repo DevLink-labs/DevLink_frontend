@@ -1,4 +1,4 @@
-.itd-dashboard { display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: 100svh; color: #354258; background: #f5f7fb; color-scheme: light; font-family: 'Pretendard', 'Inter', 'Segoe UI', 'Malgun Gothic', sans-serif; font-size: 14px; line-height: 1.6; }
+.itd-dashboard { display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: 100svh; color: #354258; background: #f5f7fb; color-scheme: light; font-family: var(--font-sans); font-size: 14px; line-height: 1.6; }
 .itd-dashboard * { box-sizing: border-box; }
 .itd-dashboard h2, .itd-dashboard h3, .itd-dashboard p { margin-top: 0; }
 .itd-dashboard button, .itd-dashboard input, .itd-dashboard select { font: inherit; }
