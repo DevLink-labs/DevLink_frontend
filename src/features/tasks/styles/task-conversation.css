@@ -54,7 +54,6 @@
 .task-conversation .tc-result-card > header { display: flex; align-items: center; gap: 10px; }
 .task-conversation .tc-result-icon { display: grid; place-items: center; width: 35px; height: 35px; flex-shrink: 0; border-radius: 10px; background: #edf7ef; color: #56805f; }
 .task-conversation .tc-result-attention .tc-result-icon { background: #fcf2ec; color: #aa6e54; }
-.task-conversation .tc-result-eyebrow { display: block; margin-bottom: 3px; color: var(--workspace-muted, #768493); font-size: 8px; letter-spacing: 1.1px; }
 .task-conversation .tc-result-card h3 { margin: 0; font-size: 13px; font-weight: 700; }
 .task-conversation .tc-result-text { margin: 16px 0 0; }
 .task-conversation .tc-partial-badge { margin-left: auto; padding: 4px 7px; border-radius: 5px; color: #aa6e54; background: #fcf2ec; font-size: 9px; white-space: nowrap; }

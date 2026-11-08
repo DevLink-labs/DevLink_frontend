@@ -244,9 +244,7 @@ export default function AgentsPanel({
     <section className="panel agents-panel" aria-labelledby={`${fieldId}-heading`}>
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">TEAM AGENTS</p>
-          <h2 className="section-title" id={`${fieldId}-heading`}>팀의 Agent</h2>
-          <p className="muted">담당 프로젝트와 역할을 한곳에서 확인하세요.</p>
+          <h2 className="section-title" id={`${fieldId}-heading`}>Agent 목록</h2>
         </div>
         <div className="section-actions">
           <button className="icon-button refresh-button" type="button" onClick={onRefresh} disabled={loading} aria-busy={loading}
@@ -270,7 +268,7 @@ export default function AgentsPanel({
 
       {loading && <p className="loading-copy" role="status">Agent 목록을 불러오고 있습니다.</p>}
       {!loading && teamAgents.length === 0 ? (
-        <EmptyState icon={<Icon name="agent" size={28} />} title="첫 Agent를 등록해보세요"
+        <EmptyState icon={<Icon name="agent" size={28} />} title="등록된 Agent 없음"
           description="이 팀에서 사용할 내 Agent와 담당 프로젝트를 등록할 수 있습니다." />
       ) : teamAgents.length > 0 && (
         <div className="table-wrap">
@@ -390,7 +388,7 @@ export default function AgentsPanel({
       )}
 
       {detail && (
-        <Modal title="Agent 상세 정보" description="서버에 저장된 Agent 정보를 확인합니다." onClose={closeDetail}>
+        <Modal title="Agent 상세 정보" onClose={closeDetail}>
           {detail.loading && <p className="loading-copy" role="status">상세 정보를 불러오고 있습니다.</p>}
           {detail.error && <p className="inline-error" role="alert">{detail.error}</p>}
           {detail.agent && (
@@ -411,7 +409,7 @@ export default function AgentsPanel({
       )}
 
       {tokenAgent && (
-        <Modal title={issuedToken ? '연결 토큰이 발급되었습니다' : 'Agent 연결 토큰'}
+        <Modal title={issuedToken ? "연결 토큰 발급 완료" : "Agent 연결 토큰"}
           description={`${tokenAgent.name} · ${tokenAgent.projectName}`} busy={issuing} onClose={closeToken}>
           {issuedToken ? (
             <>

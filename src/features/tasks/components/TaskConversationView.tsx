@@ -95,7 +95,7 @@ function TaskResult({ history }: { history: TaskHistory }) {
     <section className={`tc-result-card ${failed || rejected ? 'tc-result-attention' : ''}`} aria-label="저장된 작업 결과">
       <header>
         <span className="tc-result-icon"><Icon name={failed || rejected ? 'shield' : 'check'} size={18} /></span>
-        <div><span className="tc-result-eyebrow">TASK RESULT</span><h3>{failed ? '작업 실패' : rejected ? '작업 거절' : history.resultText !== null ? '작업 결과' : '변경 파일'}</h3></div>
+        <div><h3>{failed ? "작업 실패" : rejected ? "작업 거절" : history.resultText !== null ? "작업 결과" : "변경 파일"}</h3></div>
         {failed && history.partiallyModified && <span className="tc-partial-badge">일부 수정됨</span>}
       </header>
       {text !== null && <p className="tc-message-text tc-result-text">{text}</p>}
@@ -238,7 +238,7 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
           {(!detail || !latestHistory) && (
             <div className="tc-query-state" role={error ? 'alert' : 'status'}>
               <span className="tc-state-icon"><Icon name={error ? 'shield' : 'book'} size={25} /></span>
-              <h3>{accessError ? accessError.status === 404 ? '이 작업을 찾을 수 없습니다' : '이 대화를 열 수 없습니다' : error ? '대화 기록을 불러오지 못했습니다' : '대화 기록을 불러오고 있습니다'}</h3>
+              <h3>{accessError ? accessError.status === 404 ? "작업 없음" : "대화 접근 제한" : error ? "대화 기록 조회 실패" : "대화 기록 불러오는 중"}</h3>
               <p>{error ? errorMessage(error) : '작업 요청과 Agent 사이에 오간 기록을 확인하고 있어요.'}</p>
               {error && <button type="button" className="button button-secondary button-small" disabled={refreshing && !accessError} onClick={refresh}><Icon name="refresh" size={14} />다시 시도</button>}
             </div>
