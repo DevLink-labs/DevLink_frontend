@@ -122,7 +122,22 @@ export default function DashboardLayout({
           <button type="button" className="icon-button dashboard-mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label="워크스페이스 메뉴 열기" aria-haspopup="dialog" aria-expanded={menuOpen}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
           <div className="breadcrumb"><span>워크스페이스</span><Icon name="chevron" size={12} /><strong>{pageLabel}</strong></div>
         </div>
-        <label className="dashboard-team-picker" htmlFor={`${fieldId}-team`}><Icon name="team" size={16} /><span className="dashboard-team-label">현재 팀</span><select aria-label="현재 팀 변경" id={`${fieldId}-team`} value={selectedTeamId ?? ""} onChange={(event) => { onSelectTeam(Number(event.target.value)); }} disabled={teamsLoading || teams.length === 0} title={selectedTeam?.name ?? "현재 팀 선택"}>{teams.length === 0 && <option value="">{teamsLoading ? "팀 불러오는 중" : "참여 중인 팀 없음"}</option>}{teams.map((team) => <option key={team.teamId} value={team.teamId}>{team.name}</option>)}</select></label>
+        <label className="dashboard-team-picker" htmlFor={`${fieldId}-team`}>
+          <span className="dashboard-team-symbol"><Icon name="team" size={15} /></span>
+          <span className="dashboard-team-label">현재 팀</span>
+          <select
+            aria-label="현재 팀 변경"
+            id={`${fieldId}-team`}
+            value={selectedTeamId ?? ""}
+            onChange={(event) => onSelectTeam(Number(event.target.value))}
+            disabled={teamsLoading || teams.length === 0}
+            title={selectedTeam?.name ?? "현재 팀 선택"}
+          >
+            {teams.length === 0 && <option value="">{teamsLoading ? "팀 불러오는 중" : "참여 중인 팀 없음"}</option>}
+            {teams.map((team) => <option key={team.teamId} value={team.teamId}>{team.name}</option>)}
+          </select>
+          <Icon name="chevron" size={13} className="dashboard-team-chevron" />
+        </label>
         <div className="topbar-actions">
           {connection !== "online" && <span className={`connection-indicator connection-${connection}`} title={API_BASE_URL || "로컬 개발 프록시"} role="status"><span className="status-dot" />{connection === "checking" ? "확인 중" : "연결 확인 필요"}</span>}
           <button type="button" className="dashboard-return-scene" onClick={onReturnToScene} aria-label="3D 팀 스페이스로 돌아가기" title="3D 팀 스페이스로 돌아가기"><span className="dashboard-scene-mark" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9ZM4 7.5l8 4.5 8-4.5M12 12v9" /></svg></span><span>3D 팀 스페이스</span></button>
