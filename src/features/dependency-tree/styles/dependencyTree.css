@@ -1,0 +1,426 @@
+@import "@fontsource-variable/noto-sans-kr";
+@import "@fontsource-variable/jetbrains-mono";
+
+.dependency-page {
+  /* TODO: 다크 모드 토큰 추가 */
+  color-scheme: light;
+  --tree-canvas: #FFFFFF;
+  --tree-panel: #F8FAFC;
+  --tree-panel-border: #EDF2F7;
+  --tree-ink: #1F2C39;
+  --tree-muted: #5B6875;
+  --tree-edge: #9AA6B2;
+  --tree-http: #3D4A57;
+  --tree-focus: #36457F;
+  --tree-work-fill: #D3EBDD;
+  --tree-work-ink: #245A3E;
+  --tree-schema-fill: #F6DCC6;
+  --tree-schema-ink: #7E3F14;
+  --tree-pill-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.06), inset 0 2px 0 rgb(255 255 255 / 0.7);
+  --tree-clay-shadow: 0 14px 28px -10px rgba(var(--tree-tint), 0.32),
+    inset 0 -6px 0 rgba(var(--tree-tint), 0.12), inset 0 5px 0 rgb(255 255 255 / 0.75);
+  --tree-sans: "Noto Sans KR Variable", "Noto Sans KR", system-ui, sans-serif;
+  --tree-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
+  --tree-title-size: 22px;
+  --tree-body-size: 16px;
+  --tree-label-size: 12px;
+  --tree-name-size: 17px;
+  --tree-root-name-size: 21px;
+  --tree-meta-size: 13px;
+  --tree-pill-line: 18px;
+  --tree-weight-bold: 700;
+  --tree-weight-heavy: 800;
+  --tree-weight-code: 600;
+  --tree-label-tracking: 0.04em;
+  --tree-area-tracking: 0.12em;
+  --tree-label-opacity: 0.85;
+  --tree-label-contrast-opacity: 0.9;
+  --tree-tight-line: 1.35;
+  --tree-body-line: 1.55;
+  --tree-stroke: 1.5px;
+  --tree-panel-radius: 36px;
+  --tree-card-radius: 22px;
+  --tree-pill-radius: 999px;
+  --tree-ui-radius: 12px;
+  --tree-panel-inline: 32px;
+  --tree-panel-block: 24px;
+  --tree-card-inline: 16px;
+  --tree-card-block: 14px;
+  --tree-pill-inline: 10px;
+  --tree-pill-block: 3px;
+  --tree-page-padding: clamp(16px, 2.5vw, 40px);
+  --tree-gap-xs: 4px;
+  --tree-gap-sm: 8px;
+  --tree-gap-md: 12px;
+  --tree-gap-lg: 20px;
+  --tree-section-gap: 24px;
+  --tree-lane-gap: 64px;
+  --tree-rank-gap: 72px;
+  --tree-sibling-gap: 56px;
+  --tree-node-width: 280px;
+  --tree-root-width: 340px;
+  --tree-service-width: 400px;
+  --tree-endpoint-width: 440px;
+  --tree-node-height: 88px;
+  --tree-rich-height: 136px;
+  --tree-lane-min: 620px;
+  --tree-control-max: 22rem;
+  --tree-viewport-padding: 12px;
+  --tree-topbar-padding: 10px;
+  --tree-float-max: 320px;
+  --tree-float-inset: 16px;
+  --tree-float-shadow: 0 18px 40px -18px rgb(31 44 57 / 0.35);
+  --tree-float-bg: rgb(255 255 255 / 0.92);
+  --tree-edge-width: 3px;
+  --tree-http-width: 5px;
+  --tree-edge-radius: 16px;
+  --tree-edge-tip: 9px;
+  --tree-http-tip: 12px;
+  --tree-edge-entry-gap: 2px;
+  --tree-http-track-gap: 8px;
+  --tree-http-label-inset: 8px;
+  --tree-http-label-offset: 10px;
+  --tree-http-label-halo: 5px;
+  --tree-edge-hit-width: 16px;
+  --tree-focus-width: 2px;
+  --tree-focus-offset: 3px;
+
+  /* 툴바 한 줄 + 그래프가 남은 높이 전부. 페이지 자체는 스크롤하지 않고 그래프 뷰포트만 스크롤한다. */
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  block-size: 100svh;
+  overflow: hidden;
+  background: var(--tree-canvas);
+  color: var(--tree-ink);
+  font: var(--tree-body-size) / var(--tree-body-line) var(--tree-sans);
+}
+
+/* 카드 유형별 팔레트 */
+.dependency-page [data-kind="ROOT"] {
+  --tree-fill: #D2E5FC; --tree-border: #B8D3F2; --tree-deep: #3D4A57; --tree-tint: 61, 74, 87;
+  --tree-card-width: var(--tree-root-width);
+  --tree-card-name-size: var(--tree-root-name-size);
+}
+.dependency-page [data-kind="PAGE"] {
+  --tree-fill: #D6DEF9; --tree-border: #C0CBF2; --tree-deep: #36457F; --tree-tint: 70, 90, 160;
+}
+.dependency-page [data-kind="COMPONENT"] {
+  --tree-fill: #E4DAF6; --tree-border: #D0C2EE; --tree-deep: #53437E; --tree-tint: 110, 90, 160;
+}
+.dependency-page [data-kind="HOOK"] {
+  --tree-fill: #F8DFCF; --tree-border: #F0C9B1; --tree-deep: #7E452A; --tree-tint: 170, 110, 80;
+}
+.dependency-page [data-kind="HTTP_CLIENT"] {
+  --tree-fill: #F5EAC4; --tree-border: #EADA9F; --tree-deep: #64521A; --tree-tint: 160, 135, 60;
+}
+.dependency-page [data-kind="ENDPOINT"] {
+  --tree-fill: #F6D6E1; --tree-border: #EDBFCF; --tree-deep: #81334F; --tree-tint: 160, 80, 110;
+  --tree-card-width: var(--tree-endpoint-width);
+}
+.dependency-page [data-kind="SERVICE"] {
+  --tree-fill: #D2EEDF; --tree-border: #B8E0CB; --tree-deep: #2B5E49; --tree-tint: 60, 120, 95;
+  --tree-card-width: var(--tree-service-width);
+}
+.dependency-page [data-kind="REPOSITORY"] {
+  --tree-fill: #CEEAF0; --tree-border: #B2DBE4; --tree-deep: #285C67; --tree-tint: 60, 120, 135;
+}
+.dependency-page [data-kind="DB_TABLE"] {
+  --tree-fill: #EEE3D0; --tree-border: #E0D0B4; --tree-deep: #5F4E33; --tree-tint: 130, 110, 80;
+}
+.dependency-page [data-kind="MODULE"] {
+  --tree-fill: var(--tree-panel); --tree-border: var(--tree-edge); --tree-deep: var(--tree-http); --tree-tint: 61, 74, 87;
+}
+.dependency-page :is([data-kind="HOOK"], [data-kind="HTTP_CLIENT"], [data-kind="SERVICE"], [data-kind="REPOSITORY"], [data-kind="DB_TABLE"]) {
+  --tree-effective-label-opacity: var(--tree-label-contrast-opacity);
+}
+
+.dependency-topbar,
+.dependency-topbar-end,
+.dependency-controls,
+.dependency-legend,
+.dependency-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tree-gap-md);
+}
+.dependency-topbar {
+  gap: var(--tree-gap-lg);
+  padding: var(--tree-topbar-padding) var(--tree-page-padding);
+  border-block-end: var(--tree-stroke) solid var(--tree-panel-border);
+  background: var(--tree-canvas);
+}
+.dependency-brand { min-inline-size: 0; }
+.dependency-brand h1 {
+  margin: 0;
+  font-size: var(--tree-title-size);
+  font-weight: var(--tree-weight-heavy);
+  line-height: var(--tree-tight-line);
+  white-space: nowrap;
+}
+.dependency-brand p { margin: 0; font-size: var(--tree-meta-size); color: var(--tree-muted); }
+.dependency-topbar .dependency-controls { flex: 1 1 0; flex-wrap: nowrap; min-inline-size: 0; justify-content: center; }
+.dependency-topbar .dependency-controls > label { flex: 0 1 auto; }
+.dependency-topbar .dependency-controls select { flex: 1 1 auto; min-inline-size: 6rem; }
+.dependency-topbar-end { margin-inline-start: auto; gap: var(--tree-gap-lg); }
+.dependency-legend { justify-content: flex-end; font-size: var(--tree-meta-size); color: var(--tree-muted); }
+.dependency-legend-line { display: inline-flex; gap: var(--tree-gap-sm); align-items: center; }
+.dependency-legend-line::before {
+  content: "";
+  inline-size: var(--tree-section-gap);
+  border-block-start: var(--tree-http-width) solid var(--tree-http);
+  border-radius: var(--tree-pill-radius);
+}
+.dependency-navigation a {
+  padding: var(--tree-gap-xs) var(--tree-gap-md);
+  border: var(--tree-stroke) solid var(--tree-panel-border);
+  border-radius: var(--tree-pill-radius);
+  color: var(--tree-http);
+  font-size: var(--tree-meta-size);
+  font-weight: var(--tree-weight-bold);
+}
+
+.dependency-page label { display: grid; gap: var(--tree-gap-xs); font-size: var(--tree-meta-size); color: var(--tree-muted); }
+/* 툴바의 컨트롤은 라벨과 선택 상자를 한 줄에 둔다. */
+.dependency-controls > label { display: flex; align-items: center; gap: var(--tree-gap-sm); min-inline-size: 0; max-inline-size: 100%; white-space: nowrap; }
+.dependency-page select,
+.dependency-page input,
+.dependency-page button { font-family: inherit; }
+.dependency-page select,
+.dependency-page input {
+  max-inline-size: min(100%, var(--tree-control-max));
+  padding: var(--tree-gap-sm) var(--tree-gap-md);
+  border: var(--tree-stroke) solid var(--tree-panel-border);
+  border-radius: var(--tree-ui-radius);
+  color: var(--tree-ink);
+  background: var(--tree-canvas);
+}
+
+/* 넓은 화면에서는 상세 패널이 오른쪽 열로 도킹되어 그래프를 가리지 않고, 좁은 화면에서는 그래프 위에 겹친다. */
+.dependency-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; min-block-size: 0; }
+.dependency-empty { display: grid; place-content: center; text-align: center; color: var(--tree-muted); }
+.dependency-empty p { margin: 0; }
+.dependency-viewport {
+  container-type: inline-size;
+  display: flex;
+  min-block-size: 0;
+  overflow: auto;
+  padding: var(--tree-viewport-padding);
+}
+.dependency-fit { display: flex; gap: var(--tree-gap-xs); }
+.dependency-fit-button {
+  padding: var(--tree-gap-sm) var(--tree-gap-md);
+  border: var(--tree-stroke) solid var(--tree-panel-border);
+  border-radius: var(--tree-ui-radius);
+  background: var(--tree-panel);
+  color: var(--tree-http);
+  font-size: var(--tree-meta-size);
+  font-weight: var(--tree-weight-bold);
+  white-space: nowrap;
+}
+.dependency-fit-button[aria-pressed="true"] { border-color: var(--tree-http); background: var(--tree-http); color: var(--tree-canvas); }
+.dependency-stage {
+  flex: none;
+  inline-size: var(--tree-fitted-width, max-content);
+  min-inline-size: 0; /* 축소된 그래프가 원본 폭을 최소 폭으로 요구하지 않게 한다. */
+  block-size: var(--tree-fitted-height, auto);
+  margin: auto; /* 맞춤 상태에서는 가운데, 원본 크기에서는 스크롤 시작점이 잘리지 않는다. */
+  overflow: clip;
+}
+.dependency-diagram {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-auto-flow: column;
+  /* 레인 폭은 고정하고 뷰포트 폭에 맞춰 전체를 확대한다. 넓은 화면일수록 카드와 글씨가 함께 커진다. */
+  grid-auto-columns: var(--tree-lane-min);
+  gap: var(--tree-lane-gap);
+  inline-size: max-content;
+  align-items: stretch;
+  transform: scale(var(--tree-fit-scale, 1));
+  transform-origin: top left;
+}
+.dependency-diagram[data-single-lane] { grid-auto-columns: calc(var(--tree-lane-min) * 2 + var(--tree-lane-gap)); }
+/* 전체 맞춤: 구조 전체가 한 화면에 들어오도록 세로 간격과 카드 높이만 줄인다. 글씨 크기는 그대로라 축소 배율이 덜 떨어진다. */
+.dependency-diagram[data-compact] {
+  --tree-rank-gap: 32px;
+  --tree-sibling-gap: 32px;
+  --tree-lane-gap: 48px;
+  --tree-node-height: 56px;
+  --tree-rich-height: 96px;
+  --tree-panel-block: 12px;
+  --tree-panel-inline: 20px;
+  --tree-card-block: 8px;
+  --tree-edge-radius: 12px;
+  --tree-gap-lg: 10px;
+}
+.dependency-lane {
+  padding: var(--tree-panel-block) var(--tree-panel-inline) calc(var(--tree-panel-block) + var(--tree-gap-sm));
+  border: var(--tree-stroke) solid var(--tree-panel-border);
+  border-radius: var(--tree-panel-radius);
+  background: var(--tree-panel);
+}
+.dependency-area-label {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 var(--tree-gap-lg);
+  font-size: var(--tree-label-size);
+  font-weight: var(--tree-weight-heavy);
+  letter-spacing: var(--tree-area-tracking);
+  color: var(--tree-muted);
+}
+.dependency-ranks { display: grid; gap: var(--tree-rank-gap); }
+.dependency-row {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--tree-sibling-gap);
+  --tree-slot-width: calc((100% - (var(--tree-row-count, 1) - 1) * var(--tree-sibling-gap)) / var(--tree-row-count, 1));
+}
+.dependency-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--tree-gap-xs);
+  flex: none;
+  inline-size: min(var(--tree-card-width, var(--tree-node-width)), var(--tree-slot-width));
+  min-inline-size: 0;
+  min-block-size: var(--tree-node-height);
+  padding: var(--tree-card-block) var(--tree-card-inline);
+  border: var(--tree-stroke) solid var(--tree-border);
+  border-radius: var(--tree-card-radius);
+  background: var(--tree-fill);
+  box-shadow: var(--tree-clay-shadow);
+  color: var(--tree-ink);
+  line-height: var(--tree-tight-line);
+  text-align: center;
+  overflow-wrap: anywhere;
+  translate: var(--tree-card-offset, 0px) 0;
+}
+.dependency-card[data-rich] { min-block-size: var(--tree-rich-height); }
+.dependency-type {
+  color: var(--tree-deep);
+  font-size: var(--tree-label-size);
+  font-weight: var(--tree-weight-bold);
+  letter-spacing: var(--tree-label-tracking);
+  opacity: var(--tree-effective-label-opacity, var(--tree-label-opacity));
+}
+.dependency-name { font-size: var(--tree-card-name-size, var(--tree-name-size)); font-weight: var(--tree-weight-bold); }
+.dependency-meta { font-size: var(--tree-meta-size); color: var(--tree-deep); }
+.dependency-code,
+.dependency-detail code {
+  font-family: var(--tree-mono);
+  font-size: var(--tree-meta-size);
+  font-weight: var(--tree-weight-code);
+  color: var(--tree-ink);
+}
+.dependency-code { display: block; min-inline-size: 0; max-inline-size: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dependency-node.dependency-focused { outline: var(--tree-focus-width) solid var(--tree-border); }
+.dependency-node[aria-pressed="true"] { outline: var(--tree-focus-width) solid var(--tree-focus); }
+.dependency-page :is(button, a, select, input, .dependency-viewport):focus-visible {
+  outline: var(--tree-focus-width) solid var(--tree-focus);
+  outline-offset: var(--tree-focus-offset);
+}
+
+.dependency-workers { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--tree-gap-xs); margin-block-start: var(--tree-gap-sm); }
+.dependency-pill {
+  display: inline-block;
+  padding: var(--tree-pill-block) var(--tree-pill-inline);
+  border-radius: var(--tree-pill-radius);
+  background: var(--tree-canvas);
+  box-shadow: var(--tree-pill-shadow);
+  color: var(--tree-ink);
+  font-size: var(--tree-label-size);
+  font-weight: var(--tree-weight-bold);
+  line-height: var(--tree-pill-line);
+}
+.dependency-pill--working { background: var(--tree-work-fill); color: var(--tree-work-ink); }
+.dependency-pill--schema { background: var(--tree-schema-fill); color: var(--tree-schema-ink); }
+.dependency-pill--method { background: var(--tree-deep); color: var(--tree-canvas); }
+
+.dependency-lines { position: absolute; z-index: 1; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; pointer-events: none; }
+.dependency-line { fill: none; stroke: var(--tree-edge); stroke-width: var(--tree-edge-width); stroke-linecap: round; }
+.dependency-http { stroke: var(--tree-http); stroke-width: var(--tree-http-width); }
+.dependency-highlight { stroke: var(--tree-muted); }
+.dependency-marker { fill: var(--tree-edge); }
+.dependency-http-marker { fill: var(--tree-http); }
+.dependency-hit { fill: none; stroke: transparent; stroke-width: var(--tree-edge-hit-width); pointer-events: stroke; cursor: pointer; }
+.dependency-http-label {
+  fill: var(--tree-http);
+  stroke: var(--tree-canvas);
+  stroke-width: var(--tree-http-label-halo);
+  stroke-linejoin: round;
+  paint-order: stroke;
+  font-size: var(--tree-meta-size);
+  font-weight: var(--tree-weight-bold);
+}
+/* 그래프 위에 떠 있는 상세 패널. 접으면 요약 줄만 남아 그래프를 가리지 않는다. */
+.dependency-panel {
+  inline-size: var(--tree-float-max);
+  max-block-size: calc(100% - 2 * var(--tree-float-inset));
+  margin: var(--tree-float-inset) var(--tree-float-inset) var(--tree-float-inset) 0;
+  align-self: end;
+  display: grid;
+  align-content: start;
+  overflow: auto;
+  padding: var(--tree-gap-sm) var(--tree-card-inline);
+  border: var(--tree-stroke) solid var(--tree-panel-border);
+  border-radius: var(--tree-card-radius);
+  background: var(--tree-float-bg);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--tree-float-shadow);
+  font-size: var(--tree-meta-size);
+}
+.dependency-panel:empty { display: none; }
+.dependency-panel > * + * { border-block-start: var(--tree-stroke) solid var(--tree-panel-border); }
+.dependency-panel > p { margin: 0; padding-block: var(--tree-gap-sm); }
+.dependency-panel p[role="alert"] { color: var(--tree-schema-ink); }
+.dependency-note { color: var(--tree-muted); }
+.dependency-detail,
+.dependency-source {
+  display: grid;
+  gap: var(--tree-gap-xs);
+  padding-block: var(--tree-gap-sm);
+  overflow-wrap: anywhere;
+}
+.dependency-detail summary,
+.dependency-source summary { cursor: pointer; font-weight: var(--tree-weight-bold); color: var(--tree-ink); }
+.dependency-detail summary .dependency-type { margin-inline-start: var(--tree-gap-xs); }
+.dependency-detail p,
+.dependency-detail ul { margin: 0; }
+.dependency-detail ul { padding-inline-start: var(--tree-gap-lg); }
+.dependency-source form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tree-gap-md); }
+.dependency-source .dependency-check { display: flex; align-items: center; }
+
+@media (max-width: 1500px) {
+  .dependency-brand p { display: none; }
+}
+/* 좁은 화면: 패널을 그래프 아래 줄로 내려 겹치지 않게 하고, 그래프는 남은 높이에 다시 맞춘다. */
+@media (max-width: 1100px) {
+  .dependency-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .dependency-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    column-gap: var(--tree-gap-lg);
+    inline-size: auto;
+    max-block-size: 40vh;
+    margin: 0 var(--tree-float-inset) var(--tree-float-inset);
+    align-self: auto;
+  }
+  /* 접힌 섹션은 한 줄에 나란히, 펼친 섹션만 한 줄을 다 쓴다. */
+  .dependency-panel > * + * { border-block-start: none; }
+  .dependency-panel > details[open],
+  .dependency-panel > .dependency-source { flex: 1 1 100%; }
+}
+@media (max-width: 720px) {
+  .dependency-topbar { gap: var(--tree-gap-md); }
+  .dependency-brand h1 { white-space: normal; }
+  .dependency-topbar .dependency-controls { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; }
+  .dependency-topbar .dependency-controls > label { flex: 1 1 auto; }
+  .dependency-fit { flex-wrap: wrap; }
+  .dependency-topbar-end { margin-inline-start: 0; }
+}

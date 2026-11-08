@@ -1,0 +1,399 @@
+{
+  "graph": {
+    "repositories": [
+      {
+        "repoId": 101,
+        "displayName": "DevLink 프론트엔드",
+        "branchName": "main",
+        "analysisCommitSha": "7acc5a8e2329c4f59b3bd47233b0c1dd7ec37b65",
+        "revision": 1,
+        "repoKind": "FRONTEND"
+      },
+      {
+        "repoId": 102,
+        "displayName": "DevLink 서버",
+        "branchName": "develop",
+        "analysisCommitSha": "aecdcc3db69254d1262eb7ec82809487717b7ec7",
+        "revision": 1,
+        "repoKind": "BACKEND"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "workspace",
+        "repoId": 101,
+        "kind": "PAGE",
+        "label": "WorkspacePage",
+        "source": {
+          "relativePath": "src/pages/WorkspacePage.tsx",
+          "line": 26
+        }
+      },
+      {
+        "id": "workspace-overview",
+        "repoId": 101,
+        "kind": "COMPONENT",
+        "label": "WorkspaceOverviewView",
+        "source": {
+          "relativePath": "src/features/workspace/components/WorkspaceOverviewView.tsx",
+          "line": 31
+        }
+      },
+      {
+        "id": "conversation",
+        "repoId": 101,
+        "kind": "COMPONENT",
+        "label": "TaskConversationView",
+        "source": {
+          "relativePath": "src/features/tasks/components/TaskConversationView.tsx",
+          "line": 275
+        }
+      },
+      {
+        "id": "conversation-content",
+        "repoId": 101,
+        "kind": "COMPONENT",
+        "label": "ConversationContent",
+        "source": {
+          "relativePath": "src/features/tasks/components/TaskConversationView.tsx",
+          "line": 117
+        }
+      },
+      {
+        "id": "history-hook",
+        "repoId": 101,
+        "kind": "HOOK",
+        "label": "useTaskHistory",
+        "source": {
+          "relativePath": "src/features/tasks/hooks/useTasks.ts",
+          "line": 47
+        }
+      },
+      {
+        "id": "history-call",
+        "repoId": 101,
+        "kind": "HTTP_CLIENT",
+        "label": "taskApi.getTaskHistory",
+        "source": {
+          "relativePath": "src/features/tasks/api/taskApi.ts",
+          "line": 24
+        },
+        "httpRoute": {
+          "method": "GET",
+          "pathTemplate": "/api/v1/web/teams/{teamId}/tasks/{taskId}/events"
+        }
+      },
+      {
+        "id": "history-endpoint",
+        "repoId": 102,
+        "kind": "ENDPOINT",
+        "label": "GET /api/v1/web/teams/{teamId}/tasks/{taskId}/events",
+        "source": {
+          "relativePath": "src/main/java/com/devlink/server/controller/TaskQueryController.java",
+          "line": 34
+        },
+        "httpRoute": {
+          "method": "GET",
+          "pathTemplate": "/api/v1/web/teams/{teamId}/tasks/{taskId}/events"
+        }
+      },
+      {
+        "id": "history-service",
+        "repoId": 102,
+        "kind": "SERVICE",
+        "label": "TaskQueryService.getWebTaskHistory",
+        "source": {
+          "relativePath": "src/main/java/com/devlink/server/service/TaskQueryService.java",
+          "line": 60
+        }
+      },
+      {
+        "id": "task-repo",
+        "repoId": 102,
+        "kind": "REPOSITORY",
+        "label": "TaskRepository",
+        "source": {
+          "relativePath": "src/main/java/com/devlink/server/repository/TaskRepository.java",
+          "line": 16
+        }
+      },
+      {
+        "id": "event-repo",
+        "repoId": 102,
+        "kind": "REPOSITORY",
+        "label": "TaskEventRepository",
+        "source": {
+          "relativePath": "src/main/java/com/devlink/server/repository/TaskEventRepository.java",
+          "line": 13
+        }
+      },
+      {
+        "id": "file-repo",
+        "repoId": 102,
+        "kind": "REPOSITORY",
+        "label": "TaskFileRepository",
+        "source": {
+          "relativePath": "src/main/java/com/devlink/server/repository/TaskFileRepository.java",
+          "line": 7
+        }
+      },
+      {
+        "id": "tasks-table",
+        "repoId": 102,
+        "kind": "DB_TABLE",
+        "label": "tasks",
+        "source": {
+          "relativePath": "src/main/resources/db/migration/V1__init.sql",
+          "line": 50
+        },
+        "schemaName": "public"
+      },
+      {
+        "id": "events-table",
+        "repoId": 102,
+        "kind": "DB_TABLE",
+        "label": "task_events",
+        "source": {
+          "relativePath": "src/main/resources/db/migration/V1__init.sql",
+          "line": 80
+        },
+        "schemaName": "public"
+      },
+      {
+        "id": "files-table",
+        "repoId": 102,
+        "kind": "DB_TABLE",
+        "label": "task_files",
+        "source": {
+          "relativePath": "src/main/resources/db/migration/V1__init.sql",
+          "line": 70
+        },
+        "schemaName": "public"
+      },
+      {
+        "id": "archive-page",
+        "repoId": 101,
+        "kind": "PAGE",
+        "label": "TaskArchivePage",
+        "source": {
+          "relativePath": "src/pages/TaskArchivePage.tsx",
+          "line": 18
+        }
+      },
+      {
+        "id": "audit-summary",
+        "repoId": 101,
+        "kind": "COMPONENT",
+        "label": "TaskAuditSummary",
+        "source": {
+          "relativePath": "src/features/tasks/components/TaskAuditSummary.tsx",
+          "line": 11
+        }
+      },
+      {
+        "id": "audit-call",
+        "repoId": 101,
+        "kind": "HTTP_CLIENT",
+        "label": "loadAuditHistory",
+        "source": {
+          "relativePath": "src/features/tasks/api/taskAuditApi.ts",
+          "line": 20
+        },
+        "httpRoute": {
+          "method": "GET",
+          "pathTemplate": "/api/v1/web/teams/{teamId}/tasks/{taskId}/events"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "sourceId": "workspace",
+        "targetId": "workspace-overview",
+        "relationType": "RENDERS"
+      },
+      {
+        "sourceId": "workspace",
+        "targetId": "conversation",
+        "relationType": "RENDERS"
+      },
+      {
+        "sourceId": "conversation",
+        "targetId": "conversation-content",
+        "relationType": "RENDERS"
+      },
+      {
+        "sourceId": "conversation-content",
+        "targetId": "history-hook",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "history-hook",
+        "targetId": "history-call",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "history-call",
+        "targetId": "history-endpoint",
+        "relationType": "HTTP_CALL"
+      },
+      {
+        "sourceId": "history-endpoint",
+        "targetId": "history-service",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "history-service",
+        "targetId": "task-repo",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "history-service",
+        "targetId": "event-repo",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "history-service",
+        "targetId": "file-repo",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "task-repo",
+        "targetId": "tasks-table",
+        "relationType": "USES_TABLE"
+      },
+      {
+        "sourceId": "event-repo",
+        "targetId": "events-table",
+        "relationType": "USES_TABLE"
+      },
+      {
+        "sourceId": "file-repo",
+        "targetId": "files-table",
+        "relationType": "USES_TABLE"
+      },
+      {
+        "sourceId": "archive-page",
+        "targetId": "conversation",
+        "relationType": "RENDERS"
+      },
+      {
+        "sourceId": "archive-page",
+        "targetId": "audit-summary",
+        "relationType": "RENDERS"
+      },
+      {
+        "sourceId": "audit-summary",
+        "targetId": "audit-call",
+        "relationType": "CALLS"
+      },
+      {
+        "sourceId": "audit-call",
+        "targetId": "history-endpoint",
+        "relationType": "HTTP_CALL"
+      }
+    ],
+    "unmatchedCallCount": 0
+  },
+  "activityFrames": [
+    {
+      "label": "변경 전",
+      "data": {
+        "serverTime": "2026-11-08T10:00:00Z",
+        "items": []
+      }
+    },
+    {
+      "label": "수정 감지",
+      "data": {
+        "serverTime": "2026-11-08T10:00:03Z",
+        "items": [
+          {
+            "repoId": 101,
+            "relativePath": "src/features/tasks/components/TaskConversationView.tsx",
+            "userId": 31,
+            "displayName": "민지",
+            "branchName": "feat/task-history",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          },
+          {
+            "repoId": 101,
+            "relativePath": "src/features/tasks/components/TaskConversationView.tsx",
+            "userId": 34,
+            "displayName": "현우",
+            "branchName": "feat/reuse-history-panel",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          },
+          {
+            "repoId": 102,
+            "relativePath": "src/main/java/com/devlink/server/service/TaskQueryService.java",
+            "userId": 32,
+            "displayName": "준호",
+            "branchName": "feat/history-query",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          },
+          {
+            "repoId": 102,
+            "relativePath": "src/main/resources/db/migration/V1__init.sql",
+            "userId": 33,
+            "displayName": "서연",
+            "branchName": "feat/schema",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          },
+          {
+            "repoId": 102,
+            "relativePath": "src/main/java/com/devlink/server/service/HistorySummaryService.java",
+            "userId": 32,
+            "displayName": "준호",
+            "branchName": "feat/history-query",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          }
+        ]
+      }
+    },
+    {
+      "label": "FE 변경 해소",
+      "data": {
+        "serverTime": "2026-11-08T10:00:09Z",
+        "items": [
+          {
+            "repoId": 102,
+            "relativePath": "src/main/java/com/devlink/server/service/TaskQueryService.java",
+            "userId": 32,
+            "displayName": "준호",
+            "branchName": "feat/history-query",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          },
+          {
+            "repoId": 102,
+            "relativePath": "src/main/resources/db/migration/V1__init.sql",
+            "userId": 33,
+            "displayName": "서연",
+            "branchName": "feat/schema",
+            "changeType": "MODIFIED",
+            "observedAt": "2026-11-08T10:00:03Z",
+            "expiresAt": "2026-11-08T10:01:33Z"
+          }
+        ]
+      }
+    },
+    {
+      "label": "관측 만료",
+      "data": {
+        "serverTime": "2026-11-08T10:01:34Z",
+        "items": []
+      }
+    }
+  ]
+}
