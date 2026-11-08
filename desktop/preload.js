@@ -9,8 +9,8 @@ const origin = appArgument("origin");
 if (process.isMainFrame && window.location.origin === origin) {
   contextBridge.exposeInMainWorld("devlinkDesktop", {
     version: appArgument("version"),
-    ...(origin === "http://localhost:5173" && {
-      getStatus: () => ipcRenderer.invoke("devlink:status"),
+    ...(["http://localhost:5173", "https://devlink.ai.kr"].includes(origin) && {
+      getStatus: (account) => ipcRenderer.invoke("devlink:status", account),
       setup: {
         pickFolder: (account) => ipcRenderer.invoke("devlink:pickFolder", account),
         run: (id, tool, password) => ipcRenderer.invoke("devlink:setup", id, tool, password),

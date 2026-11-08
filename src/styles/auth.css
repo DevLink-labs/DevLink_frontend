@@ -245,6 +245,38 @@
   left: 50%;
 }
 
+@media (min-width: 901px) {
+  .auth-story {
+    height: calc(100svh - 40px);
+    min-height: 520px;
+    gap: clamp(16px, 4svh, 32px);
+    padding-block: clamp(24px, 5svh, 44px);
+  }
+
+  .auth-story-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    justify-items: center;
+    min-height: 0;
+    gap: clamp(12px, 3svh, 24px);
+    padding: 0;
+  }
+
+  .auth-mascot-stage {
+    max-height: 100%;
+    aspect-ratio: 934 / 854;
+  }
+
+  .auth-mascot {
+    height: 100%;
+  }
+
+  .auth-form-side {
+    padding-block: clamp(24px, 5svh, 64px);
+  }
+}
+
 @media (max-width: 900px) {
   .auth-layout {
     grid-template-columns: minmax(0, 1fr);
