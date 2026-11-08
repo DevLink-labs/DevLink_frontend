@@ -1,6 +1,7 @@
 const { spawn, spawnSync } = require("node:child_process");
 const { cp, mkdir, readFile, rename, rm } = require("node:fs/promises");
 const path = require("node:path");
+const { checkCliRuntime } = require("./check-cli-runtime.cjs");
 
 const desktop = path.resolve(__dirname, "..");
 const client = path.resolve(desktop, "..", "..", "DevLink_client");
@@ -69,6 +70,7 @@ async function main() {
     await cp(node, path.join(stage, "node", "node.exe"));
     await mkdir(path.join(stage, "bin", "mcp-server"), { recursive: true });
     await cp(cli, path.join(stage, "bin", "devlink.exe"));
+    checkCliRuntime(await readFile(path.join(stage, "bin", "devlink.exe")));
     run(path.join(stage, "bin", "devlink.exe"), ["--version"]);
     const destination = path.join(stage, "bin", "mcp-server");
     for (const name of ["dist", "package.json", "package-lock.json"]) {

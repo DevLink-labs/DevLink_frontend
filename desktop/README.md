@@ -70,7 +70,9 @@ npm ci
 npm run dist:win
 ```
 
-기존 연결 프로그램이 `target/release/devlink.exe`를 사용 중이면 별도 Cargo 출력 폴더로 빌드하고, `DEVLINK_VENDOR_CLI_PATH` 환경 변수로 해당 실행 파일을 지정할 수 있습니다. 이 변수는 설치 파일을 준비할 때만 사용합니다. `prepare:vendor`는 실행 중인 공식 Node 24의 `node.exe`, CLI, MCP의 운영 의존성을 `vendor`에 모으고 MCP 초기화 응답을 확인합니다. 결과는 `desktop/dist/DevLink-Setup-<버전>.exe`이며 바이너리와 `vendor`는 Git에 추가하지 않습니다.
+Windows x64 CLI는 `DevLink_client/rust/.cargo/config.toml`의 `+crt-static` 설정으로 C 런타임을 정적으로 연결합니다. 위 Cargo 명령은 `rust` 디렉터리에서 실행하며, 배포 PC에 Visual C++ 재배포 패키지를 별도로 요구하지 않습니다. `RUSTFLAGS`로 빌드 설정을 재정의할 때도 이 설정을 유지해야 합니다.
+
+기존 연결 프로그램이 `target/release/devlink.exe`를 사용 중이면 별도 Cargo 출력 폴더로 빌드하고, `DEVLINK_VENDOR_CLI_PATH` 환경 변수로 해당 실행 파일을 지정할 수 있습니다. 이 변수는 설치 파일을 준비할 때만 사용합니다. `prepare:vendor`는 실행 중인 공식 Node 24의 `node.exe`, CLI, MCP의 운영 의존성을 `vendor`에 모읍니다. CLI를 실행하기 전에 일반·지연 DLL 가져오기 표를 검사하고, `VCRUNTIME`·`MSVCP` 등 Visual C++ 재배포 DLL 의존성이나 잘못된 Windows x64 실행 파일을 발견하면 중단합니다. 그다음 CLI 버전과 MCP 초기화 응답을 확인합니다. 결과는 `desktop/dist/DevLink-Setup-<버전>.exe`이며 바이너리와 `vendor`는 Git에 추가하지 않습니다.
 
 설치본은 `process.resourcesPath` 아래의 `bin/devlink.exe`, `bin/mcp-server/dist/index.js`, `node/node.exe`를 사용합니다. 서버는 `wss://api.devlink.ai.kr/`, 프로필은 사용자 홈의 `.devlink/desktop/accounts/...`를 사용합니다. 개발용 `.env.local`과 테스트 계정 프로필은 설치본에 포함하지 않습니다. 배포 화면(`https://devlink.ai.kr`)의 최상위 프레임에만 연결 API를 제공하며, main에서도 호출 출처를 확인합니다.
 
@@ -92,5 +94,7 @@ npm run verify:installer
 ```
 
 실제 Electron의 프로젝트 연결 화면과 CLI를 사용해 새 연결, 재연결, 두 번째 프로젝트, 다른 팀, 직접 적용 후 확인·재실행, 여러 연결 프로그램의 중지·복원을 확인합니다. 직접 적용 경로만 미검증 버전을 출력하는 테스트 Host를 사용합니다. AI 작업이나 모델 호출은 실행하지 않습니다. 테스트 전용 계정과 팀을 로컬 서버에 생성하고, 임시 프로필·설치 후보 폴더는 검증 후 삭제합니다. 화면과 검사 결과는 `dist/verification`에 남깁니다. 이 검사는 깨끗한 Windows 계정에서의 실제 설치·업데이트·제거 수용 검사를 대체하지 않습니다.
+
+Visual C++ 런타임은 PC 전체에 설치될 수 있으므로 같은 PC에 새 계정을 만드는 것만으로 런타임 미설치 환경을 보장하지 않습니다. 이 조건은 재배포 패키지가 없는 깨끗한 Windows VM 등에서 별도로 확인합니다.
 
 폴더 선택 대화상자의 반환값은 테스트 프로젝트로 고정하고 나머지 화면·IPC·CLI·로컬 서버는 실제 구현을 사용합니다. `verify:installer`는 기존 DevLink 설치와 `.devlink/desktop` 프로필이 없을 때만 실행합니다. `Programs` 아래의 임시 위치에 실제 NSIS 설치 파일을 설치하고 업데이트·제거 훅을 확인합니다. 제거 후 프로필과 자격 파일이 보존되는지 검사한 다음 테스트가 만든 프로필과 임시 설치만 정리합니다. 로컬 서버에 생성한 테스트 계정·팀·Agent 데이터는 남습니다.
