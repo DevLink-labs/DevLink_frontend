@@ -242,11 +242,23 @@ const memberColors: Record<string, string> = {
   mint: "#999999",
 };
 const loadingMembers: PreviewMember[] = [];
-const SCENE_RETURN_DISTANCE_MULTIPLIER = 1;
-const SCENE_RETURN_DURATION_MS = 760;
+const SCENE_RETURN_DISTANCE_MULTIPLIER = 1.18;
+const SCENE_RETURN_DURATION_MS = 900;
 
 function easeSceneReturn(progress: number) {
-  return progress * progress * (3 - 2 * progress);
+  if (progress <= 0 || progress >= 1) return progress;
+  let lower = 0;
+  let upper = 1;
+  // 기본 스크롤의 가속·감속 곡선에 맞춘 베지어 역산
+  for (let iteration = 0; iteration < 16; iteration++) {
+    const parameter = (lower + upper) / 2;
+    const remaining = 1 - parameter;
+    const position = 1.2 * remaining * remaining * parameter + parameter ** 3;
+    if (position < progress) lower = parameter;
+    else upper = parameter;
+  }
+  const parameter = (lower + upper) / 2;
+  return parameter * parameter * (3 - 2 * parameter);
 }
 
 interface LiveWorkspace {

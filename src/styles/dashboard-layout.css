@@ -123,7 +123,6 @@ div.workspace-dashboard.app-shell {
 .workspace-dashboard .dashboard-team-options button:focus-visible { outline: 2px solid var(--workspace-focus); outline-offset: -2px; }
 .workspace-dashboard .dashboard-team-initial { display: grid; place-items: center; width: 27px; height: 27px; flex-shrink: 0; border: 1px solid #e1e8ef; border-radius: 7px; color: #66819d; background: #f8fafc; font-size: 12px; font-weight: 600; }
 .workspace-dashboard .dashboard-team-option-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.workspace-dashboard .dashboard-return-scene,
 .workspace-dashboard .dashboard-team-trigger,
 .workspace-dashboard .dashboard-refresh { height: var(--dashboard-control-height); min-height: var(--dashboard-control-height); }
 .workspace-dashboard .dashboard-return-scene { justify-self: center; }

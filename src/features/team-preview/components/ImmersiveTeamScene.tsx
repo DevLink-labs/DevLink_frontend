@@ -710,8 +710,8 @@ export default function ImmersiveTeamScene({
         lastReveal = reveal;
       }
       entrance = THREE.MathUtils.lerp(entrance, 1, frozen ? 1 : 1 - Math.exp(-delta * 2.4));
-      world.scale.setScalar((0.96 + entrance * 0.04) * (1 - sceneDepth * 0.14));
-      world.position.y = -0.025 + entrance * 0.025 + sceneDepth * 0.16;
+      world.scale.setScalar((0.96 + entrance * 0.04) * (1 - sceneDepth * 0.2));
+      world.position.y = -0.025 + entrance * 0.025 - sceneDepth * 0.22;
       core.position.y = TEAM_CHARACTER_CENTER_Y + Math.sin(elapsed * 0.4) * 0.008;
       if (loadingAgent) {
         const orbit = elapsed * 0.72;
@@ -799,7 +799,7 @@ export default function ImmersiveTeamScene({
         const verticalFit = (lookingDown ? 3.95 : 3.15) / tangent;
         radius = Math.max(11.4, horizontalFit, verticalFit) * (1 - loadingWeight * 0.14);
       }
-      radius *= zoomFactor * (1 + sceneDepth * 0.18);
+      radius *= zoomFactor * (1 + sceneDepth * 0.25);
       orbitOffset.set(
         Math.sin(azimuth) * Math.sin(polar) * radius,
         Math.cos(polar) * radius,

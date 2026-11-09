@@ -7,15 +7,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0 12px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 16px;
   border: 1px solid #dce4ed;
   border-radius: 9px;
   color: #475569;
   background: #ffffffeb;
   box-shadow: 0 2px 8px #1f2c3905;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: -0.2px;
@@ -32,8 +32,8 @@
   background: #f4f8fd;
 }
 .space-navigation-button > .space-navigation-arrows {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 .space-navigation-button[data-direction="up"] > .space-navigation-arrows {
@@ -60,6 +60,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .space-navigation-button {
+    transition: none;
+  }
   .space-navigation-arrows > path {
     animation: none;
     opacity: 0.7;
