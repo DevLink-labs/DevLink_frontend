@@ -230,6 +230,7 @@ async function ipcFixture(t) {
         config: paths.config,
         teamId: input.team.id,
         mcpMode: input.mcp.mode,
+        agent: input.agent,
       });
       inputs.set(paths.config, input);
       // CLI가 새 프로필 설정 파일을 만드는 동작
@@ -296,6 +297,41 @@ async function ipcFixture(t) {
 function setupConfigs(calls) {
   return calls.filter((call) => call.kind === "setup").map((call) => call.config);
 }
+
+test("IPC 담당 정보는 검증·정규화하고 재시도 시 보존하며 생략 시 CLI 기본값·프로필을 따른다", async (t) => {
+  const f = await ipcFixture(t);
+  let selection = await f.invoke("pickFolder", accountB);
+  await f.invoke("setup", selection.id, "codex", undefined, {
+    part: "BACKEND", roles: [" API ", "API", "인증"],
+  });
+  const custom = f.calls.find((call) => call.kind === "setup").agent;
+  assert.equal(custom.part, "BACKEND");
+  assert.deepEqual(Array.from(custom.roles), ["API", "인증"]);
+
+  await f.invoke("setup", selection.id, "codex");
+  const retried = f.calls.filter((call) => call.kind === "setup").at(-1).agent;
+  assert.equal(retried.part, "BACKEND");
+  assert.deepEqual(Array.from(retried.roles), ["API", "인증"]);
+
+  selection = await f.invoke("pickFolder", accountB);
+  await f.invoke("setup", selection.id, "codex");
+  const defaults = f.calls.filter((call) => call.kind === "setup").at(-1).agent;
+  assert.equal(defaults.part, undefined);
+  assert.equal(defaults.roles, undefined);
+});
+
+test("IPC의 잘못된 담당 정보는 세션 확인과 CLI 실행 전에 거부한다", async (t) => {
+  const f = await ipcFixture(t);
+  const selection = await f.invoke("pickFolder", accountB);
+  for (const metadata of [
+    { part: "backend" }, { part: null }, { roles: null }, { roles: "API" },
+    { roles: [" "] }, { roles: [null] }, { roles: ["😀".repeat(33)] },
+    { roles: Array(11).fill("API") }, { unexpected: true },
+  ]) {
+    await assert.rejects(f.invoke("setup", selection.id, "codex", undefined, metadata), /담당 파트/);
+  }
+  assert.equal(f.calls.length, 0);
+});
 
 test("IPC 상태 조회·설정·수동 확인은 같은 프로젝트 프로필을 사용하고 계정을 바꿔도 유지된다", async (t) => {
   const f = await ipcFixture(t);
@@ -381,6 +417,25 @@ test("프로필 충돌은 원래 오류 코드와 함께 도구 확인 안내를
   assert.equal(result.state, "error");
   assert.equal(result.code, "SETUP_PROFILE_CONFLICT");
   assert.match(result.message, /AI 도구/);
+});
+
+test("기존 Agent와 담당 정보가 다르면 한글 안내를 돌려주고 비운 담당 정보로 다시 연결한다", async (t) => {
+  const f = await ipcFixture(t);
+  f.setSetupError({ code: "SETUP_AGENT_BINDING_CONFLICT", message: "Agent identity, metadata or binding differs." });
+  const selection = await f.invoke("pickFolder", accountB);
+  const result = await f.invoke("setup", selection.id, "codex", undefined, { part: "BACKEND", roles: ["API"] });
+  assert.equal(result.state, "error");
+  assert.equal(result.code, "SETUP_AGENT_BINDING_CONFLICT");
+  assert.match(result.message, /비워 두고/);
+
+  const retried = await f.invoke("setup", selection.id, "codex", undefined, {});
+  const cleared = f.calls.filter((call) => call.kind === "setup").at(-1).agent;
+  assert.equal(cleared.part, undefined);
+  assert.equal(cleared.roles, undefined);
+  // 담당 정보 없이 난 충돌은 이름·도구 확인 안내
+  assert.equal(retried.code, "SETUP_AGENT_BINDING_CONFLICT");
+  assert.doesNotMatch(retried.message, /비워 두고/);
+  assert.match(retried.message, /폴더를 다시 선택/);
 });
 
 test("이전 계정의 CLI 세션은 설정을 실행하지 않고 현재 계정 비밀번호를 요청한다", async (t) => {
