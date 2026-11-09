@@ -246,9 +246,17 @@
 @keyframes dependency-card-in {
   from { opacity: 0; scale: 0.85; }
 }
-.dependency-radial .dependency-card { animation: dependency-card-in var(--tree-card-in-duration) ease-out; }
+/* 카드 자리와 선도 카메라와 같은 시간·곡선으로 옮겨 가야 전환 도중 튀지 않는다. */
+.dependency-radial .dependency-card {
+  animation: dependency-card-in var(--tree-card-in-duration) ease-out;
+  transition: left var(--tree-camera-duration) var(--tree-camera-easing), top var(--tree-camera-duration) var(--tree-camera-easing),
+    opacity 0.2s;
+}
+.dependency-radial .dependency-line { transition: d var(--tree-camera-duration) var(--tree-camera-easing), opacity 0.2s; }
 @media (prefers-reduced-motion: reduce) {
-  .dependency-radial { transition: none; }
+  .dependency-radial,
+  .dependency-radial .dependency-card,
+  .dependency-radial .dependency-line { transition: none; }
   .dependency-radial .dependency-card { animation: none; }
 }
 .dependency-card {
