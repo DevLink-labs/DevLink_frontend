@@ -20,6 +20,8 @@ interface ProjectConnectViewProps {
   onRefreshAgents: () => void;
   presentation?: "modal" | "page";
   onBusyChange?: (busy: boolean) => void;
+  // - 전달 시 연결 상태 배지는 부모가 표시
+  onReadyChange?: (ready: boolean | null) => void;
   onConnected?: () => void;
   onFinish?: () => void;
   onOpenDashboard?: () => void;
@@ -74,6 +76,7 @@ export default function ProjectConnectView({
   onRefreshAgents,
   presentation = "modal",
   onBusyChange,
+  onReadyChange,
   onConnected,
   onFinish,
   onOpenDashboard,
@@ -111,6 +114,10 @@ export default function ProjectConnectView({
   }, [busy, onBusyChange]);
 
   useEffect(() => {
+    onReadyChange?.(ready);
+  }, [ready, onReadyChange]);
+
+  useEffect(() => {
     active.current = true;
     const unsubscribe = setup.onProgress(({ step, status }) => {
       setProgress((previous) => ({ ...previous, [step]: status }));
@@ -141,7 +148,7 @@ export default function ProjectConnectView({
               previous.ready),
         }));
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       current = false;
     };
@@ -298,7 +305,7 @@ export default function ProjectConnectView({
             <span className="project-connect-symbol">
               <Icon name="grid" size={26} />
             </span>
-            <h3>이 PC에서 작업할 폴더를 선택하세요</h3>
+            <h3>PC에서 작업할 폴더를 선택하세요</h3>
             <p>
               폴더와 AI 도구를 선택하면 Agent 등록과 연결 설정을 함께 진행해요.
             </p>
@@ -323,7 +330,7 @@ export default function ProjectConnectView({
             className="project-connect-tool-selection"
             disabled={busy || toolLocked}
           >
-            <legend>이 프로젝트에 연결할 AI 도구</legend>
+            <legend>프로젝트에 연결할 AI 도구</legend>
             <div className="project-connect-tools">
               {project.tools.map((tool) => (
                 <button
@@ -429,7 +436,7 @@ export default function ProjectConnectView({
       {view.state === "password" && (
         <form className="grid gap-4" onSubmit={submitPassword}>
           <p>
-            이 PC 연결을 위해 {account.email} 계정의 비밀번호를 한 번 더
+            PC 연결을 위해 {account.email} 계정의 비밀번호를 한 번 더
             확인합니다.
           </p>
           <label className="field">
@@ -576,14 +583,14 @@ export default function ProjectConnectView({
               selectedTool &&
               view.code === "SETUP_AGENT_BINDING_CONFLICT" &&
               Boolean(agentPart || rolesText.trim()) && (
-              <button
-                className="button button-primary"
-                type="button"
-                onClick={() => setView({ state: "select-tool" })}
-              >
-                담당 정보 다시 입력
-              </button>
-            )}
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={() => setView({ state: "select-tool" })}
+                >
+                  담당 정보 다시 입력
+                </button>
+              )}
             {project && selectedTool && !noRetryCodes.includes(view.code ?? "") && (
               <button className="button button-primary" type="button" onClick={() => {
                 void run(project, selectedTool);
@@ -627,12 +634,12 @@ export default function ProjectConnectView({
   if (presentation === "page") return content;
   return (
     <div className="section-actions">
-      {ready !== null && (
+      {!onReadyChange && ready !== null && (
         <span
           className={`badge ${ready ? "badge-online" : "badge-offline"}`}
           role="status"
         >
-          이 PC: {ready ? "연결됨" : "설정 필요"}
+          PC: {ready ? "연결" : "미연결"}
         </span>
       )}
       <button
@@ -640,11 +647,11 @@ export default function ProjectConnectView({
         type="button"
         onClick={() => setView({ state: "choose" })}
       >
-        이 PC 연결
+        PC 연결
       </button>
       {view && (
         <Modal
-          title="이 PC 연결"
+          title="PC 연결"
           description={`${teamName} 팀에 이 PC의 프로젝트를 연결합니다.`}
           onClose={close}
           busy={busy}
