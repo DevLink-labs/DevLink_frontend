@@ -22,6 +22,7 @@
   translate: -50% 0;
   text-align: center;
 }
+.itp-stage-sticky .itp-team-picker { z-index: 3; }
 .itp-stage-sticky .itp-team-picker-label { display: block; margin-bottom: 2px; color: #737e8b; font-size: 11px; font-weight: 550; line-height: 1.4; letter-spacing: .2px; }
 .itp-stage-sticky .itp-team-picker h1 { color: #292a2d; font-size: clamp(24px, 2.1vw, 30px); font-weight: 550; letter-spacing: -.8px; text-shadow: none; }
 .itp-stage-sticky .itp-team-picker-trigger { justify-content: center; gap: 10px; padding: 3px 9px; border: 1px solid transparent; border-radius: 12px; text-align: center; transition: background .18s, border-color .18s; }
