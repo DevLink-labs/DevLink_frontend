@@ -23,7 +23,7 @@
   align-items: center;
   gap: 14px;
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .onboarding-layout {
@@ -67,7 +67,7 @@
 .onboarding-story-copy > p:last-child {
   margin: 0;
   color: var(--workspace-muted);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.8;
 }
 
@@ -95,18 +95,18 @@
   border: 1px solid var(--workspace-border);
   border-radius: 11px;
   background: color-mix(in srgb, var(--workspace-surface) 65%, transparent);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .onboarding-steps strong {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 650;
 }
 
 .onboarding-steps p {
   margin: 3px 0 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .onboarding-steps .is-current {
@@ -141,7 +141,7 @@
 
 .onboarding-mascot span {
   color: var(--workspace-muted);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.3px;
 }
 
@@ -163,7 +163,7 @@
   display: block;
   margin-bottom: 12px;
   color: var(--workspace-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.6px;
 }
@@ -179,7 +179,7 @@
 
 .onboarding-main-heading > p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--workspace-muted);
   word-break: keep-all;
 }
@@ -193,7 +193,7 @@
 
 .onboarding-label {
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
   margin: 0;
 }
 
@@ -234,14 +234,14 @@
 
 .onboarding-choice strong,
 .project-connect-tool strong {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 650;
 }
 
 .onboarding-choice > span:last-child,
 .project-connect-tool > span {
   color: var(--workspace-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .onboarding-option-icon,
@@ -291,7 +291,7 @@
 .onboarding-team-option small,
 .onboarding-selected-team small {
   color: var(--workspace-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .onboarding-selected-team {
@@ -321,7 +321,7 @@
 .onboarding-skip p,
 .onboarding-footer {
   color: var(--workspace-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .onboarding-skip p {
@@ -337,7 +337,7 @@
 .onboarding-invite {
   margin-top: 24px;
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .onboarding-invite-content {
@@ -368,7 +368,7 @@
 
 .onboarding-browser-help p {
   color: var(--workspace-muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .project-connect-content {
@@ -399,7 +399,7 @@
   background: var(--color-workspace);
   border-radius: 9px;
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
@@ -420,7 +420,7 @@
 
 .project-connect-folder h3,
 .project-connect-complete h3 {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 650;
   margin: 0;
   word-break: keep-all;
@@ -428,7 +428,7 @@
 
 .project-connect-folder p,
 .project-connect-complete p {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--workspace-muted);
   margin: 0;
 }
@@ -470,7 +470,7 @@
   border: 1px solid var(--workspace-divider);
   border-radius: 50%;
   color: var(--workspace-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .project-connect-progress .is-current .project-connect-step {
@@ -500,12 +500,12 @@
 
 .project-connect-summary dt {
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .project-connect-summary dd {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
@@ -585,7 +585,7 @@
     gap: 8px;
   }
   .onboarding-steps strong {
-    font-size: 12px;
+    font-size: 13px;
   }
   .onboarding-main {
     max-width: none;

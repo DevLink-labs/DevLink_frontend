@@ -127,7 +127,7 @@
 .auth-story-copy p {
   margin: 0;
   color: var(--workspace-muted);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.8;
   word-break: keep-all;
 }
@@ -160,8 +160,8 @@
 
 .auth-form-card .field label {
   color: var(--color-ink);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .auth-form-card input {
@@ -169,7 +169,7 @@
   padding: 12px 14px;
   border-color: #cbd5df;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .auth-form-card input::placeholder {
@@ -197,7 +197,7 @@
   margin-top: 8px;
   padding: 12px 16px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -209,7 +209,7 @@
   gap: 8px;
   margin: 28px 0 0;
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .auth-mode-switch button {
@@ -271,7 +271,7 @@
 .connection-help p {
   margin: 0 0 6px;
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .auth-layout ~ .toast {
@@ -351,7 +351,7 @@
   }
 
   .auth-story-copy p {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .auth-form-side {
@@ -377,7 +377,7 @@
   }
 
   .auth-story-copy p {
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.7;
   }
 

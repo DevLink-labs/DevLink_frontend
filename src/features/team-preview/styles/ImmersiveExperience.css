@@ -78,7 +78,7 @@
   background: linear-gradient(145deg, #d5edbe13, #b6d3b207);
   box-shadow: inset 0 1px 0 #ffffff0a;
   backdrop-filter: blur(16px);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.35;
   font-weight: 500;
   white-space: nowrap;
@@ -107,7 +107,7 @@
   color: #c0d0b6;
   background: #10201a47;
   backdrop-filter: blur(12px);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.4;
   letter-spacing: -.2px;
   transform: translateX(-50%);
@@ -158,9 +158,9 @@
   .itp-stage-sticky .itp-header-actions .itp-icon-button { width: 36px; height: 36px; }
   .itp-stage-sticky .is-focused .itp-brand-word { display: none; }
   .itp-stage-sticky .is-focused .itp-header-actions { max-width: calc(100% - 48px); flex-wrap: nowrap; }
-  .itp-overview-button, .itp-dashboard-jump { min-height: 36px; gap: 6px; padding: 8px 9px; border-radius: 9px; font-size: 13px; }
+  .itp-overview-button, .itp-dashboard-jump { min-height: 36px; gap: 6px; padding: 8px 9px; border-radius: 9px; font-size: 14px; }
   .itp-overview-button > svg, .itp-dashboard-jump > svg { width: 15px; height: 15px; }
-  .itp-scroll-prompt { bottom: 142px; min-height: 32px; padding: 6px 8px; gap: 6px; font-size: 13px; }
+  .itp-scroll-prompt { bottom: 142px; min-height: 32px; padding: 6px 8px; gap: 6px; font-size: 14px; }
   .itp-scroll-prompt > svg { width: 14px; height: 14px; }
   .itp-dashboard-frame { border-radius: calc(20px * (1 - var(--itp-reveal))) calc(20px * (1 - var(--itp-reveal))) 0 0; }
 }
