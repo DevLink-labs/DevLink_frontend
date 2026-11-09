@@ -143,6 +143,7 @@
 .agent-name-button { border: 0; background: none; padding: 0; color: var(--workspace-action); font-size: 12px; font-weight: 650; text-align: left; overflow-wrap: anywhere; }
 .agent-name-button:hover { color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; }
 .agent-meta { display: block; color: var(--workspace-muted); font-size: 10px; margin-top: 4px; max-width: 240px; overflow-wrap: anywhere; }
+.status-cell { display: inline-grid; justify-items: center; }
 .status-detail { display: block; font-size: 9px; color: var(--workspace-muted); margin-top: 5px; white-space: nowrap; }
 .empty-table-cell { text-align: center; padding: 30px !important; color: var(--workspace-muted); }
 .agents-footnote { display: flex; align-items: flex-start; gap: 7px; color: var(--workspace-muted); font-size: 10px; padding: 14px 24px; border-top: 1px solid var(--workspace-divider); margin: 0; line-height: 1.7; }
