@@ -7,7 +7,8 @@
 /** 클릭으로 여닫는 종류. 나머지(훅·함수·BE 경로)는 부모가 열리면 함께 펼쳐진다. */
 export const COLLAPSIBLE = new Set(["PAGE", "COMPONENT", "ENDPOINT", "HTTP_CLIENT"]);
 const KIND_ORDER = { PAGE: 0, COMPONENT: 1, HOOK: 2, MODULE: 3, HTTP_CLIENT: 4, ENDPOINT: 5, SERVICE: 6, REPOSITORY: 7, DB_TABLE: 8 };
-const BE_GROUPS = ["SERVICE", "REPOSITORY", "DB_TABLE"];
+/** BE 쪽 종류. 훅 접기 없이 호출 관계 그대로 트리를 만든다. */
+export const BACKEND_KINDS = new Set(["ENDPOINT", "SERVICE", "REPOSITORY", "DB_TABLE"]);
 export const COMMON_ID = "common";
 /** 페이지가 직접 부르는 API 호출을 묶는 가상 카드의 키 조각. */
 export const SELF_ID = "self";
@@ -155,21 +156,6 @@ export function rootBranches(model, repo) {
   return branches;
 }
 
-/** 엔드포인트 아래의 BE 경로를 종류별 묶음 카드(서비스 → 레포지토리 → DB 테이블)로 만든다. */
-function backendChain(model, endpointId, key, depth) {
-  const downstream = [...model.reach(endpointId)].map((id) => model.nodeById.get(id)).filter(Boolean);
-  let children = [];
-  for (const kind of [...BE_GROUPS].reverse()) {
-    const items = downstream.filter((node) => node.kind === kind).sort(byLabel);
-    if (!items.length) continue;
-    const groupKey = key + "/" + kind;
-    children = [{ key: groupKey, id: groupKey, group: kind, items, depth: 0, collapsible: false, open: true, childIds: [], children }];
-  }
-  let level = depth;
-  for (let entry = children[0]; entry; entry = entry.children[0]) entry.depth = level++;
-  return children;
-}
-
 /**
  * 지금 보이는 트리. openPath(열린 가지의 키)와 autoOpen(팀원 모드에서 자동으로 여는 조건)에 따라 가지를 펼친다.
  * 공유 컴포넌트는 가지마다 복제되므로 키는 부모 키에 노드 ID를 이어 붙인 경로다.
@@ -181,11 +167,12 @@ export function visibleTree(model, branches, openPath, autoOpen) {
     const node = model.nodeById.get(id);
     const collapsible = COLLAPSIBLE.has(node.kind) && (node.kind !== "ENDPOINT" || depth === 1);
     const open = !collapsible || isOpen(key, id);
-    const childLinks = node.kind === "ENDPOINT" ? [] : foldedChildren(model, id, ancestors);
+    const childLinks = BACKEND_KINDS.has(node.kind)
+      ? (model.next.get(id) ?? []).filter((child) => !ancestors.has(child)).map((child) => ({ id: child, via: [] }))
+      : foldedChildren(model, id, ancestors);
     const entry = { key, id, node, depth, collapsible, open, via, childIds: childLinks.map((link) => link.id), children: [] };
     if (!open) return entry;
-    if (node.kind === "ENDPOINT") entry.children = backendChain(model, id, key, depth + 1);
-    else {
+    {
       const seen = new Set(ancestors).add(id);
       for (const skipped of childLinks.flatMap((link) => link.via)) seen.add(skipped);
       // 페이지가 컴포넌트를 거치지 않고 직접 부르는 API는 "페이지 자체 호출" 카드 하나로 묶어 눌러야 펼쳐지게 한다.
@@ -223,7 +210,8 @@ export function collapsedSummary(model, entry) {
   const counts = new Map();
   for (const id of entry.childIds) {
     const kind = model.nodeById.get(id)?.kind;
-    const label = { PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API", MODULE: "함수" }[kind] ?? kind;
+    const label = { PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API", MODULE: "함수",
+      SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "테이블" }[kind] ?? kind;
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   return [...counts].map(([label, count]) => `${label} ${count}`).join(" · ");
@@ -287,8 +275,10 @@ export function layoutRadial(tree, metrics) {
     const childWeights = children.map(leaves);
     const childTotal = childWeights.reduce((sum, weight) => sum + weight, 0) || 1;
     // 자식은 부모 방향을 중심으로 잎 수에 비례한 좁은 호만 쓴다. 부채꼴 전체로 퍼지면 선이 중심을 가로지른다.
-    const childRadius = metrics.ring + depth * metrics.step;
-    const span = Math.min(end - start, (childTotal * metrics.minArc * metrics.spread) / childRadius);
+    // BE 쪽은 단 간격이 좁고 부채꼴을 더 넓게 써서 남는 자리에 구조가 펼쳐지게 한다.
+    const backend = Boolean(entry.node && BACKEND_KINDS.has(entry.node.kind));
+    const childRadius = metrics.ring + depth * (backend ? metrics.backendStep : metrics.step);
+    const span = Math.min(end - start, (childTotal * metrics.minArc * (backend ? metrics.backendSpread : metrics.spread)) / childRadius);
     let cursor = angle - span / 2;
     children.forEach((child, index) => {
       const slice = span * childWeights[index] / childTotal;
@@ -309,7 +299,9 @@ export function layoutRadial(tree, metrics) {
     let gap = TAU;
     for (let index = 1; index < angles.length; index += 1) gap = Math.min(gap, angles[index] - angles[index - 1]);
     if (angles.length > 1) gap = Math.min(gap, angles[0] + TAU - angles[angles.length - 1]);
-    const base = depth === 1 ? metrics.ring : radii[depth - 2] + metrics.step;
+    const level = byDepth.get(depth) ?? [];
+    const backendLevel = level.length > 0 && level.every((item) => item.node && BACKEND_KINDS.has(item.node.kind));
+    const base = depth === 1 ? metrics.ring : radii[depth - 2] + (backendLevel ? metrics.backendStep : metrics.step);
     radii.push(Math.max(base, angles.length > 1 ? metrics.minArc / gap : 0));
   }
   const bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };

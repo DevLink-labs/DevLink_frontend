@@ -10,9 +10,6 @@ const nodeKinds = {
   PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API 호출", COMMON: "공통", SELF: "페이지 자체 호출",
   ENDPOINT: "엔드포인트", SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "DB 테이블", MODULE: "함수",
 };
-const groupKinds = { SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "DB 테이블" };
-/** 묶음 카드에 바로 보여줄 항목 수. 나머지는 "외 N개"로 줄인다. */
-const groupLimit = 8;
 
 function wrapNodeName(label) {
   return label.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[._])(?=\w)/).map((part, index) => (
@@ -26,7 +23,7 @@ const maxFitScale = 1.6;
 const minFocusScale = 0.3;
 const fitModes = [["both", "전체 맞춤"], ["width", "가로 맞춤"], ["none", "원본 크기"], ["focus", "선택 중심"]];
 /** 방사형 간격. ring은 중심에서 1단까지, step은 단 사이, minArc는 같은 단 이웃 카드 사이 최소 호 길이(px). */
-const metrics = { ring: 300, step: 250, minArc: 150, spread: 1.4 };
+const metrics = { ring: 300, step: 250, minArc: 150, spread: 1.4, backendStep: 190, backendSpread: 2.4 };
 /** 카드 크기 추정치. 캔버스 크기와 여백 계산에만 쓴다. */
 const cardSize = { width: 260, height: 140, pad: 40 };
 
@@ -175,7 +172,6 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   const inFocus = (entry) => {
     if (!focus) return true;
     const touched = (id) => focus.working.has(id) || focus.impact.has(id);
-    if (entry.group) return entry.items.some(({ id }) => touched(id));
     if (entry.id === COMMON_ID || entry.virtual) return entry.childIds.some((id) => touched(id) || focus.touches(id));
     return touched(entry.id);
   };
@@ -191,6 +187,13 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     ? focus.outside.map((person) => [fileKey(person.repoId, person.relativePath), new Map([[person.userId, person]])])
     : [...workers.entries()].filter(([key, entries]) => !model.byFile.has(key) && repoIds.has(entries.values().next().value.repoId));
 
+  /** 중심 저장소 카드: 가지를 모두 접고 전체 맞춤의 처음 화면으로 돌아간다. */
+  function resetView() {
+    setOpenPath(null);
+    setSelected(null);
+    setFocusKey(null);
+    setFit("both");
+  }
   /** 누른 카드를 가운데로 가져오는 선택 중심 모드로 전환한다. */
   function focusOn(key) {
     setFocusKey(key);
@@ -198,7 +201,6 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   }
   function activate(entry) {
     focusOn(entry.key);
-    if (entry.group) return;
     setSelected(entry.node ? entry.id : null);
     if (entry.collapsible) setOpenPath(onOpenPath(entry.key) ? parentKey(entry.key) : entry.key);
   }
@@ -305,35 +307,6 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     {graph.unmatchedCallCount > 0 && <p className="dependency-note">연결되지 않은 API 호출 {graph.unmatchedCallCount}개</p>}
   </>;
 
-  function renderGroup(entry) {
-    const { x, y } = entry;
-    const shown = entry.items.slice(0, groupLimit);
-    return (
-      <div className="dependency-card dependency-group" key={entry.key} data-kind={entry.group} data-rich
-        data-dim={focus && !inFocus(entry) || undefined} style={{ left: x, top: y }}>
-        <span className="dependency-type">{groupKinds[entry.group]} {entry.items.length}</span>
-        <ul className="dependency-group-list">
-          {shown.map((item) => {
-            const editing = people(item);
-            return (
-              <li key={item.id}>
-                <button type="button" className="dependency-item" aria-pressed={selected === item.id}
-                  data-dim={focus && !(focus.working.has(item.id) || focus.impact.has(item.id)) || undefined}
-                  data-working={focus?.working.has(item.id) || undefined} onClick={() => { setSelected(item.id); focusOn(entry.key); }}>
-                  <span>{wrapNodeName(item.label)}</span>
-                  {editing.length > 0 && <span className={"dependency-pill " + (item.kind === "DB_TABLE" ? "dependency-pill--schema" : "dependency-pill--working")}>
-                    {editing.map(({ displayName }) => displayName).join(", ")}
-                  </span>}
-                </button>
-              </li>
-            );
-          })}
-          {entry.items.length > shown.length && <li className="dependency-meta">외 {entry.items.length - shown.length}개</li>}
-        </ul>
-      </div>
-    );
-  }
-
   function renderNode(entry) {
     const { x, y } = entry;
     const node = entry.node;
@@ -384,13 +357,13 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
         <div className="dependency-stage" ref={stage}>
           <div className="dependency-radial" ref={canvas} style={{ width, height }}>
             <DependencyTreeLines links={links} width={width} height={height} />
-            <header className="dependency-card dependency-root" data-kind="ROOT" data-rich data-node-id={`root:${sourceRepo.repoId}`}
-              style={{ left: originX, top: originY }}>
+            <button type="button" className="dependency-card dependency-root" data-kind="ROOT" data-rich data-node-id={`root:${sourceRepo.repoId}`}
+              style={{ left: originX, top: originY }} title="처음 화면으로" onClick={resetView}>
               <span className="dependency-type">{area} REPO</span>
               <strong className="dependency-name">{sourceRepo.displayName}</strong>
               <span className="dependency-meta">{sourceRepo.branchName} · {sourceRepo.analysisCommitSha?.slice(0, 8) ?? "첫 분석 대기"}</span>
-            </header>
-            {scene.entries.map((entry) => entry.group ? renderGroup(entry) : renderNode(entry))}
+            </button>
+            {scene.entries.map(renderNode)}
             {sourceRepo.analysisCommitSha && !tree.length && <p className="dependency-empty-note">표시할 의존성 노드가 없습니다.</p>}
           </div>
         </div>
