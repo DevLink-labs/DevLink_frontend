@@ -79,7 +79,7 @@
 .itp-stage-sticky .itp-orbit-controls .itp-icon-button,
 .itp-stage-sticky .itp-invite-trigger { width: 38px; height: 38px; margin-top: 0; border-radius: 10px; }
 .itp-stage-sticky .itp-orbit-controls .itp-icon-button > svg { width: 19px; height: 19px; }
-.itp-stage-sticky .itp-scroll-prompt { bottom: 29px; }
+.itp-stage-sticky .space-navigation-button.itp-scroll-prompt { bottom: 29px; }
 .itp-stage-sticky .itp-member-list {
   top: 50%;
   right: auto;
@@ -118,7 +118,7 @@
   .itp-stage-sticky .itp-bottom { right: 12px; bottom: 24px; left: 12px; height: 36px; }
   .itp-stage-sticky .itp-orbit-controls .itp-icon-button,
   .itp-stage-sticky .itp-invite-trigger { width: 36px; height: 36px; }
-  .itp-stage-sticky .itp-scroll-prompt { bottom: 24px; }
+  .itp-stage-sticky .space-navigation-button.itp-scroll-prompt { bottom: 24px; }
   .itp-stage-sticky .itp-member-list { left: 12px; width: min(136px, 36vw); max-height: calc(100svh - 252px); padding: 4px; }
   .itp-stage-sticky .itp-member-list .itp-member { gap: 6px; padding-inline: 5px; }
   .itp-stage-sticky .is-focused .itp-member-list { top: calc(22svh + 56px); max-height: clamp(56px, calc(44svh - 156px), 140px); }

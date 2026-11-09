@@ -446,7 +446,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
           <button type="button" className="itp-invite-trigger" onClick={openInvite} aria-label="팀원 초대" title="팀원 초대"><Icon name="plus" size={23} /></button>
         )}
       </div>}
-      <button type="button" className="itp-scroll-prompt" onClick={showDashboard}><span>아래로 스크롤</span><Icon name="chevron" size={17} /></button>
+      <button type="button" className="space-navigation-button itp-scroll-prompt" data-direction="down" onClick={showDashboard}><span>대시보드로 가기</span><Icon name="chevrons" size={20} className="space-navigation-arrows" /></button>
     </div>
         </div>
         <div className="itp-scroll-wash" aria-hidden="true" />
