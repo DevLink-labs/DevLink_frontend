@@ -13,7 +13,7 @@ if (process.isMainFrame && window.location.origin === origin) {
       getStatus: (account) => ipcRenderer.invoke("devlink:status", account),
       setup: {
         pickFolder: (account) => ipcRenderer.invoke("devlink:pickFolder", account),
-        run: (id, tool, password) => ipcRenderer.invoke("devlink:setup", id, tool, password),
+        run: (id, tool, password, metadata) => ipcRenderer.invoke("devlink:setup", id, tool, password, metadata),
         check: (id) => ipcRenderer.invoke("devlink:checkSetup", id),
         openConfigFolder: (id) => ipcRenderer.invoke("devlink:openConfigFolder", id),
         onProgress: (listener) => {

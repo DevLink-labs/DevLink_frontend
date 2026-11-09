@@ -33,6 +33,27 @@ function validateAccount(account) {
   }
 }
 
+function agentMetadata(value = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).some((key) => !["part", "roles"].includes(key))) {
+    throw new Error("담당 파트와 역할 태그를 확인해주세요.");
+  }
+  const part = value.part === undefined ? "OTHER" : value.part;
+  const roles = value.roles === undefined ? [] : value.roles;
+  if (!["FRONTEND", "BACKEND", "INFRA", "OTHER"].includes(part)
+    || !Array.isArray(roles) || roles.length > 10
+    || roles.some((role) => typeof role !== "string" || role.length > 64
+      || /^[\u0009-\u000d\u001c-\u0020\u1680\u2000-\u2006\u2008-\u200a\u2028\u2029\u205f\u3000]*$/.test(role))) {
+    throw new Error("담당 파트 또는 역할 태그가 올바르지 않습니다. 태그는 64자 이내로 최대 10개 입력해주세요.");
+  }
+  return {
+    ...(value.part === undefined ? {} : { part }),
+    ...(value.roles === undefined ? {} : {
+      roles: [...new Set(roles.map((role) => role.replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, "")))],
+    }),
+  };
+}
+
 function registerSetupHandlers(window, webOrigin, loadPaths = loadDevelopmentPaths) {
   let selection;
   let busy = false;
@@ -119,8 +140,9 @@ function registerSetupHandlers(window, webOrigin, loadPaths = loadDevelopmentPat
     return { id: selection.id, name, tools };
   }));
 
-  handle("setup", (frame, id, tool, password) => exclusive(async () => {
+  handle("setup", (frame, id, tool, password, metadata) => exclusive(async () => {
     const current = requireSelection(id);
+    const agent = agentMetadata(metadata === undefined ? current.agentMetadata : metadata);
     if (!current.tools.includes(tool) || (current.tool && current.tool !== tool)) {
       throw new Error("감지된 AI 도구를 선택해주세요. 도구를 바꾸려면 폴더를 다시 선택해주세요.");
     }
@@ -129,6 +151,7 @@ function registerSetupHandlers(window, webOrigin, loadPaths = loadDevelopmentPat
       throw new Error("비밀번호를 확인해주세요. 비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.");
     }
 
+    current.agentMetadata = agent;
     current.tool = tool;
     current.targetPath = tool === "claude-code"
       ? path.join(current.project, ".mcp.json")
@@ -159,7 +182,7 @@ function registerSetupHandlers(window, webOrigin, loadPaths = loadDevelopmentPat
       team: { id: current.teamId },
       project: { path: current.project, name: current.name },
       tool: { type: tool },
-      agent: { action: "create", name: current.name },
+      agent: { action: "create", name: current.name, ...agent },
       mcp: { mode: "replace", targetPath: current.targetPath },
     };
     const result = await runSetup(paths, input, password, (progress) => {
@@ -191,6 +214,17 @@ function registerSetupHandlers(window, webOrigin, loadPaths = loadDevelopmentPat
         state: "error",
         code: error.code,
         message: "이 폴더는 이 PC에서 다른 AI 도구나 설정으로 이미 연결돼 있습니다. 처음 연결한 AI 도구로 다시 시도해주세요.",
+      };
+    }
+
+    if (error?.code === "SETUP_AGENT_BINDING_CONFLICT") {
+      // 담당 정보를 보내지 않았으면 이름·도구 등 다른 연결 정보 충돌
+      return {
+        state: "error",
+        code: error.code,
+        message: Object.keys(agent).length > 0
+          ? "이 폴더에 연결된 기존 Agent 정보와 입력한 내용이 다릅니다. 기존 Agent의 담당 파트·역할 태그는 이 화면에서 바꿀 수 없으니 해당 항목을 비워 두고 다시 연결해주세요."
+          : "이 폴더에 연결된 기존 Agent 정보가 현재 연결 정보와 다릅니다. Agent 목록에서 이름과 AI 도구를 확인하거나 폴더를 다시 선택해주세요.",
       };
     }
 

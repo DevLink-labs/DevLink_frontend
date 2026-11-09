@@ -55,6 +55,12 @@ Windows 권한 검사를 통과하려면 사용자 전용 폴더에 프로젝트
 
 계정별 프로필 및 데스크톱 IPC 회귀 테스트는 저장소 루트에서 `node --test desktop/tests/setup-profiles.test.cjs`로 실행합니다.
 
+SET-3-01의 연결 화면은 폴더 선택 후 AI 도구·담당 파트·역할 태그를 확인하고 **연결하기**를 눌러 등록합니다. 도구가 하나여도 담당 정보를 입력할 수 있습니다. 파트는 프론트엔드·백엔드·인프라·기타 중 선택하며, 태그는 쉼표로 구분해 최대 10개·각 UTF-16 64자로 입력합니다. 잘못된 태그는 CLI 실행 전에 화면에서 오류를 표시합니다. 앞뒤 U+0000–U+0020과 중복은 서버와 같이 제거하며 비밀번호 재입력·연결 재시도에도 입력값을 유지합니다. 등록 결과 불명과 프로필 충돌에는 재시도 버튼을 제공하지 않습니다. 이미 연결된 Agent와 담당 정보가 달라 `SETUP_AGENT_BINDING_CONFLICT`가 나면 한글 안내와 함께 **담당 정보 다시 입력**으로 입력 화면에 돌아가며, 비운 항목은 저장값을 유지합니다. 이때 AI 도구는 처음 실행한 도구로 고정됩니다. 담당 정보를 입력하지 않았는데 같은 충돌이 나면 이름·도구 등 다른 연결 정보 문제로 안내하고 다시 입력 버튼을 표시하지 않습니다.
+
+화면은 preload의 `setup.run(id, tool, password?, metadata?)` 네 번째 인자로 `{ part: "BACKEND", roles: ["API", "인증"] }`를 전달합니다. 선택하지 않거나 비워 둔 필드는 생략해 CLI가 신규 등록 시 `OTHER`·`[]`, 기존 프로필 재사용 시 저장값으로 처리합니다. 기존 Agent의 담당 정보 변경은 이 화면에서 제공하지 않습니다. 새 CLI와 서버의 Agent 메타데이터 API 반영이 필요합니다.
+
+입력 검증 회귀는 `node --test desktop/tests/agent-metadata.test.cjs`로 실행합니다. 실제 React 화면의 입력·비밀번호 재입력·재시도·모달·좁은 화면 회귀는 `node --test desktop/tests/project-connect.test.cjs`로 실행합니다. 이 검사는 로컬 Vite 개발 서버와 모의 setup API를 사용하고 빌드를 실행하지 않습니다. Playwright 모듈이 없으면 화면 검사는 건너뜁니다. 외부 모듈 경로는 `DEVLINK_TEST_PLAYWRIGHT`, 설치된 Chromium 계열 브라우저 실행 경로는 `DEVLINK_TEST_BROWSER`로 지정할 수 있습니다.
+
 ## Windows 설치 파일
 
 Node 24 x64에서 최신 CLI 릴리스 빌드와 MCP의 `dist`를 준비한 뒤 `desktop`에서 실행합니다. 프론트 웹 빌드는 이 과정에 포함하지 않습니다.
