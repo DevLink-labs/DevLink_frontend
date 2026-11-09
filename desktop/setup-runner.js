@@ -76,6 +76,10 @@ function runGuide(paths) {
   return runJson(paths, ["setup", "mcp-guide", "--output", "json", ...runtimeArgs(paths)]);
 }
 
+function runUpdates(paths, args) {
+  return runJson(paths, ["updates", ...args], true);
+}
+
 async function checkSession(paths) {
   if (paths.accountProfile && !(await hasConfig(paths))) return { state: "logged_out", authenticated: false };
   const { result } = await runJson(paths, ["auth", "status"], true);
@@ -152,4 +156,4 @@ async function runSetup(paths, input, password, onProgress) {
   }
 }
 
-module.exports = { checkSession, detectTools, loadDevelopmentPaths, runSetup, runStatus, runGuide };
+module.exports = { checkSession, detectTools, loadDevelopmentPaths, runSetup, runStatus, runGuide, runUpdates };

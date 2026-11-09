@@ -390,6 +390,7 @@ export default function ProjectConnectView({
                     name: connection.name,
                     tools: [connection.tool],
                     saved: true,
+                    authRequired: connection.availability === "auth_required",
                   });
                   setSelectedTool(connection.tool);
                   setView({ state: "guide" });
@@ -404,11 +405,13 @@ export default function ProjectConnectView({
                   </span>
                   <br />
                   <span className="field-hint">
-                    {connection.availability !== "ready"
-                      ? "로컬 연결 준비 필요"
-                      : connection.fileState === "matches"
-                        ? "설정 파일 일치"
-                        : "설정 확인 필요"}
+                    {connection.availability === "auth_required"
+                      ? "로그인 만료 · 비밀번호 입력 후 재개"
+                      : connection.availability !== "ready"
+                        ? "로컬 연결 준비 필요"
+                        : connection.fileState === "matches"
+                          ? "설정 파일 일치"
+                          : "설정 확인 필요"}
                   </span>
                 </span>
               </button>
@@ -439,6 +442,7 @@ export default function ProjectConnectView({
             key={project.id}
             setup={setup}
             id={project.id}
+            authRequired={project.authRequired}
             onBusyChange={setGuideBusy}
             onReady={markProjectReady}
           />

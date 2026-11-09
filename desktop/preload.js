@@ -14,6 +14,20 @@ if (process.isMainFrame && window.location.origin === origin) {
     ...(["http://localhost:5173", "https://devlink.ai.kr"].includes(origin) && {
       getStatus: (account) => ipcRenderer.invoke("devlink:status", account),
       capabilities: { manualMcpSetup: 1 },
+      updates: {
+        watch: (account) => ipcRenderer.invoke("devlink:watchUpdates", account),
+        stop: () => ipcRenderer.invoke("devlink:stopUpdates"),
+        onUpdates: (listener) => {
+          const handler = (_event, items) => listener(items);
+          ipcRenderer.on("devlink:updates", handler);
+          return () => ipcRenderer.removeListener("devlink:updates", handler);
+        },
+        onOpenTask: (listener) => {
+          const handler = (_event, target) => listener(target);
+          ipcRenderer.on("devlink:open-task", handler);
+          return () => ipcRenderer.removeListener("devlink:open-task", handler);
+        },
+      },
       setup: {
         pickFolder: (account) =>
           ipcRenderer.invoke("devlink:pickFolder", account),

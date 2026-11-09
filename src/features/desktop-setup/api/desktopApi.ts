@@ -27,6 +27,7 @@ export interface ProjectSelection {
   name: string;
   tools: SetupTool[];
   saved?: boolean;
+  authRequired?: boolean;
 }
 
 export interface SavedConnection {
@@ -36,7 +37,7 @@ export interface SavedConnection {
   tool: SetupTool;
   agentId: string;
   fileState: McpGuide["fileState"];
-  availability: McpGuide["availability"];
+  availability: McpGuide["availability"] | "auth_required";
 }
 
 export interface McpGuide {
@@ -118,11 +119,38 @@ export interface DesktopSetupApi {
   onProgress: (listener: (event: SetupProgress) => void) => () => void;
 }
 
+export interface UpdatesAccount {
+  userId: number;
+  email: string;
+  teamIds: number[];
+}
+
+export interface DesktopTaskUpdate {
+  kind: string;
+  teamId: string;
+  taskId: string;
+  title: string;
+  body: string;
+}
+
+export interface DesktopTaskTarget {
+  teamId: number;
+  taskId: number;
+}
+
+export interface DesktopUpdatesApi {
+  watch: (account: UpdatesAccount) => Promise<void>;
+  stop: () => Promise<void>;
+  onUpdates: (listener: (items: DesktopTaskUpdate[]) => void) => () => void;
+  onOpenTask: (listener: (target: DesktopTaskTarget) => void) => () => void;
+}
+
 interface DesktopApi {
   version: string;
   capabilities?: { manualMcpSetup?: number };
   getStatus?: (account: SetupAccount) => Promise<DesktopStatus>;
   setup?: DesktopSetupApi;
+  updates?: DesktopUpdatesApi;
 }
 
 declare global {

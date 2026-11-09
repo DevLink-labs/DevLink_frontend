@@ -9,6 +9,7 @@ import TaskConversationView from "@/features/tasks/components/TaskConversationVi
 import { useTeamTasks } from "@/features/tasks/hooks/useTasks";
 import TeamsPanel from "@/features/teams/components/TeamsPanel";
 import AgentsPanel from "@/features/agents/components/AgentsPanel";
+import { useDesktopUpdates } from "@/features/desktop-setup/hooks/useDesktopUpdates";
 import ImmersiveTeamPreview from "@/features/team-preview/components/ImmersiveTeamPreview";
 import type { PreviewMember } from "@/features/team-preview/data/previewData";
 import { EmptyState, Icon } from "@/components/ui";
@@ -24,6 +25,7 @@ const memberColors = ["sage", "blue", "peach", "lavender", "sand", "mint"];
 export default function WorkspacePage({ user, initialTeamId }: { user: User; initialTeamId?: number }) {
   const [view, setView] = useState<WorkspaceView>('workspace')
   const [conversation, setConversation] = useState<{ teamId: number; taskId: number } | null>(null);
+  const [dashboardRequest, setDashboardRequest] = useState(0);
   const [autoRefresh, setAutoRefresh] = useState(() => {
     try {
       return localStorage.getItem(`devlink:${user.userId}:auto-refresh`) !== "off";
@@ -54,6 +56,32 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
     setConversation({ teamId: selectedTeamId, taskId });
     setView("conversation");
   }
+
+  // 데스크톱 알림에서 다른 팀의 작업을 열면 팀도 함께 전환
+  function openTask(teamId: number, taskId: number) {
+    if (!teams.some((team) => team.teamId === teamId)) return;
+    if (teamId !== selectedTeamId) selectTeam(teamId);
+    setConversation({ teamId, taskId });
+    setView("conversation");
+    setDashboardRequest((request) => request + 1);
+  }
+
+  const teamIds = useMemo(() => teams.map((team) => team.teamId), [teams]);
+  useDesktopUpdates({
+    userId: user.userId,
+    email: user.email,
+    teamIds,
+    onUpdates: (items) => {
+      const [first] = items;
+      notify(
+        items.length > 1 ? `${first.body} 외 ${items.length - 1}건` : first.body,
+        "success",
+        { label: "열기", onClick: () => openTask(Number(first.teamId), Number(first.taskId)) },
+      );
+      void tasksQuery.refetch();
+    },
+    onOpenTask: ({ teamId, taskId }) => openTask(teamId, taskId),
+  });
 
   function changeAutoRefresh(enabled: boolean) {
     setAutoRefresh(enabled);
@@ -107,6 +135,7 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
       onSelectTeam: selectTeam,
       onRetry: refreshAll,
       onInvite: canInvite ? openTeamInvite : undefined,
+      dashboardRequest,
       renderDashboard: (showScene) => (
         <DashboardLayout
           view={view}

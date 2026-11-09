@@ -13,6 +13,7 @@ const {
 const {
   listTeamProfiles,
   prepareAccountProfile,
+  readSavedBinding,
   resolveProjectPaths,
 } = require("./setup-profiles");
 
@@ -287,12 +288,36 @@ function registerSetupHandlers(
       for (const paths of await listTeamProfiles(await loadPaths(), account)) {
         const before = await fingerprint(paths);
         const result = await runGuide(paths);
-        const data = result.result?.data;
+        let data = result.exitCode === 0 ? result.result?.data : undefined;
+        let authRequired = false;
+        if (result.exitCode !== 0) {
+          // CLI 세션 만료 시 저장된 Agent 연결을 비밀번호 입력 대상으로 유지
+          const session = await checkSession(paths).catch(() => null);
+          const binding = ["logged_out", "expired"].includes(session?.state)
+            ? await readSavedBinding(paths, account).catch(() => null)
+            : null;
+          if (binding) {
+            authRequired = true;
+            data = {
+              ...binding,
+              userId: String(account.userId),
+              teamId: String(account.teamId),
+              targetPath: path.join(
+                binding.projectPath,
+                ...(binding.toolType === "codex"
+                  ? [".codex", "config.toml"]
+                  : [".mcp.json"]),
+              ),
+              fileState: "unavailable",
+              availability: "auth_required",
+            };
+          }
+        }
         if (version !== documentVersion)
           throw new Error("계정이 변경됐습니다. 설정을 다시 열어주세요.");
         if (
-          result.exitCode !== 0 ||
-          data?.userId !== String(account.userId) ||
+          !data ||
+          data.userId !== String(account.userId) ||
           data.teamId !== String(account.teamId) ||
           !["codex", "claude_code"].includes(data.toolType) ||
           !path.isAbsolute(data.projectPath ?? "") ||
@@ -322,6 +347,7 @@ function registerSetupHandlers(
           targetPath: target,
           agentId: data.agentId,
           fingerprint: before,
+          needsPassword: authRequired,
           saved: true,
         };
         connections.set(current.id, current);
@@ -589,6 +615,8 @@ function registerSetupHandlers(
       ["SETUP_AUTH_REQUIRED", "SETUP_AUTH_REJECTED"].includes(error.code)
     ) {
       current.needsPassword = true;
+      // 재시도 시 프로필 변경 검사를 위해 실행 후 상태 저장
+      current.fingerprint = await fingerprint(paths);
       return {
         state: "password",
         message:
