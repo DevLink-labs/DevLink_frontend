@@ -275,6 +275,10 @@
 .dependency-card[data-rich] { min-block-size: var(--tree-rich-height); }
 .dependency-card[data-kind="ROOT"][data-rich] { min-block-size: var(--tree-root-height); } /* 시안의 저장소 카드는 340×96 */
 .dependency-root { z-index: 3; }
+/* 방사형에서는 배치 모델이 가정한 폭(240px)에 모든 카드를 맞춘다. 레인 배치용 엔드포인트·서비스 넓은 카드는 쓰지 않는다. */
+.dependency-radial [data-kind="ENDPOINT"],
+.dependency-radial [data-kind="SERVICE"] { --tree-card-width: var(--tree-node-width); }
+.dependency-radial .dependency-code { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 .dependency-page [data-kind="SELF"] {
   --tree-fill: #F5EAC4; --tree-border: #EADA9F; --tree-deep: #64521A; --tree-tint: 160, 135, 60;
 }

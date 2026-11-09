@@ -317,7 +317,25 @@ export function layoutRadial(tree, metrics) {
       const actual = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
       factor = Math.max(factor, separation(a, b) / actual);
     }
-    radii.push(base * Math.min(factor, metrics.maxCrowdFactor ?? 4));
+    let radius = base * Math.min(factor, metrics.maxCrowdFactor ?? 4);
+    // 부모와 자식도 카드 크기만큼 떨어져야 한다. 가로 방향 가지는 폭이 기준이라 단 간격보다 더 멀어질 수 있다.
+    if (depth > 1) {
+      const byKey = new Map(placed.map((item) => [item.key, item]));
+      for (let round = 0; round < 6; round += 1) {
+        let shortfall = 0;
+        for (const item of level) {
+          const parent = byKey.get(item.parentKey);
+          if (!parent) continue;
+          const a = place(radii[parent.depth - 1], parent.angle);
+          const b = place(radius, item.angle);
+          const actual = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+          shortfall = Math.max(shortfall, separation(a, b) - actual);
+        }
+        if (shortfall <= 0.5) break;
+        radius += shortfall;
+      }
+    }
+    radii.push(radius);
   }
   const bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   const entries = placed.map((item) => {
