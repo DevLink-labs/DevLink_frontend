@@ -60,6 +60,7 @@ export default function AgentsPanel({
   const active = useRef(true);
   const mutations = useAgentMutations(currentUserId, team.teamId);
   const [search, setSearch] = useState("");
+  const [pcReady, setPcReady] = useState<boolean | null>(null);
   const [formTarget, setFormTarget] = useState<Agent | "register" | null>(null);
   const [form, setForm] = useState<AgentForm>(emptyForm);
   const saving = mutations.registerAgent.isPending || mutations.updateAgent.isPending;
@@ -70,10 +71,10 @@ export default function AgentsPanel({
     detailAgentId === null
       ? null
       : {
-          agent: detailQuery.data ?? null,
-          loading: detailQuery.isFetching,
-          error: detailQuery.error ? errorMessage(detailQuery.error) : null,
-        };
+        agent: detailQuery.data ?? null,
+        loading: detailQuery.isFetching,
+        error: detailQuery.error ? errorMessage(detailQuery.error) : null,
+      };
   const [tokenAgent, setTokenAgent] = useState<Agent | null>(null);
   const [issuedToken, setIssuedToken] = useState<string | null>(null);
   const [tokenVisible, setTokenVisible] = useState(false);
@@ -275,10 +276,18 @@ export default function AgentsPanel({
   return (
     <section className="panel agents-panel" aria-labelledby={`${fieldId}-heading`}>
       <div className="panel-heading">
-        <div>
+        <div className="section-actions">
           <h2 className="section-title" id={`${fieldId}-heading`}>
             Agent 목록
           </h2>
+          {pcReady !== null && (
+            <span
+              className={`badge ${pcReady ? "badge-online" : "badge-offline"}`}
+              role="status"
+            >
+              PC : {pcReady ? "연결" : "미연결"}
+            </span>
+          )}
         </div>
         <div className="section-actions">
           {desktop?.setup && desktop.getStatus && (
@@ -288,18 +297,9 @@ export default function AgentsPanel({
               account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}
               teamName={team.name}
               onRefreshAgents={onRefresh}
+              onReadyChange={setPcReady}
             />
           )}
-          <button
-            className="icon-button"
-            type="button"
-            onClick={onRefresh}
-            disabled={loading}
-            aria-label="Agent 목록 새로고침"
-            title="목록 새로고침"
-          >
-            <Icon name="refresh" size={18} />
-          </button>
           <button
             className="button button-primary"
             type="button"
@@ -383,13 +383,15 @@ export default function AgentsPanel({
                       )}
                     </td>
                     <td>
-                      <span
-                        className={`badge ${agent.status === "ONLINE" ? "badge-online" : "badge-offline"}`}
-                      >
-                        {agent.status === "ONLINE" ? "온라인" : "오프라인"}
-                      </span>
-                      <div className="status-detail">
-                        {agent.lastSeenAt ? formatDate(agent.lastSeenAt) : "접속 기록 없음"}
+                      <div className="status-cell">
+                        <span
+                          className={`badge ${agent.status === "ONLINE" ? "badge-online" : "badge-offline"}`}
+                        >
+                          {agent.status === "ONLINE" ? "온라인" : "오프라인"}
+                        </span>
+                        <div className="status-detail">
+                          {agent.lastSeenAt ? formatDate(agent.lastSeenAt) : "접속 기록 없음"}
+                        </div>
                       </div>
                     </td>
                     <td>
