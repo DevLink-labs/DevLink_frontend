@@ -126,8 +126,8 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
         >
             {workspaceError && ["workspace", "agents", "teams"].includes(view) && <div className="workspace-error" role="alert"><Icon name="shield" /><p>{workspaceError}</p><button type="button" className="button button-secondary button-small" onClick={refreshAll}>다시 불러오기</button></div>}
             {view === "workspace" && <WorkspaceOverviewView
-              teams={teams} team={selectedTeam} members={members} agents={agents}
-              teamsLoading={teamsLoading} workspaceLoading={workspaceLoading} workspaceError={!!workspaceError}
+              team={selectedTeam} members={members} agents={agents}
+              workspaceLoading={workspaceLoading || sceneStatus === "loading"} workspaceError={!!workspaceError}
               tasks={tasks} tasksLoading={tasksLoading} tasksError={tasksError} onSelectTask={selectTask}
               onManageTeams={() => setView("teams")} onManageAgents={() => setView("agents")}
               onGuide={() => setView("guide")} onInvite={openTeamInvite} onRetryTasks={() => { void tasksQuery.refetch(); }}
