@@ -13,6 +13,21 @@ export function taskTitle(task: Pick<TaskListItem, "taskId" | "taskSummary"> | n
   return task.taskSummary?.trim() || `${task.taskId}번 세션`;
 }
 
+export function parseTaskPrompt(prompt: string): { title: string; description: string } {
+  const fallback = { title: "", description: prompt };
+  try {
+    const parsed: unknown = JSON.parse(prompt);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+    const fields = parsed as Record<string, unknown>;
+    return {
+      title: typeof fields.title === "string" ? fields.title.trim() : "",
+      description: typeof fields.description === "string" ? fields.description : "",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 const timeOptions: Intl.DateTimeFormatOptions = {
   year: "numeric",
   month: "numeric",

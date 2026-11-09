@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Icon } from '@/components/ui'
 import { ApiError } from '@/lib/apiClient'
 import { taskKeys, useTaskDetail, useTaskHistory } from '../hooks/useTasks'
 import type { TaskDetail, TaskEvent, TaskHistory } from '../types'
-import { compareSequences, formatTaskTime, mergeTaskEvents, taskStatusLabels, taskTitle } from '../utils/taskPresentation'
+import { compareSequences, formatTaskTime, mergeTaskEvents, parseTaskPrompt, taskStatusLabels, taskTitle } from '../utils/taskPresentation'
 import '../styles/task-conversation.css'
 
 interface TaskConversationViewProps {
@@ -37,6 +39,32 @@ function isAccessError(error: unknown): error is ApiError {
 function RecordTime({ value, utc = false, className }: { value: string; utc?: boolean; className?: string }) {
   const localTime = utc || /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
   return <time className={className} title={localTime ? '내 기기의 시간대 기준' : '서버에 기록된 시각'}>{formatTaskTime(value, utc)}<span className="tc-time-basis">· {localTime ? '내 시간' : '서버 시각'}</span></time>
+}
+
+function InitialTaskRequest({ prompt, fallbackTitle }: { prompt: string; fallbackTitle: string }) {
+  const request = parseTaskPrompt(prompt);
+
+  return (
+    <section className="tc-bubble tc-request-card" aria-label="최초 작업 요청">
+      <header className="tc-request-heading">
+        <span className="tc-message-kind">최초 작업 요청</span>
+        <h3>{request.title || fallbackTitle}</h3>
+      </header>
+      <div className="tc-request-description">
+        {request.description.trim() ? (
+          <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
+            h1: "h4",
+            h2: "h4",
+            h3: "h5",
+            table: ({ children }) => <div className="tc-request-table"><table>{children}</table></div>,
+            a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
+          }}>
+            {request.description}
+          </Markdown>
+        ) : <p>등록된 요청 설명이 없습니다.</p>}
+      </div>
+    </section>
+  );
 }
 
 function EventMessage({ event, detail, eventsById }: {
@@ -251,7 +279,7 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
                 <span className="tc-agent-avatar" aria-hidden="true"><Icon name="agent" size={18} /></span>
                 <div className="tc-message-content">
                   <div className="tc-message-meta"><strong>{detail.requesterAgent.name}</strong></div>
-                  <div className="tc-bubble"><span className="tc-message-kind">최초 작업 요청</span><p className="tc-message-text">{latestHistory.prompt}</p></div>
+                  <InitialTaskRequest prompt={latestHistory.prompt} fallbackTitle={taskTitle(detail)} />
                   <RecordTime className="tc-message-time" value={detail.createdAt} />
                 </div>
               </div>

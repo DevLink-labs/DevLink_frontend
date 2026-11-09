@@ -22,11 +22,6 @@ interface ImmersiveTeamSceneProps {
   onAvailabilityChange: (available: boolean) => void
 }
 
-const colors: Record<string, string> = {
-  sage: '#858585', blue: '#6b6b6b', peach: '#a5a5a5',
-  lavender: '#909090', sand: '#bdbdbd', mint: '#999999',
-}
-
 const MOBILE_BREAKPOINT = 680
 const LABEL_SIDE_SWITCH_THRESHOLD = 20;
 const TOP_VIEW_POLAR = 0.025;
@@ -739,8 +734,8 @@ export default function ImmersiveTeamScene({ teamName, members, loading, selecte
         hidden={focusedMemberId !== null && focusedMemberId !== member.id}
         aria-label={`${member.name} 팀원 선택`}
         onClick={() => { if (control.current.scrollState.current.progress <= 0.12) control.current.onSelectMember(member.id) }}
-        style={{ '--itp-label-color': colors[member.color] ?? colors.sage, visibility: focusedMemberId !== null && focusedMemberId !== member.id ? 'hidden' : undefined } as CSSProperties}
-      ><span className="itp-scene-member-label-dot" aria-hidden="true" /><span>{member.name}</span></button>)}
+        style={{ visibility: focusedMemberId !== null && focusedMemberId !== member.id ? 'hidden' : undefined } as CSSProperties}
+      ><span>{member.name}</span></button>)}
     </div>
   </div>
 }

@@ -23,8 +23,10 @@ export default function FocusedMemberDetails({ member, color, onClose, onOpenDas
     const body = scrollBody.current
     const section = agentSection.current
     if (!body || !section) return
-    const top = body.scrollTop + section.getBoundingClientRect().top - body.getBoundingClientRect().top - 4
-    body.scrollTo({ top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    const scrollContainer = getComputedStyle(body).overflowY === "visible" ? body.parentElement : body;
+    if (!scrollContainer) return;
+    const top = scrollContainer.scrollTop + section.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top - 4;
+    scrollContainer.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }
 
   return <aside className="itp-selection itp-member-inspector" style={{ '--itp-member-color': color } as CSSProperties} aria-labelledby={`${id}-name`}>
