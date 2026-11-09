@@ -227,6 +227,39 @@
   color: var(--workspace-focus);
 }
 
+.auth-remember-email {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 9px;
+  min-height: 28px;
+  color: var(--workspace-action);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.auth-form-card .auth-remember-email input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--workspace-action);
+  cursor: pointer;
+}
+
+.auth-remember-email input:focus-visible {
+  outline: 2px solid var(--workspace-focus);
+  outline-offset: 3px;
+}
+
+.auth-remember-email:has(input:disabled) {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .connection-help {
   margin-bottom: 24px;
   padding: 12px 14px;
