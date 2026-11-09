@@ -283,6 +283,37 @@
 .dependency-card[data-rich] { min-block-size: var(--tree-rich-height); }
 .dependency-card[data-kind="ROOT"][data-rich] { min-block-size: var(--tree-root-height); } /* 시안의 저장소 카드는 340×96 */
 .dependency-root { z-index: 3; }
+/* React Flow 캔버스. 카드 마크업은 같지만 자리는 라이브러리가 잡으므로 절대 배치와 이동 전환을 끈다. */
+.dependency-flow {
+  position: relative;
+  min-block-size: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  --tree-node-width: 240px;
+  --tree-node-height: 72px;
+  --tree-rich-height: 100px;
+}
+.dependency-flow .dependency-card { position: static; translate: none; transition: opacity 0.2s; }
+.dependency-flow [data-kind="ENDPOINT"],
+.dependency-flow [data-kind="SERVICE"] { --tree-card-width: var(--tree-node-width); }
+.dependency-flow .dependency-code { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.dependency-flow .react-flow__node { cursor: default; }
+.dependency-flow .react-flow__handle {
+  inset-block-start: 50%;
+  inset-block-end: auto;
+  inset-inline-start: 50%;
+  inline-size: 1px;
+  block-size: 1px;
+  min-inline-size: 0;
+  min-block-size: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.dependency-flow .react-flow__edge-path { stroke-linecap: round; }
+.dependency-flow .react-flow__minimap { border: var(--tree-stroke) solid var(--tree-panel-border); border-radius: var(--tree-ui-radius); }
+.dependency-flow .react-flow__controls { border-radius: var(--tree-ui-radius); overflow: hidden; }
 /* 방사형에서는 배치 모델이 가정한 폭(240px)에 모든 카드를 맞춘다. 레인 배치용 엔드포인트·서비스 넓은 카드는 쓰지 않는다. */
 .dependency-radial [data-kind="ENDPOINT"],
 .dependency-radial [data-kind="SERVICE"] { --tree-card-width: var(--tree-node-width); }

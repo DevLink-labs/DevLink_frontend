@@ -3,7 +3,7 @@ import PageTitle from "@/components/common/PageTitle";
 import { useTeams } from "@/features/teams/hooks/useTeams";
 import DependencySourceForm from "@/features/dependency-tree/components/DependencySourceForm";
 import DependencyTreeFrame from "@/features/dependency-tree/components/DependencyTreeFrame";
-import DependencyTreeView from "@/features/dependency-tree/components/DependencyTreeView";
+import DependencyTreeView from "@/features/dependency-tree/components/DependencyFlowView";
 import { useDependencyTree } from "@/features/dependency-tree/hooks/useDependencyTree";
 import sample from "@/features/dependency-tree/data/dependencyTreeFixture.json";
 
