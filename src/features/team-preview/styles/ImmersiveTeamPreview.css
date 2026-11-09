@@ -583,9 +583,7 @@
 .itp-team-scene-label { padding: 9px 15px; color: #f2f8ec; background: #111f1bf2; border: 1px solid #b5d88d80; border-radius: 10px; box-shadow: 0 6px 20px #0004, inset 0 1px 0 #f5ffe90d; backdrop-filter: blur(15px); font-size: 19px; font-weight: 600; }
 .itp-scene-member-label { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; color: #f2f6ed; background: #101c1bf2; border: 1px solid #d8e8d14f; border-radius: 11px; box-shadow: 0 5px 16px #0005, inset 0 1px 0 #ffffff0d; backdrop-filter: blur(15px); font-size: 19px; font-weight: 550; pointer-events: auto; transition: border-color .2s, color .2s, background .2s; }
 .itp-scene-member-label:hover { background: #223326f5; border-color: #c5e5a096; }
-.itp-scene-member-label.is-selected { color: #efffdc; background: #20301cf5; border-color: #caec9ed9; box-shadow: 0 5px 19px #0005, 0 0 0 2px #c4e8941a; }
-.itp-scene-member-label-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--itp-label-color, #c7e99b); box-shadow: 0 0 9px color-mix(in srgb, var(--itp-label-color, #c7e99b), transparent 70%); }
-.itp-fallback::before { content: none; }
+.itp-scene-member-label.is-selected { color: #efffdc; background: #20301cf5; border-color: #caec9ed9; box-shadow: 0 5px 19px #0005, 0 0 0 2px #c4e8941a; }.itp-fallback::before { content: none; }
 .itp-fallback-core { left: calc(60% - 78px); top: calc(48% - 67px); width: 156px; height: 134px; border: 1px solid #ddf3b9bd; border-radius: 39px; background: linear-gradient(135deg, #ebffdaf2, #9fbb88 48%, #436b45); box-shadow: inset 4px 6px 14px #f7ffeb2e, inset -9px -13px 25px #19361b66, 15px 24px 50px #0006; transform: rotate(-8deg); }
 .itp-fallback-visor { position: absolute; inset: 41px 22px; display: flex; justify-content: center; align-items: center; gap: 25px; border: 1px solid #b5d69091; border-radius: 18px; background: #13271e; box-shadow: inset 0 3px 10px #0006; }
 .itp-fallback-visor > i { width: 13px; height: 21px; border-radius: 7px; background: #d8ff9f; box-shadow: 0 0 15px #ccff9b4d; }
@@ -664,9 +662,7 @@
   .itp-orbit-controls .itp-icon-button, .itp-invite-trigger { width: 35px; height: 35px; }
   .itp-orbit-controls .itp-icon-button > svg { width: 17px; height: 17px; }
   .itp-invite-trigger > svg { width: 19px; height: 19px; }
-  .itp-scene-member-label { padding: 7px 10px; gap: 6px; border-radius: 8px; font-size: 16px; }
-  .itp-scene-member-label-dot { width: 5px; height: 5px; }
-  .itp-team-scene-label { padding: 7px 10px; border-radius: 8px; font-size: 17px; }
+  .itp-scene-member-label { padding: 7px 10px; gap: 6px; border-radius: 8px; font-size: 16px; }  .itp-team-scene-label { padding: 7px 10px; border-radius: 8px; font-size: 17px; }
   .itp-fallback-core { width: 108px; height: 94px; left: calc(52% - 54px); top: calc(45% - 47px); border-radius: 28px; border-width: 1px; }
   .itp-fallback-visor { inset: 29px 15px; gap: 18px; border-radius: 13px; }
   .itp-fallback-visor > i { width: 8px; height: 14px; }
