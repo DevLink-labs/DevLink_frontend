@@ -9,6 +9,8 @@ export const COLLAPSIBLE = new Set(["PAGE", "COMPONENT", "ENDPOINT", "HTTP_CLIEN
 const KIND_ORDER = { PAGE: 0, COMPONENT: 1, HOOK: 2, MODULE: 3, HTTP_CLIENT: 4, ENDPOINT: 5, SERVICE: 6, REPOSITORY: 7, DB_TABLE: 8 };
 const BE_GROUPS = ["SERVICE", "REPOSITORY", "DB_TABLE"];
 export const COMMON_ID = "common";
+/** 페이지가 직접 부르는 API 호출을 묶는 가상 카드의 키 조각. */
+export const SELF_ID = "self";
 
 const TAU = Math.PI * 2;
 
@@ -186,7 +188,19 @@ export function visibleTree(model, branches, openPath, autoOpen) {
     else {
       const seen = new Set(ancestors).add(id);
       for (const skipped of childLinks.flatMap((link) => link.via)) seen.add(skipped);
-      entry.children = childLinks.map((link) => build(link.id, key + "/" + link.id, depth + 1, seen, link.via));
+      // 페이지가 컴포넌트를 거치지 않고 직접 부르는 API는 "페이지 자체 호출" 카드 하나로 묶어 눌러야 펼쳐지게 한다.
+      const direct = node.kind === "PAGE" ? childLinks.filter((link) => model.nodeById.get(link.id)?.kind === "HTTP_CLIENT") : [];
+      const nested = childLinks.filter((link) => !direct.includes(link));
+      entry.children = nested.map((link) => build(link.id, key + "/" + link.id, depth + 1, seen, link.via));
+      if (direct.length) {
+        const selfKey = key + "/" + SELF_ID;
+        const selfOpen = onPath(selfKey) || Boolean(autoOpen && direct.some((link) => autoOpen(link.id)));
+        entry.children.unshift({
+          key: selfKey, id: selfKey, node: null, virtual: SELF_ID, depth: depth + 1, collapsible: true, open: selfOpen, via: [],
+          childIds: direct.map((link) => link.id),
+          children: selfOpen ? direct.map((link) => build(link.id, selfKey + "/" + link.id, depth + 2, seen, link.via)) : [],
+        });
+      }
     }
     return entry;
   }
@@ -203,12 +217,13 @@ export function visibleTree(model, branches, openPath, autoOpen) {
 /** 접힌 카드에 보여줄 요약. 직접 자식을 종류별로 센다. */
 export function collapsedSummary(model, entry) {
   if (entry.id === COMMON_ID) return `진입점 ${entry.childIds.length}`;
+  if (entry.virtual === SELF_ID) return `API ${entry.childIds.length}`;
   if (entry.node?.kind === "HTTP_CLIENT") return model.callTarget.has(entry.id) ? "BE 경로 보기" : "연결된 엔드포인트 없음";
   if (entry.node?.kind === "ENDPOINT") return "BE 경로 보기";
   const counts = new Map();
   for (const id of entry.childIds) {
     const kind = model.nodeById.get(id)?.kind;
-    const label = { COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API", MODULE: "함수" }[kind] ?? kind;
+    const label = { PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API", MODULE: "함수" }[kind] ?? kind;
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   return [...counts].map(([label, count]) => `${label} ${count}`).join(" · ");
@@ -228,9 +243,14 @@ export function keyFor(model, branches, id) {
       const chain = [];
       for (let cursor = current; cursor; cursor = via.get(cursor)) chain.push(cursor);
       let key = isRoot ? rootKeys.get(current) : "b:" + COMMON_ID;
-      // 훅·함수는 카드가 없으므로 키에서도 건너뛴다.
+      // 훅·함수는 카드가 없으므로 키에서도 건너뛰고, 페이지 바로 아래의 API 호출은 "페이지 자체 호출" 카드를 거친다.
+      let previous = isRoot ? model.nodeById.get(current)?.kind : null;
       for (const step of chain.slice(isRoot ? 1 : 0)) {
-        if (!FOLDED.has(model.nodeById.get(step)?.kind)) key += "/" + step;
+        const kind = model.nodeById.get(step)?.kind;
+        if (FOLDED.has(kind)) continue;
+        if (previous === "PAGE" && kind === "HTTP_CLIENT") key += "/" + SELF_ID;
+        key += "/" + step;
+        previous = kind;
       }
       return key;
     }

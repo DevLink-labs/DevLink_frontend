@@ -2,12 +2,12 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import DependencyTreeFrame from "./DependencyTreeFrame";
 import DependencyTreeLines from "./DependencyTreeLines";
 import {
-  COMMON_ID, buildModel, collapsedSummary, currentWorkers, fileKey, isFileModule, keyFor, layoutRadial,
+  COMMON_ID, SELF_ID, buildModel, collapsedSummary, currentWorkers, fileKey, isFileModule, keyFor, layoutRadial,
   memberFocus, memberList, rootBranches, visibleTree,
 } from "../model/dependencyTreeLayout";
 
 const nodeKinds = {
-  PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API 호출", COMMON: "공통",
+  PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API 호출", COMMON: "공통", SELF: "페이지 자체 호출",
   ENDPOINT: "엔드포인트", SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "DB 테이블", MODULE: "함수",
 };
 const groupKinds = { SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "DB 테이블" };
@@ -141,7 +141,7 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     if (!focus) return true;
     const touched = (id) => focus.working.has(id) || focus.impact.has(id);
     if (entry.group) return entry.items.some(({ id }) => touched(id));
-    if (entry.id === COMMON_ID) return entry.childIds.some((id) => touched(id) || focus.touches(id));
+    if (entry.id === COMMON_ID || entry.virtual) return entry.childIds.some((id) => touched(id) || focus.touches(id));
     return touched(entry.id);
   };
   const entryByKey = new Map(scene.entries.map((entry) => [entry.key, entry]));
@@ -292,9 +292,11 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   function renderNode(entry) {
     const { x, y } = entry;
     const node = entry.node;
-    const kind = node ? node.kind : "COMMON";
+    const kind = node ? node.kind : entry.virtual === SELF_ID ? "SELF" : "COMMON";
     // 접힌 훅·함수의 작업자는 이 카드에 함께 표시한다.
-    const viaNodes = entry.via.map((id) => model.nodeById.get(id)).filter(Boolean);
+    // API 정의 함수(label이 호출 지점 라벨의 앞부분)는 같은 이름이 반복되므로 경유 표시에서 뺀다.
+    const viaNodes = entry.via.map((id) => model.nodeById.get(id))
+      .filter((step) => step && !(node && node.label.startsWith(step.label + " · ")));
     const editing = node ? [...new Map([...people(node), ...viaNodes.flatMap(people)].map((person) => [person.userId, person])).values()] : [];
     const shared = node?.kind === "COMPONENT" ? model.pagesFor(node.id).length : 0;
     const meta = [
@@ -315,7 +317,7 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
         {endpoint ? <>
           <span className="dependency-pill dependency-pill--method">{node.httpRoute.method}</span>
           <code className="dependency-code" title={node.httpRoute.pathTemplate}>{node.httpRoute.pathTemplate}</code>
-        </> : <strong className="dependency-name">{node ? wrapNodeName(node.label) : "공통"}</strong>}
+        </> : <strong className="dependency-name">{node ? wrapNodeName(node.label) : kind === "SELF" ? "직접 호출" : "공통"}</strong>}
         {meta && <span className="dependency-meta">{meta}</span>}
         {editing.length > 0 && (
           <span className="dependency-workers">
