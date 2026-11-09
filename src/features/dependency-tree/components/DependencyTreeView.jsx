@@ -23,7 +23,13 @@ const maxFitScale = 1.6;
 const minFocusScale = 0.3;
 const fitModes = [["both", "전체 맞춤"], ["width", "가로 맞춤"], ["none", "원본 크기"], ["focus", "선택 중심"]];
 /** 방사형 간격. ring은 중심에서 1단까지, step은 단 사이, minArc는 같은 단 이웃 카드 사이 최소 호 길이(px). */
-const metrics = { ring: 300, step: 250, minArc: 150, spread: 1.4, backendStep: 190, backendSpread: 2.4 };
+const metrics = {
+  ring: 300, step: 250, minArc: 150, spread: 1.4, backendStep: 190, backendSpread: 2.4,
+  /** 가로 늘림 비율. 넓은 화면의 좌우 여백을 쓰도록 타원으로 배치한다. */
+  aspect: 1.6,
+  /** 같은 링의 이웃 카드가 겹치지 않게 반지름을 키울 때 쓰는 카드 크기와 여백. */
+  cardWidth: 240, cardHeight: 110, gap: 24, maxCrowdFactor: 4,
+};
 /** 카드 크기 추정치. 캔버스 크기와 여백 계산에만 쓴다. */
 const cardSize = { width: 260, height: 140, pad: 40 };
 

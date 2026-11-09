@@ -292,23 +292,36 @@ export function layoutRadial(tree, metrics) {
     assign(branch, cursor, cursor + span, 1, null);
     cursor += span;
   });
+  // 가로로 늘린 타원 위에 놓는다. 넓은 화면의 좌우 여백을 쓰고, 같은 링의 이웃은 카드 크기만큼 떨어지도록 반지름을 키운다.
+  const aspect = metrics.aspect ?? 1;
+  const place = (radius, angle) => [radius * Math.cos(angle) * aspect, radius * Math.sin(angle)];
+  /** 두 카드 중심이 이 방향으로 최소 얼마나 떨어져야 겹치지 않는지. 가로 이웃은 폭, 세로 이웃은 높이가 기준이다. */
+  const separation = ([ax, ay], [bx, by]) => {
+    const distance = Math.hypot(bx - ax, by - ay) || 1;
+    const ux = Math.abs(bx - ax) / distance;
+    const uy = Math.abs(by - ay) / distance;
+    return Math.min(ux > 0 ? (metrics.cardWidth + metrics.gap) / ux : Infinity, uy > 0 ? (metrics.cardHeight + metrics.gap) / uy : Infinity);
+  };
   const radii = [];
   const maxDepth = Math.max(0, ...byDepth.keys());
   for (let depth = 1; depth <= maxDepth; depth += 1) {
-    const angles = (byDepth.get(depth) ?? []).map(({ angle }) => angle).sort((a, b) => a - b);
-    let gap = TAU;
-    for (let index = 1; index < angles.length; index += 1) gap = Math.min(gap, angles[index] - angles[index - 1]);
-    if (angles.length > 1) gap = Math.min(gap, angles[0] + TAU - angles[angles.length - 1]);
-    const level = byDepth.get(depth) ?? [];
+    const level = [...(byDepth.get(depth) ?? [])].sort((a, b) => a.angle - b.angle);
     const backendLevel = level.length > 0 && level.every((item) => item.node && BACKEND_KINDS.has(item.node.kind));
     const base = depth === 1 ? metrics.ring : radii[depth - 2] + (backendLevel ? metrics.backendStep : metrics.step);
-    radii.push(Math.max(base, angles.length > 1 ? metrics.minArc / gap : 0));
+    let factor = 1;
+    const pairs = level.length > 1 ? level.map((item, index) => [item, level[(index + 1) % level.length]]) : [];
+    for (const [first, second] of pairs) {
+      if (first === second) continue;
+      const a = place(base, first.angle);
+      const b = place(base, second.angle);
+      const actual = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      factor = Math.max(factor, separation(a, b) / actual);
+    }
+    radii.push(base * Math.min(factor, metrics.maxCrowdFactor ?? 4));
   }
   const bounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   const entries = placed.map((item) => {
-    const radius = radii[item.depth - 1];
-    const x = radius * Math.cos(item.angle);
-    const y = radius * Math.sin(item.angle);
+    const [x, y] = place(radii[item.depth - 1], item.angle);
     bounds.minX = Math.min(bounds.minX, x);
     bounds.maxX = Math.max(bounds.maxX, x);
     bounds.minY = Math.min(bounds.minY, y);
