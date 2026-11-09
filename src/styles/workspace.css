@@ -768,6 +768,7 @@
 }
 .team-summary {
   padding: 21px 24px;
+  min-width: 0;
   border-right: 1px solid var(--workspace-divider);
 }
 .team-summary-heading {
@@ -780,6 +781,10 @@
   margin: 0 0 4px;
   font-size: 15px;
   letter-spacing: -0.2px;
+  overflow-wrap: anywhere;
+}
+.team-summary-heading > div {
+  min-width: 0;
 }
 .team-mark {
   display: grid;
@@ -801,10 +806,11 @@
 }
 .team-selector select {
   max-width: 270px;
-  font-size: 13px;
+  min-width: 0;
+  font-size: 14px;
 }
 .team-selector label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   color: var(--workspace-muted);
   white-space: nowrap;
@@ -816,7 +822,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 7px 15px;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--workspace-muted);
   margin-top: 8px;
 }
@@ -825,7 +831,7 @@
   margin: 0;
 }
 .team-meta dt {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--workspace-muted);
 }
 .team-members {
@@ -837,11 +843,11 @@
   align-items: center;
   justify-content: space-between;
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 14px;
   margin-bottom: 12px;
 }
 .team-members-heading h3 {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
   margin: 0;
 }
@@ -868,7 +874,7 @@
 }
 .member-identity strong {
   display: inline-block;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
   color: var(--workspace-action);
   vertical-align: middle;
@@ -878,13 +884,14 @@
 .member-identity .muted,
 .member-identity small {
   display: block;
-  font-size: 10px;
+  font-size: 13px;
   margin-top: 1px;
+  overflow-wrap: anywhere;
 }
 .member-self,
 .self-label {
   display: inline-block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--workspace-focus);
   font-weight: 600;
   margin-left: 5px;
@@ -898,6 +905,7 @@
 }
 .search-field {
   max-width: 280px;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
@@ -905,13 +913,14 @@
 }
 .search-field input {
   padding: 8px 12px;
-  font-size: 12px;
+  min-width: 0;
+  font-size: 14px;
   background: var(--color-workspace);
   border-color: var(--workspace-border);
 }
 .search-field label {
   color: var(--workspace-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 .table-wrap {
   width: 100%;
@@ -919,13 +928,15 @@
 }
 .data-table {
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
   text-align: left;
-  font-size: 12px;
+  font-size: 14px;
 }
 .data-table th {
   padding: 12px 20px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--workspace-muted);
   background: var(--color-workspace);
   border-top: 1px solid var(--workspace-divider);
@@ -944,11 +955,17 @@
 .data-table tbody tr:hover {
   background: var(--color-workspace);
 }
+.data-table .section-actions {
+  flex-wrap: nowrap;
+}
+.data-table .button-small {
+  white-space: nowrap;
+}
 .agent-cell {
   display: flex;
   align-items: center;
   gap: 11px;
-  min-width: 160px;
+  min-width: 180px;
 }
 .agent-icon {
   display: inline-grid;
@@ -965,7 +982,7 @@
   background: none;
   padding: 0;
   color: var(--workspace-action);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
   text-align: left;
   overflow-wrap: anywhere;
@@ -978,7 +995,7 @@
 .agent-meta {
   display: block;
   color: var(--workspace-muted);
-  font-size: 10px;
+  font-size: 13px;
   margin-top: 4px;
   max-width: 240px;
   overflow-wrap: anywhere;
@@ -989,7 +1006,7 @@
 }
 .status-detail {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--workspace-muted);
   margin-top: 5px;
   white-space: nowrap;
@@ -1004,7 +1021,7 @@
   align-items: flex-start;
   gap: 7px;
   color: var(--workspace-muted);
-  font-size: 11px;
+  font-size: 13px;
   padding: 14px 24px;
   border-top: 1px solid var(--workspace-divider);
   margin: 0;
