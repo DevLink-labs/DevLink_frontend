@@ -2,9 +2,9 @@ import "../styles/dependencyTree.css";
 
 /**
  * 트리 화면의 고정 레이아웃. 상단 한 줄 툴바(제목·선택 컨트롤·범례·이동 링크) 아래에
- * 그래프가 남은 높이를 모두 쓰고, 상세 정보는 그래프 위에 떠 있는 패널로 보여 준다.
+ * 팀원 선택 줄(toolbar), 그래프(남은 높이 전부), 상세 패널 순으로 쌓인다.
  */
-export default function DependencyTreeFrame({ title, description, links, controls, panel, children }) {
+export default function DependencyTreeFrame({ title, description, links, controls, toolbar, panel, children }) {
   return (
     <main className="dependency-page">
       <header className="dependency-topbar">
@@ -23,6 +23,7 @@ export default function DependencyTreeFrame({ title, description, links, control
         </div>
       </header>
       <div className="dependency-body">
+        {toolbar}
         {children}
         {panel && <aside className="dependency-panel" aria-label="상세 정보">{panel}</aside>}
       </div>

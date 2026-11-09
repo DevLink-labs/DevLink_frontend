@@ -1,12 +1,18 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import DependencyTreeFrame from "./DependencyTreeFrame";
 import DependencyTreeLines from "./DependencyTreeLines";
-import { currentWorkers, displayGraph, fileKey, repositoryRows, upstream } from "../model/dependencyTreeLayout";
+import {
+  COMMON_ID, buildModel, collapsedSummary, currentWorkers, fileKey, isFileModule, keyFor, layoutRadial,
+  memberFocus, memberList, rootBranches, visibleTree,
+} from "../model/dependencyTreeLayout";
 
 const nodeKinds = {
-  PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API 호출",
-  ENDPOINT: "엔드포인트", SERVICE: "서비스", REPOSITORY: "REPOSITORY", DB_TABLE: "DB 테이블", MODULE: "모듈",
+  PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API 호출", COMMON: "공통",
+  ENDPOINT: "엔드포인트", SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "DB 테이블", MODULE: "함수",
 };
+const groupKinds = { SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "DB 테이블" };
+/** 묶음 카드에 바로 보여줄 항목 수. 나머지는 "외 N개"로 줄인다. */
+const groupLimit = 8;
 
 function wrapNodeName(label) {
   return label.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[._])(?=\w)/).map((part, index) => (
@@ -16,15 +22,14 @@ function wrapNodeName(label) {
 
 /** 맞춤에서 작은 그래프를 키우는 상한. 카드가 지나치게 커지지 않게 막는다. */
 const maxFitScale = 1.6;
-/** 크기 모드. 기본은 전체 구조가 한 화면에 들어오는 전체 맞춤이며, 이때 다이어그램은 컴팩트 간격을 쓴다. */
 const fitModes = [["both", "전체 맞춤"], ["width", "가로 맞춤"], ["none", "원본 크기"]];
-/** 상세 패널이 오른쪽 열로 도킹되는 폭. dependencyTree.css의 미디어 쿼리와 같은 값이다. */
-const dockedPanel = window.matchMedia("(min-width: 1101px)");
-function useDockedPanel() {
-  return useSyncExternalStore(
-    (notify) => { dockedPanel.addEventListener("change", notify); return () => dockedPanel.removeEventListener("change", notify); },
-    () => dockedPanel.matches,
-  );
+/** 방사형 간격. ring은 중심에서 1단까지, step은 단 사이, minArc는 같은 단 이웃 카드 사이 최소 호 길이(px). */
+const metrics = { ring: 300, step: 250, minArc: 150, spread: 1.4 };
+/** 카드 크기 추정치. 캔버스 크기와 여백 계산에만 쓴다. */
+const cardSize = { width: 260, height: 140, pad: 40 };
+
+function parentKey(key) {
+  return key.includes("/") ? key.slice(0, key.lastIndexOf("/")) : null;
 }
 
 /**
@@ -36,9 +41,10 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   const stage = useRef(null);
   const canvas = useRef(null);
   const [selected, setSelected] = useState(null);
+  const [openPath, setOpenPath] = useState(null);
   const [pair, setPair] = useState(null);
+  const [member, setMember] = useState(null);
   const [fit, setFit] = useState("both");
-  const docked = useDockedPanel();
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!activity?.receivedAt) return undefined;
@@ -104,49 +110,79 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     const keys = new Set(nodes.map(({ id }) => id));
     return { nodes, edges: graph.edges.filter(({ sourceId, targetId }) => keys.has(sourceId) && keys.has(targetId)) };
   }, [graph, visibleRepos]);
-  const nodeById = useMemo(() => new Map(activeGraph.nodes.map((node) => [node.id, node])), [activeGraph]);
-  const firstMatchedEndpoint = activeGraph.edges.find(({ relationType }) => relationType === "HTTP_CALL")?.targetId;
-  const chosen = nodeById.get(selected) ?? nodeById.get(firstMatchedEndpoint)
-    ?? activeGraph.nodes.find(({ kind }) => kind === "PAGE") ?? activeGraph.nodes[0];
-  const view = useMemo(() => displayGraph(activeGraph, chosen?.id), [activeGraph, chosen?.id]);
-  const rows = useMemo(() => visibleRepos.map((repo) => ({
-    repo,
-    rows: repositoryRows(view.nodes.filter(({ repoId }) => repoId === repo.repoId), view.edges),
-  })), [visibleRepos, view]);
-  const edges = useMemo(() => {
-    const parents = new Set(view.edges.filter(({ relationType }) => relationType !== "HTTP_CALL").map(({ targetId }) => targetId));
-    return [...view.edges, ...rows.flatMap(({ repo, rows: layers }) => (layers[0] ?? [])
-      .filter(({ id }) => !parents.has(id)).map(({ id }) => ({
-        sourceId: `root:${repo.repoId}`, targetId: id, relationType: "GROUP",
-      })))];
-  }, [view, rows]);
+  const model = useMemo(() => buildModel(activeGraph), [activeGraph]);
+  const branches = useMemo(() => sourceRepo ? rootBranches(model, sourceRepo) : [], [model, sourceRepo]);
+  const repoIds = useMemo(() => new Set(visibleRepos.map(({ repoId }) => repoId)), [visibleRepos]);
   const workers = useMemo(() => currentWorkers(activity, now), [activity, now]);
+  const members = useMemo(() => memberList(workers, repoIds), [workers, repoIds]);
+  const focus = useMemo(() => member !== null && members.some(({ userId }) => userId === member)
+    ? memberFocus(model, workers, member, repoIds) : null, [model, workers, member, members, repoIds]);
+  const tree = useMemo(() => visibleTree(model, branches, openPath, focus ? focus.touches : null), [model, branches, openPath, focus]);
+  /** 배치와 캔버스 크기, 선의 좌표를 한 번에 계산한다. 카드 좌표는 캔버스 왼쪽 위 기준으로 옮겨 둔다. */
+  const scene = useMemo(() => {
+    const { entries, bounds } = layoutRadial(tree, metrics);
+    const originX = -bounds.minX + cardSize.width / 2 + cardSize.pad;
+    const originY = -bounds.minY + cardSize.height / 2 + cardSize.pad;
+    const placed = entries.map((entry) => ({ ...entry, x: originX + entry.x, y: originY + entry.y }));
+    const byKey = new Map(placed.map((entry) => [entry.key, entry]));
+    const links = placed.map((entry) => {
+      const from = entry.parentKey ? byKey.get(entry.parentKey) : { x: originX, y: originY };
+      return { key: entry.key, x1: from.x, y1: from.y, x2: entry.x, y2: entry.y, http: entry.node?.kind === "ENDPOINT" && entry.depth > 1 };
+    });
+    return {
+      entries: placed, links, originX, originY,
+      width: bounds.maxX - bounds.minX + cardSize.width + cardSize.pad * 2,
+      height: bounds.maxY - bounds.minY + cardSize.height + cardSize.pad * 2,
+    };
+  }, [tree]);
+  const { originX, originY, width, height } = scene;
+  const onOpenPath = (key) => Boolean(openPath && (openPath === key || openPath.startsWith(key + "/")));
+  const inFocus = (entry) => {
+    if (!focus) return true;
+    const touched = (id) => focus.working.has(id) || focus.impact.has(id);
+    if (entry.group) return entry.items.some(({ id }) => touched(id));
+    if (entry.id === COMMON_ID) return entry.childIds.some((id) => touched(id) || focus.touches(id));
+    return touched(entry.id);
+  };
+  const entryByKey = new Map(scene.entries.map((entry) => [entry.key, entry]));
+  const links = scene.links.map((link) => {
+    const entry = entryByKey.get(link.key);
+    return { ...link, highlight: onOpenPath(link.key) || Boolean(focus && inFocus(entry)), dim: Boolean(focus && !inFocus(entry)) };
+  });
+
+  const chosen = model.nodeById.get(selected) ?? null;
   const people = (node) => [...(workers.get(fileKey(node.repoId, node.source.relativePath))?.values() ?? [])];
-  const focus = chosen ? upstream(chosen.id, activeGraph.edges.filter(({ relationType }) => relationType !== "IMPORT")) : new Set();
-  const calls = activeGraph.edges.filter(({ relationType, sourceId, targetId }) => relationType === "HTTP_CALL"
-    && (chosen?.id === sourceId || focus.has(sourceId) && focus.has(targetId)));
-  for (const { targetId } of calls) focus.add(targetId);
-  const pagesFor = (id) => [...upstream(id, activeGraph.edges.filter(({ relationType }) => relationType !== "IMPORT"))]
-    .filter((key) => nodeById.get(key)?.kind === "PAGE");
-  const pageIds = new Set(calls.flatMap(({ sourceId }) => pagesFor(sourceId)));
-  const knownPaths = new Set(activeGraph.nodes.map((node) => fileKey(node.repoId, node.source.relativePath)));
-  const repoIds = new Set(visibleRepos.map(({ repoId }) => repoId));
-  const unknown = [...workers.entries()].filter(([key, entries]) => !knownPaths.has(key) && repoIds.has(entries.values().next().value.repoId));
+  const unknown = focus
+    ? focus.outside.map((person) => [fileKey(person.repoId, person.relativePath), new Map([[person.userId, person]])])
+    : [...workers.entries()].filter(([key, entries]) => !model.byFile.has(key) && repoIds.has(entries.values().next().value.repoId));
+
+  function activate(entry) {
+    if (entry.group) return;
+    setSelected(entry.node ? entry.id : null);
+    if (entry.collapsible) setOpenPath(onOpenPath(entry.key) ? parentKey(entry.key) : entry.key);
+  }
+  function locate(id) {
+    setSelected(id);
+    const key = keyFor(model, branches, id);
+    if (key) setOpenPath(key);
+  }
 
   if (!sourceRepo) {
     return <DependencyTreeFrame {...frame}><div className="dependency-empty"><p>등록된 저장소가 없습니다.</p></div></DependencyTreeFrame>;
   }
+
   const controls = <>
     {frame.controls}
     {(frontends.length > 1 || !frontends.length && backends.length > 1) && (
-      <label>저장소 <select value={sourceRepo.repoId} onChange={(event) => { setPair(Number(event.target.value)); setSelected(null); }}>
+      <label>저장소 <select value={sourceRepo.repoId} onChange={(event) => { setPair(Number(event.target.value)); setSelected(null); setOpenPath(null); }}>
         {(frontends.length ? frontends : backends).map((repo) => <option key={repo.repoId} value={repo.repoId}>{repo.displayName}</option>)}
       </select></label>
     )}
-    {chosen && <label>노드 <select value={chosen.id} onChange={(event) => setSelected(event.target.value)}>
-      {activeGraph.nodes.filter(({ kind, id }) => kind !== "MODULE" || id === chosen.id)
+    <label>노드 <select value={chosen?.id ?? ""} onChange={(event) => event.target.value && locate(event.target.value)}>
+      <option value="">찾기</option>
+      {activeGraph.nodes.filter((node) => node.kind !== "MODULE" && !isFileModule(node))
         .map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
-    </select></label>}
+    </select></label>
     <div className="dependency-fit" role="group" aria-label="그래프 크기">
       {fitModes.map(([mode, label]) => (
         <button className="dependency-fit-button" type="button" key={mode} aria-pressed={fit === mode} onClick={() => setFit(mode)}>
@@ -155,102 +191,147 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
       ))}
     </div>
   </>;
-  const partial = view.nodes.length < activeGraph.nodes.filter(({ kind }) => kind !== "MODULE").length;
+
+  const summary = focus?.summary;
+  const toolbar = (
+    <div className="dependency-members" role="group" aria-label="팀원 선택">
+      <span className="dependency-members-label">팀원</span>
+      <button type="button" className="dependency-chip" aria-pressed={member === null} onClick={() => setMember(null)}>전체</button>
+      {members.map((person) => (
+        <button type="button" className="dependency-chip" key={person.userId} aria-pressed={member === person.userId}
+          onClick={() => setMember(member === person.userId ? null : person.userId)}>
+          {person.displayName} · {person.files}
+        </button>
+      ))}
+      {!members.length && <span className="dependency-members-summary">지금 작업 중인 팀원이 없습니다.</span>}
+      {focus && <span className="dependency-members-summary" aria-live="polite">
+        작업 중 노드 {focus.working.size} · 영향 페이지 {summary.pages} · API {summary.apis} · 엔드포인트 {summary.endpoints} · 테이블 {summary.tables}
+        {focus.outside.length > 0 && ` · 트리 밖 ${focus.outside.length} (집계 제외)`}
+      </span>}
+    </div>
+  );
+
+  const endpointOf = chosen?.kind === "HTTP_CLIENT" ? model.nodeById.get(model.callTarget.get(chosen.id)) : null;
+  const callSites = (endpointId) => (model.callSources.get(endpointId) ?? []).map((id) => model.nodeById.get(id)).filter(Boolean);
+  const pagesOf = (ids) => new Set(ids.flatMap((id) => model.pagesFor(id)));
   const panel = <>
     {frame.panel}
     {chosen && (
-      <details className="dependency-detail" open={docked} aria-live="polite">
+      <details className="dependency-detail" aria-live="polite">
         <summary><strong>{chosen.label}</strong> <span className="dependency-type">{nodeKinds[chosen.kind] ?? chosen.kind}</span></summary>
         <code>{chosen.source.relativePath}:{chosen.source.line}</code>
         {chosen.httpRoute && <code>{chosen.httpRoute.method} {chosen.httpRoute.pathTemplate}</code>}
-        {chosen.kind === "HTTP_CLIENT" && calls.length === 0 && <p>
-          {chosen.httpRoute ? "대상 BE 설정과 일치하는 엔드포인트를 확인하세요." : "코드에서 HTTP 경로를 확정할 수 없습니다."}
-        </p>}
-        {chosen.kind === "COMPONENT" && pagesFor(chosen.id).length > 1
-          && <span>사용 페이지 {pagesFor(chosen.id).map((id) => nodeById.get(id).label).join(", ")}</span>}
-        {calls.length > 0 && <>
-          <span>호출 지점 {calls.length}개 · 사용 페이지 {pageIds.size}개</span>
-          <ul>{calls.map(({ sourceId, targetId }) => (
-            <li key={`${sourceId}:${targetId}`}>{nodeById.get(sourceId).label} ← {pagesFor(sourceId).map((id) => nodeById.get(id).label).join(", ")}</li>
-          ))}</ul>
-        </>}
+        {chosen.kind === "HTTP_CLIENT" && (endpointOf
+          ? <span>엔드포인트 {endpointOf.httpRoute.method} {endpointOf.httpRoute.pathTemplate} · {endpointOf.source.relativePath}:{endpointOf.source.line}</span>
+          : <p>{chosen.httpRoute ? "대상 BE 설정과 일치하는 엔드포인트를 확인하세요." : "코드에서 HTTP 경로를 확정할 수 없습니다."}</p>)}
+        {chosen.kind === "ENDPOINT" && (() => {
+          const sites = callSites(chosen.id);
+          return sites.length
+            ? <>
+              <span>호출 지점 {sites.length}개 · 사용 페이지 {pagesOf(sites.map(({ id }) => id)).size}개</span>
+              <ul>{sites.map((site) => (
+                <li key={site.id}>{site.label} ← {model.pagesFor(site.id).map((id) => model.nodeById.get(id).label).join(", ") || "공통"}</li>
+              ))}</ul>
+            </>
+            : <span>FE 호출 지점이 없습니다.</span>;
+        })()}
+        {chosen.kind === "COMPONENT" && model.pagesFor(chosen.id).length > 1
+          && <span>사용 페이지 {model.pagesFor(chosen.id).map((id) => model.nodeById.get(id).label).join(", ")}</span>}
         {people(chosen).map((person) => (
           <span key={person.userId}>{person.displayName} · {person.branchName ?? "브랜치 없음"} · {new Date(person.observedAt).toLocaleTimeString("ko-KR")} 관측</span>
         ))}
       </details>
     )}
     {unknown.length > 0 && <details className="dependency-detail">
-      <summary>트리 밖 작업 파일 {unknown.length}개</summary>
+      <summary>트리 밖 작업 파일 {unknown.length}개{focus ? " · 집계 제외" : ""}</summary>
       <ul>{unknown.map(([key, entries]) => {
         const entriesList = [...entries.values()];
         return <li key={key}>{entriesList[0].relativePath} · {entriesList.map(({ displayName }) => displayName).join(", ")}</li>;
       })}</ul>
     </details>}
-    {(partial || graph.unmatchedCallCount > 0) && <p className="dependency-note">
-      {partial && `선택 노드 주변 ${view.nodes.length}개를 표시합니다. 노드 메뉴에서 다른 경로를 선택할 수 있습니다. `}
-      {graph.unmatchedCallCount > 0 && `연결되지 않은 API 호출 ${graph.unmatchedCallCount}개`}
-    </p>}
+    {graph.unmatchedCallCount > 0 && <p className="dependency-note">연결되지 않은 API 호출 {graph.unmatchedCallCount}개</p>}
   </>;
+
+  function renderGroup(entry) {
+    const { x, y } = entry;
+    const shown = entry.items.slice(0, groupLimit);
+    return (
+      <div className="dependency-card dependency-group" key={entry.key} data-kind={entry.group} data-rich
+        data-dim={focus && !inFocus(entry) || undefined} style={{ left: x, top: y }}>
+        <span className="dependency-type">{groupKinds[entry.group]} {entry.items.length}</span>
+        <ul className="dependency-group-list">
+          {shown.map((item) => {
+            const editing = people(item);
+            return (
+              <li key={item.id}>
+                <button type="button" className="dependency-item" aria-pressed={selected === item.id}
+                  data-dim={focus && !(focus.working.has(item.id) || focus.impact.has(item.id)) || undefined}
+                  data-working={focus?.working.has(item.id) || undefined} onClick={() => setSelected(item.id)}>
+                  <span>{wrapNodeName(item.label)}</span>
+                  {editing.length > 0 && <span className={"dependency-pill " + (item.kind === "DB_TABLE" ? "dependency-pill--schema" : "dependency-pill--working")}>
+                    {editing.map(({ displayName }) => displayName).join(", ")}
+                  </span>}
+                </button>
+              </li>
+            );
+          })}
+          {entry.items.length > shown.length && <li className="dependency-meta">외 {entry.items.length - shown.length}개</li>}
+        </ul>
+      </div>
+    );
+  }
+
+  function renderNode(entry) {
+    const { x, y } = entry;
+    const node = entry.node;
+    const kind = node ? node.kind : "COMMON";
+    const editing = node ? people(node) : [];
+    const shared = node?.kind === "COMPONENT" ? model.pagesFor(node.id).length : 0;
+    const meta = [entry.collapsible && !entry.open ? collapsedSummary(model, entry) : null, shared > 1 ? `사용 페이지 ${shared}` : null]
+      .filter(Boolean).join(" · ") || null;
+    const endpoint = node?.kind === "ENDPOINT" && node.httpRoute;
+    const schema = node?.kind === "DB_TABLE";
+    return (
+      <button type="button" className="dependency-card dependency-node" key={entry.key} data-node-id={entry.id} data-kind={kind}
+        data-rich={Boolean(meta || editing.length || endpoint) || undefined}
+        data-open={entry.collapsible && entry.open || undefined} data-active={onOpenPath(entry.key) || undefined}
+        data-dim={focus && !inFocus(entry) || undefined} data-working={focus?.working.has(entry.id) || undefined}
+        aria-pressed={node ? selected === entry.id : undefined} aria-expanded={entry.collapsible ? entry.open : undefined}
+        style={{ left: x, top: y }} onClick={() => activate(entry)}>
+        <span className="dependency-type">{nodeKinds[kind] ?? kind}</span>
+        {endpoint ? <>
+          <span className="dependency-pill dependency-pill--method">{node.httpRoute.method}</span>
+          <code className="dependency-code" title={node.httpRoute.pathTemplate}>{node.httpRoute.pathTemplate}</code>
+        </> : <strong className="dependency-name">{node ? wrapNodeName(node.label) : "공통"}</strong>}
+        {meta && <span className="dependency-meta">{meta}</span>}
+        {editing.length > 0 && (
+          <span className="dependency-workers">
+            {editing.slice(0, 2).map((person) => <span className="dependency-pill" key={person.userId}>{person.displayName}</span>)}
+            {editing.length > 2 && <span className="dependency-pill">+{editing.length - 2}명</span>}
+            <span className={"dependency-pill " + (schema ? "dependency-pill--schema" : "dependency-pill--working")}>
+              {schema ? "스키마 변경" : "● 작업 중"}
+            </span>
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  const area = sourceRepo.repoKind === "FRONTEND" ? "FRONTEND" : "BACKEND";
   return (
-    <DependencyTreeFrame {...frame} controls={controls} panel={panel}>
+    <DependencyTreeFrame {...frame} controls={controls} toolbar={toolbar} panel={panel}>
       <div className="dependency-viewport" ref={viewport} role="region" aria-label="저장소 트리" tabIndex={0}>
         <div className="dependency-stage" ref={stage}>
-          <div className="dependency-diagram" ref={canvas} data-single-lane={rows.length === 1 || undefined}
-            data-compact={fit === "both" || undefined}>
-            <DependencyTreeLines canvas={canvas} edges={edges} focus={focus} onSelect={setSelected} />
-            {rows.map(({ repo, rows: layers }) => {
-              const area = repo.repoKind === "FRONTEND" ? "FRONTEND" : "BACKEND";
-              return (
-                <section className="dependency-lane" key={repo.repoId} data-repo-lane aria-label={area}>
-                  <h2 className="dependency-area-label">{area}</h2>
-                  <div className="dependency-ranks">
-                    <div className="dependency-row">
-                      <header className="dependency-card" data-kind="ROOT" data-rich data-node-id={`root:${repo.repoId}`}>
-                        <span className="dependency-type">{area} REPO</span>
-                        <strong className="dependency-name">{repo.displayName}</strong>
-                        <span className="dependency-meta">{repo.branchName} · {repo.analysisCommitSha?.slice(0, 8) ?? "첫 분석 대기"}</span>
-                      </header>
-                    </div>
-                    {layers.map((layer) => (
-                      <div className="dependency-row" key={layer[0].id} style={{ "--tree-row-count": layer.length }}>
-                        {layer.map((node) => {
-                          const editing = people(node);
-                          const endpoint = node.kind === "ENDPOINT";
-                          const schema = node.kind === "DB_TABLE";
-                          const count = endpoint
-                            ? activeGraph.edges.filter((edge) => edge.targetId === node.id && edge.relationType === "HTTP_CALL").length
-                            : node.kind === "COMPONENT" ? pagesFor(node.id).length : 0;
-                          const meta = endpoint ? `호출 지점 ${count}개` : count > 1 ? `사용 페이지 ${count}개` : null;
-                          return (
-                            <button type="button" className={"dependency-card dependency-node" + (focus.has(node.id) ? " dependency-focused" : "")}
-                              data-node-id={node.id} data-kind={node.kind} data-rich={Boolean(meta || editing.length) || undefined}
-                              data-http-method={endpoint ? node.httpRoute?.method : undefined}
-                              key={node.id} aria-pressed={chosen?.id === node.id} onClick={() => setSelected(node.id)}>
-                              <span className="dependency-type">{nodeKinds[node.kind] ?? node.kind}</span>
-                              {endpoint && node.httpRoute ? <>
-                                <span className="dependency-pill dependency-pill--method">{node.httpRoute.method}</span>
-                                <code className="dependency-code" title={node.httpRoute.pathTemplate}>{node.httpRoute.pathTemplate}</code>
-                              </> : <strong className="dependency-name">{wrapNodeName(node.label)}</strong>}
-                              {meta && <span className="dependency-meta">{meta}</span>}
-                              {editing.length > 0 && (
-                                <span className="dependency-workers">
-                                  {editing.slice(0, 2).map((person) => <span className="dependency-pill" key={person.userId}>{person.displayName}</span>)}
-                                  {editing.length > 2 && <span className="dependency-pill">+{editing.length - 2}명</span>}
-                                  <span className={"dependency-pill " + (schema ? "dependency-pill--schema" : "dependency-pill--working")}>
-                                    {schema ? "스키마 변경" : "● 작업 중"}
-                                  </span>
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                  {repo.analysisCommitSha && !layers.length && <p>표시할 의존성 노드가 없습니다.</p>}
-                </section>
-              );
-            })}
+          <div className="dependency-radial" ref={canvas} style={{ width, height }}>
+            <DependencyTreeLines links={links} width={width} height={height} />
+            <header className="dependency-card dependency-root" data-kind="ROOT" data-rich data-node-id={`root:${sourceRepo.repoId}`}
+              style={{ left: originX, top: originY }}>
+              <span className="dependency-type">{area} REPO</span>
+              <strong className="dependency-name">{sourceRepo.displayName}</strong>
+              <span className="dependency-meta">{sourceRepo.branchName} · {sourceRepo.analysisCommitSha?.slice(0, 8) ?? "첫 분석 대기"}</span>
+            </header>
+            {scene.entries.map((entry) => entry.group ? renderGroup(entry) : renderNode(entry))}
+            {sourceRepo.analysisCommitSha && !tree.length && <p className="dependency-empty-note">표시할 의존성 노드가 없습니다.</p>}
           </div>
         </div>
       </div>

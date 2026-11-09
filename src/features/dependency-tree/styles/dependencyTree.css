@@ -63,11 +63,11 @@
   --tree-endpoint-width: 440px;
   --tree-node-height: 88px;
   --tree-rich-height: 136px;
+  --tree-root-height: 96px;
   --tree-lane-min: 620px;
   --tree-control-max: 22rem;
   --tree-viewport-padding: 12px;
   --tree-topbar-padding: 10px;
-  --tree-float-max: 320px;
   --tree-float-inset: 16px;
   --tree-float-shadow: 0 18px 40px -18px rgb(31 44 57 / 0.35);
   --tree-float-bg: rgb(255 255 255 / 0.92);
@@ -196,8 +196,8 @@
   background: var(--tree-canvas);
 }
 
-/* 넓은 화면에서는 상세 패널이 오른쪽 열로 도킹되어 그래프를 가리지 않고, 좁은 화면에서는 그래프 위에 겹친다. */
-.dependency-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; min-block-size: 0; }
+/* 그래프가 위, 상세 패널이 아래 한 줄. 패널은 접힌 요약 줄만 차지하고, 펼치면 그래프가 남은 높이에 다시 맞춰진다. */
+.dependency-body { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-block-size: 0; }
 .dependency-empty { display: grid; place-content: center; text-align: center; color: var(--tree-muted); }
 .dependency-empty p { margin: 0; }
 .dependency-viewport {
@@ -227,67 +227,25 @@
   margin: auto; /* 맞춤 상태에서는 가운데, 원본 크기에서는 스크롤 시작점이 잘리지 않는다. */
   overflow: clip;
 }
-.dependency-diagram {
+/* 방사형 캔버스. 중심 저장소 카드를 기준으로 카드를 절대 좌표에 놓고, 뷰포트 폭에 맞춰 전체를 확대·축소한다. */
+.dependency-radial {
   position: relative;
   isolation: isolate;
-  display: grid;
-  grid-auto-flow: column;
-  /* 레인 폭은 고정하고 뷰포트 폭에 맞춰 전체를 확대한다. 넓은 화면일수록 카드와 글씨가 함께 커진다. */
-  grid-auto-columns: var(--tree-lane-min);
-  gap: var(--tree-lane-gap);
-  inline-size: max-content;
-  align-items: stretch;
+  --tree-node-width: 240px;
+  --tree-group-width: 280px;
+  --tree-node-height: 72px;
+  --tree-rich-height: 100px;
   transform: scale(var(--tree-fit-scale, 1));
   transform-origin: top left;
 }
-.dependency-diagram[data-single-lane] { grid-auto-columns: calc(var(--tree-lane-min) * 2 + var(--tree-lane-gap)); }
-/* 전체 맞춤: 구조 전체가 한 화면에 들어오도록 세로 간격과 카드 높이만 줄인다. 글씨 크기는 그대로라 축소 배율이 덜 떨어진다. */
-.dependency-diagram[data-compact] {
-  --tree-rank-gap: 32px;
-  --tree-sibling-gap: 32px;
-  --tree-lane-gap: 48px;
-  --tree-node-height: 56px;
-  --tree-rich-height: 96px;
-  --tree-panel-block: 12px;
-  --tree-panel-inline: 20px;
-  --tree-card-block: 8px;
-  --tree-edge-radius: 12px;
-  --tree-gap-lg: 10px;
-}
-.dependency-lane {
-  padding: var(--tree-panel-block) var(--tree-panel-inline) calc(var(--tree-panel-block) + var(--tree-gap-sm));
-  border: var(--tree-stroke) solid var(--tree-panel-border);
-  border-radius: var(--tree-panel-radius);
-  background: var(--tree-panel);
-}
-.dependency-area-label {
-  position: relative;
-  z-index: 2;
-  margin: 0 0 var(--tree-gap-lg);
-  font-size: var(--tree-label-size);
-  font-weight: var(--tree-weight-heavy);
-  letter-spacing: var(--tree-area-tracking);
-  color: var(--tree-muted);
-}
-.dependency-ranks { display: grid; gap: var(--tree-rank-gap); }
-.dependency-row {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--tree-sibling-gap);
-  --tree-slot-width: calc((100% - (var(--tree-row-count, 1) - 1) * var(--tree-sibling-gap)) / var(--tree-row-count, 1));
-}
 .dependency-card {
-  position: relative;
+  position: absolute;
   z-index: 2;
   display: grid;
   justify-items: center;
   align-content: center;
   gap: var(--tree-gap-xs);
-  flex: none;
-  inline-size: min(var(--tree-card-width, var(--tree-node-width)), var(--tree-slot-width));
-  min-inline-size: 0;
+  inline-size: var(--tree-card-width, var(--tree-node-width));
   min-block-size: var(--tree-node-height);
   padding: var(--tree-card-block) var(--tree-card-inline);
   border: var(--tree-stroke) solid var(--tree-border);
@@ -298,9 +256,75 @@
   line-height: var(--tree-tight-line);
   text-align: center;
   overflow-wrap: anywhere;
-  translate: var(--tree-card-offset, 0px) 0;
+  translate: -50% -50%;
+  transition: opacity 0.2s;
 }
 .dependency-card[data-rich] { min-block-size: var(--tree-rich-height); }
+.dependency-card[data-kind="ROOT"][data-rich] { min-block-size: var(--tree-root-height); } /* 시안의 저장소 카드는 340×96 */
+.dependency-root { z-index: 3; }
+.dependency-page [data-kind="COMMON"] {
+  --tree-fill: var(--tree-panel); --tree-border: var(--tree-edge); --tree-deep: var(--tree-http); --tree-tint: 61, 74, 87;
+}
+.dependency-node { cursor: pointer; }
+/* 열린 가지의 카드는 진한 테두리, 선택한 팀원이 수정 중인 카드는 작업 색 테두리, 범위 밖은 흐리게 */
+.dependency-node[data-open] { border-color: var(--tree-deep); }
+.dependency-node[data-active] { box-shadow: var(--tree-clay-shadow), 0 0 0 var(--tree-focus-offset) rgba(var(--tree-tint), 0.25); }
+.dependency-node[data-working] { border-color: var(--tree-work-ink); box-shadow: var(--tree-clay-shadow), 0 0 0 var(--tree-focus-offset) var(--tree-work-fill); }
+.dependency-card[data-dim] { opacity: 0.3; }
+.dependency-empty-note { position: absolute; inset-inline-start: var(--tree-gap-lg); inset-block-start: var(--tree-gap-lg); margin: 0; color: var(--tree-muted); }
+/* BE 경로의 종류별 묶음 카드. 항목 하나하나를 눌러 상세를 볼 수 있다. */
+.dependency-group { inline-size: var(--tree-group-width); justify-items: stretch; text-align: start; }
+.dependency-group > .dependency-type { justify-self: center; }
+.dependency-group-list { display: grid; gap: var(--tree-gap-xs); margin: 0; padding: 0; list-style: none; }
+.dependency-group-list > .dependency-meta { text-align: center; }
+.dependency-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--tree-gap-sm);
+  inline-size: 100%;
+  padding: var(--tree-gap-xs) var(--tree-gap-sm);
+  border: 0;
+  border-radius: var(--tree-ui-radius);
+  background: rgb(255 255 255 / 0.55);
+  color: var(--tree-ink);
+  font: inherit;
+  font-size: var(--tree-meta-size);
+  font-weight: var(--tree-weight-bold);
+  line-height: var(--tree-tight-line);
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.dependency-item[aria-pressed="true"] { outline: var(--tree-focus-width) solid var(--tree-focus); }
+.dependency-item[data-working] { box-shadow: inset 0 0 0 var(--tree-focus-width) var(--tree-work-ink); }
+.dependency-item[data-dim] { opacity: 0.4; }
+/* 팀원 선택 줄 */
+.dependency-members {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tree-gap-sm);
+  padding: var(--tree-gap-sm) var(--tree-page-padding);
+  border-block-end: var(--tree-stroke) solid var(--tree-panel-border);
+  font-size: var(--tree-meta-size);
+  color: var(--tree-muted);
+}
+.dependency-members-label { font-weight: var(--tree-weight-bold); }
+.dependency-members-summary { margin-inline-start: auto; }
+.dependency-chip {
+  padding: var(--tree-pill-block) var(--tree-pill-inline);
+  border: var(--tree-stroke) solid var(--tree-panel-border);
+  border-radius: var(--tree-pill-radius);
+  background: var(--tree-canvas);
+  color: var(--tree-http);
+  font-size: var(--tree-label-size);
+  font-weight: var(--tree-weight-bold);
+  line-height: var(--tree-pill-line);
+  cursor: pointer;
+}
+.dependency-chip[aria-pressed="true"] { border-color: var(--tree-work-ink); background: var(--tree-work-fill); color: var(--tree-work-ink); }
+.dependency-body:has(> .dependency-members) { grid-template-rows: auto minmax(0, 1fr) auto; }
 .dependency-type {
   color: var(--tree-deep);
   font-size: var(--tree-label-size);
@@ -342,9 +366,10 @@
 .dependency-pill--method { background: var(--tree-deep); color: var(--tree-canvas); }
 
 .dependency-lines { position: absolute; z-index: 1; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; pointer-events: none; }
-.dependency-line { fill: none; stroke: var(--tree-edge); stroke-width: var(--tree-edge-width); stroke-linecap: round; }
-.dependency-http { stroke: var(--tree-http); stroke-width: var(--tree-http-width); }
-.dependency-highlight { stroke: var(--tree-muted); }
+.dependency-line { fill: none; stroke: var(--tree-edge); stroke-width: var(--tree-edge-width); stroke-linecap: round; transition: opacity 0.2s; }
+.dependency-http { stroke: var(--tree-http); stroke-width: var(--tree-http-width); stroke-dasharray: 10 8; }
+.dependency-highlight { stroke: var(--tree-focus); }
+.dependency-line.dependency-dim { opacity: 0.2; }
 .dependency-marker { fill: var(--tree-edge); }
 .dependency-http-marker { fill: var(--tree-http); }
 .dependency-hit { fill: none; stroke: transparent; stroke-width: var(--tree-edge-hit-width); pointer-events: stroke; cursor: pointer; }
@@ -357,14 +382,14 @@
   font-size: var(--tree-meta-size);
   font-weight: var(--tree-weight-bold);
 }
-/* 그래프 위에 떠 있는 상세 패널. 접으면 요약 줄만 남아 그래프를 가리지 않는다. */
+/* 상세 패널. 접힌 섹션은 한 줄에 나란히 놓이고, 펼친 섹션만 한 줄을 다 쓴다. */
 .dependency-panel {
-  inline-size: var(--tree-float-max);
-  max-block-size: calc(100% - 2 * var(--tree-float-inset));
-  margin: var(--tree-float-inset) var(--tree-float-inset) var(--tree-float-inset) 0;
-  align-self: end;
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  column-gap: var(--tree-gap-lg);
+  max-block-size: 40vh;
+  margin: 0 var(--tree-float-inset) var(--tree-float-inset);
   overflow: auto;
   padding: var(--tree-gap-sm) var(--tree-card-inline);
   border: var(--tree-stroke) solid var(--tree-panel-border);
@@ -375,7 +400,8 @@
   font-size: var(--tree-meta-size);
 }
 .dependency-panel:empty { display: none; }
-.dependency-panel > * + * { border-block-start: var(--tree-stroke) solid var(--tree-panel-border); }
+.dependency-panel > details[open],
+.dependency-panel > .dependency-source { flex: 1 1 100%; }
 .dependency-panel > p { margin: 0; padding-block: var(--tree-gap-sm); }
 .dependency-panel p[role="alert"] { color: var(--tree-schema-ink); }
 .dependency-note { color: var(--tree-muted); }
@@ -397,24 +423,6 @@
 
 @media (max-width: 1500px) {
   .dependency-brand p { display: none; }
-}
-/* 좁은 화면: 패널을 그래프 아래 줄로 내려 겹치지 않게 하고, 그래프는 남은 높이에 다시 맞춘다. */
-@media (max-width: 1100px) {
-  .dependency-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
-  .dependency-panel {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: start;
-    column-gap: var(--tree-gap-lg);
-    inline-size: auto;
-    max-block-size: 40vh;
-    margin: 0 var(--tree-float-inset) var(--tree-float-inset);
-    align-self: auto;
-  }
-  /* 접힌 섹션은 한 줄에 나란히, 펼친 섹션만 한 줄을 다 쓴다. */
-  .dependency-panel > * + * { border-block-start: none; }
-  .dependency-panel > details[open],
-  .dependency-panel > .dependency-source { flex: 1 1 100%; }
 }
 @media (max-width: 720px) {
   .dependency-topbar { gap: var(--tree-gap-md); }
