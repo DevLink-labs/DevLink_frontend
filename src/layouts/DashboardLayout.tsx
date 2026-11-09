@@ -190,7 +190,7 @@ export default function DashboardLayout({
           {taskList.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p></div>}
         </div>
       </section>
-      <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined}><Icon name="eye" size={18} /><span>디자인 미리보기</span><Icon name="chevron" size={14} /></button></div>
+      {import.meta.env.DEV && <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined}><Icon name="eye" size={18} /><span>디자인 미리보기</span><Icon name="chevron" size={14} /></button></div>}
       <div className="sidebar-bottom"><div className="sidebar-profile">
         <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-label="내 프로필과 설정 열기"><span className="avatar">{profileName.slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{profileName}</strong><span title={profileEmail}>{profileEmail}</span></span></button>
         <button type="button" className={`icon-button${view === "settings" || view === "guide" ? " is-selected" : ""}`} onClick={() => changeView("settings")} aria-label="설정" title="설정"><SettingsIcon /></button>
