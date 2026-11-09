@@ -14,7 +14,8 @@ interface ImmersiveTeamSceneProps {
   loading: boolean;
   selectedMemberId: string;
   focusedMemberId: string | null;
-  scrollState: RefObject<{ progress: number }>;
+  active: boolean;
+  transitionState: RefObject<{ progress: number; sceneProgress: number; sceneDistance: number }>;
   onRenderRequestChange: (requestRender: () => void) => void;
   onSelectMember: (id: string) => void;
   paused: boolean;
@@ -95,7 +96,8 @@ export default function ImmersiveTeamScene({
   loading,
   selectedMemberId,
   focusedMemberId,
-  scrollState,
+  active,
+  transitionState,
   onRenderRequestChange,
   onSelectMember,
   paused,
@@ -107,13 +109,15 @@ export default function ImmersiveTeamScene({
   const teamLabel = useRef<HTMLDivElement>(null);
   const memberLabels = useRef(new Map<string, HTMLButtonElement>());
   const wake = useRef<() => void>(() => {});
+  const requestRender = useRef<() => void>(() => {});
   const control = useRef({
     teamName,
     members,
     loading,
     selectedMemberId,
     focusedMemberId,
-    scrollState,
+    active,
+    transitionState,
     onSelectMember,
     paused,
     topView,
@@ -127,7 +131,8 @@ export default function ImmersiveTeamScene({
       loading,
       selectedMemberId,
       focusedMemberId,
-      scrollState,
+      active,
+      transitionState,
       onSelectMember,
       paused,
       topView,
@@ -140,7 +145,8 @@ export default function ImmersiveTeamScene({
     loading,
     selectedMemberId,
     focusedMemberId,
-    scrollState,
+    active,
+    transitionState,
     onSelectMember,
     paused,
     topView,
@@ -148,7 +154,7 @@ export default function ImmersiveTeamScene({
   ]);
 
   useEffect(() => {
-    onRenderRequestChange(() => wake.current());
+    onRenderRequestChange(() => requestRender.current());
     return () => onRenderRequestChange(() => {});
   }, [onRenderRequestChange]);
 
@@ -345,7 +351,12 @@ export default function ImmersiveTeamScene({
     let targetPolar = 1.08;
     let lastFocusId: string | null = null;
     let lastSelectedId = "";
-    let lastRenderedScroll = -1;
+    let availabilityReported = false;
+    let zoomFactor = 1;
+    let targetZoomFactor = 1;
+    let zoomFocusId = control.current.focusedMemberId;
+    let zoomTopView = control.current.topView;
+    let lastSceneProgress = 0;
     let cameraInitialized = false;
     let teamReveal = 0;
     let lastReveal = -1;
@@ -522,7 +533,7 @@ export default function ImmersiveTeamScene({
       if (layoutDirty) measureLabels();
       const mobile = width <= MOBILE_BREAKPOINT;
       const focused = control.current.focusedMemberId !== null;
-      const canSelect = teamReveal >= 0.65 && control.current.scrollState.current.progress <= 0.12;
+      const canSelect = teamReveal >= 0.65 && control.current.active && !isTransitioning();
       const { minY, maxY } = labelLayout;
       const teamElement = teamLabel.current;
       teamBox.visible = control.current.focusedMemberId === null;
@@ -625,16 +636,45 @@ export default function ImmersiveTeamScene({
       }
     }
 
+    function resetZoomForView() {
+      const { focusedMemberId, topView } = control.current;
+      if (zoomFocusId === focusedMemberId && zoomTopView === topView) return;
+      zoomFactor = targetZoomFactor = 1;
+      zoomFocusId = focusedMemberId;
+      zoomTopView = topView;
+    }
+
+    function isTransitioning() {
+      const { progress, sceneProgress } = control.current.transitionState.current;
+      return progress > 0 || sceneProgress > 0;
+    }
+
     function frame(now: number) {
-      if (disposed || assetFailed || contextLost) return;
+      if (disposed || assetFailed || contextLost || !control.current.active) {
+        renderer.setAnimationLoop(null);
+        running = false;
+        return;
+      }
       const delta = Math.min((now - previous) / 1000, 0.05);
       previous = now;
       const frozen = control.current.paused;
       const blend = frozen ? 1 : 1 - Math.exp(-delta * 5);
       const agentTurnBlend = frozen ? 1 : 1 - Math.exp(-delta * 12);
-      const progress = THREE.MathUtils.clamp(control.current.scrollState.current.progress, 0, 1);
+      const transition = THREE.MathUtils.clamp(control.current.transitionState.current.progress, 0, 1);
+      const sceneProgress = THREE.MathUtils.clamp(control.current.transitionState.current.sceneProgress, 0, 1);
+      const sceneDepth = sceneProgress * control.current.transitionState.current.sceneDistance;
+      if (transition > 0 || sceneProgress > 0) {
+        pointerDown = null;
+        pointer.set(0, 0);
+      }
       const focusId = control.current.focusedMemberId;
       const lookingDown = control.current.topView;
+      resetZoomForView();
+      zoomFactor = THREE.MathUtils.lerp(
+        zoomFactor,
+        targetZoomFactor,
+        frozen ? 1 : 1 - Math.exp(-delta * 12),
+      );
       const loading = control.current.loading || !companionAsset || !teamCharacter;
       updateMembers(control.current.members);
       if (agentFocus && (agentFocus.memberId !== focusId || now >= agentFocus.until || loading))
@@ -652,7 +692,7 @@ export default function ImmersiveTeamScene({
       if (!frozen) elapsed += delta;
       if (loading) {
         teamReveal = 0;
-      } else if (frozen || progress >= 0.12 || lastRenderedScroll >= 1) {
+      } else if (frozen) {
         teamReveal = 1;
       } else {
         teamReveal = Math.min(1, teamReveal + delta / TEAM_REVEAL_SECONDS);
@@ -670,8 +710,8 @@ export default function ImmersiveTeamScene({
         lastReveal = reveal;
       }
       entrance = THREE.MathUtils.lerp(entrance, 1, frozen ? 1 : 1 - Math.exp(-delta * 2.4));
-      world.scale.setScalar((0.96 + entrance * 0.04) * (1 - progress * 0.14));
-      world.position.y = -0.025 + entrance * 0.025 + progress * 0.16;
+      world.scale.setScalar((0.96 + entrance * 0.04) * (1 - sceneDepth * 0.14));
+      world.position.y = -0.025 + entrance * 0.025 + sceneDepth * 0.16;
       core.position.y = TEAM_CHARACTER_CENTER_Y + Math.sin(elapsed * 0.4) * 0.008;
       if (loadingAgent) {
         const orbit = elapsed * 0.72;
@@ -736,7 +776,7 @@ export default function ImmersiveTeamScene({
       const desiredAzimuth = targetAzimuth + (lookingDown ? 0 : pointer.x * 0.045);
       const desiredPolar = lookingDown
         ? TOP_VIEW_POLAR
-        : targetPolar + pointer.y * 0.025 - progress * 0.14;
+        : targetPolar + pointer.y * 0.025 - sceneDepth * 0.14;
       azimuth = THREE.MathUtils.lerp(azimuth, desiredAzimuth, orientationBlend);
       polar = THREE.MathUtils.lerp(polar, desiredPolar, orientationBlend);
       const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
@@ -754,19 +794,21 @@ export default function ImmersiveTeamScene({
         const verticalFit = 0.9 / (tangent * heightFraction);
         radius = Math.max(4.25, horizontalFit, verticalFit);
       } else {
-        target.set(0, 0.05 + progress * 0.08, 0);
+        target.set(0, 0.05 + sceneDepth * 0.08, 0);
         const horizontalFit = 3.95 / (tangent * camera.aspect);
         const verticalFit = (lookingDown ? 3.95 : 3.15) / tangent;
         radius = Math.max(11.4, horizontalFit, verticalFit) * (1 - loadingWeight * 0.14);
       }
-      radius *= 1 + progress * 0.18;
+      radius *= zoomFactor * (1 + sceneDepth * 0.18);
       orbitOffset.set(
         Math.sin(azimuth) * Math.sin(polar) * radius,
         Math.cos(polar) * radius,
         Math.cos(azimuth) * Math.sin(polar) * radius,
       );
       desiredPosition.copy(target).add(orbitOffset);
-      const cameraBlend = frozen || !cameraInitialized ? 1 : 1 - Math.exp(-delta * 6);
+      const cameraBlend = frozen || !cameraInitialized || sceneProgress > 0 || lastSceneProgress > 0
+        ? 1
+        : 1 - Math.exp(-delta * 6);
       camera.position.lerp(desiredPosition, cameraBlend);
       cameraTarget.lerp(target, cameraBlend);
       const targetOffsetX = focusedNode ? width * 0.5 - focusFrame.centerX : 0;
@@ -797,50 +839,62 @@ export default function ImmersiveTeamScene({
       renderer.render(scene, camera);
       if (!loading && teamCharacter && teamReveal >= 0.25) updateLabels();
       else if (labelsElement) labelsElement.style.visibility = "hidden";
-      if (lastRenderedScroll === -1 && companionAsset && teamCharacter)
+      if (!availabilityReported && companionAsset && teamCharacter) {
         control.current.onAvailabilityChange(true);
-      lastRenderedScroll = progress;
-      if (frozen || progress >= 1) {
+        availabilityReported = true;
+      }
+      lastSceneProgress = sceneProgress;
+      if (frozen) {
         renderer.setAnimationLoop(null);
         running = false;
       }
     }
 
     function start() {
-      if (
-        disposed ||
-        assetFailed ||
-        contextLost ||
-        document.hidden ||
-        running ||
-        (control.current.scrollState.current.progress >= 1 && lastRenderedScroll >= 1)
-      )
+      if (!control.current.active) {
+        renderer.setAnimationLoop(null);
+        running = false;
+        pointerDown = null;
+        pointer.set(0, 0);
+        clearAgentFocus();
         return;
+      }
+      if (disposed || assetFailed || contextLost || document.hidden || running) return;
       running = true;
       previous = performance.now();
       renderer.setAnimationLoop(frame);
     }
-    wake.current = start;
     function resize() {
-      width = Math.max(element!.clientWidth, 1);
-      height = Math.max(element!.clientHeight, 1);
-      renderer.setSize(width, height, false);
+      if (!control.current.active) {
+        start();
+        return;
+      }
+      const nextWidth = Math.max(element!.clientWidth, 1);
+      const nextHeight = Math.max(element!.clientHeight, 1);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+      if (renderer.getPixelRatio() !== pixelRatio) {
+        renderer.setPixelRatio(pixelRatio);
+      }
+      if (width !== nextWidth || height !== nextHeight) {
+        width = nextWidth;
+        height = nextHeight;
+        renderer.setSize(width, height, false);
+      }
       camera.aspect = width / height;
       camera.fov = width <= MOBILE_BREAKPOINT ? 43 : 37;
       camera.updateProjectionMatrix();
       layoutDirty = true;
       start();
     }
+    wake.current = resize;
+    requestRender.current = start;
     const observer = new ResizeObserver(resize);
     observer.observe(element);
     resize();
 
     function hit(event: PointerEvent) {
-      if (
-        control.current.loading ||
-        teamReveal < 0.65 ||
-        control.current.scrollState.current.progress > 0.12
-      )
+      if (!control.current.active || control.current.loading || teamReveal < 0.65 ||
+        isTransitioning())
         return undefined;
       const bounds = renderer.domElement.getBoundingClientRect();
       raycaster.setFromCamera(
@@ -859,10 +913,11 @@ export default function ImmersiveTeamScene({
     }
     function down(event: PointerEvent) {
       if (
+        !control.current.active ||
         event.button !== 0 ||
         control.current.loading ||
         teamReveal < 0.65 ||
-        control.current.scrollState.current.progress > 0.12
+        isTransitioning()
       )
         return;
       pointerDown = { x: event.clientX, y: event.clientY, moved: false };
@@ -870,6 +925,7 @@ export default function ImmersiveTeamScene({
       renderer.domElement.style.cursor = "grabbing";
     }
     function move(event: PointerEvent) {
+      if (!control.current.active || isTransitioning()) return;
       const bounds = renderer.domElement.getBoundingClientRect();
       pointer.set(
         ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
@@ -918,6 +974,37 @@ export default function ImmersiveTeamScene({
       renderer.domElement.style.cursor = "grab";
       start();
     }
+    function wheel(event: WheelEvent) {
+      if (!control.current.active || event.ctrlKey) return;
+      if (event.target instanceof Element) {
+        if (event.target.closest(".itp-selection, .itp-team-picker-panel, .itp-member-list"))
+          return;
+        let ancestor: HTMLElement | null =
+          event.target instanceof HTMLElement ? event.target : event.target.parentElement;
+        while (ancestor && ancestor !== stage && ancestor !== element) {
+          const style = window.getComputedStyle(ancestor);
+          if (
+            (/(auto|scroll)/.test(style.overflowY) && ancestor.scrollHeight > ancestor.clientHeight) ||
+            (/(auto|scroll)/.test(style.overflowX) && ancestor.scrollWidth > ancestor.clientWidth)
+          )
+            return;
+          ancestor = ancestor.parentElement;
+        }
+      }
+      event.preventDefault();
+      if (isTransitioning()) return;
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? height : 1;
+      const delta = THREE.MathUtils.clamp(event.deltaY * unit, -240, 240);
+      if (!Number.isFinite(delta) || delta === 0) return;
+      resetZoomForView();
+      const focused = control.current.focusedMemberId !== null;
+      targetZoomFactor = THREE.MathUtils.clamp(
+        targetZoomFactor * Math.exp(delta * 0.0015),
+        focused ? 0.75 : 0.65,
+        focused ? 1.5 : 1.8,
+      );
+      start();
+    }
     function visibility() {
       if (document.hidden) {
         renderer.setAnimationLoop(null);
@@ -934,10 +1021,12 @@ export default function ImmersiveTeamScene({
     }
     function restored() {
       contextLost = false;
-      lastRenderedScroll = -1;
+      availabilityReported = false;
       start();
     }
     const canvas = renderer.domElement;
+    const wheelTarget = stage ?? element;
+    wheelTarget.addEventListener("wheel", wheel, { passive: false });
     canvas.addEventListener("pointerdown", down);
     canvas.addEventListener("pointermove", move);
     canvas.addEventListener("pointerup", up);
@@ -976,7 +1065,7 @@ export default function ImmersiveTeamScene({
         });
         world.add(loadingAgent.group);
         updateMembers(control.current.members, true);
-        lastRenderedScroll = -1;
+        availabilityReported = false;
         start();
       })
       .catch(() => {
@@ -995,9 +1084,11 @@ export default function ImmersiveTeamScene({
       stage?.style.removeProperty("--itp-team-reveal-visibility");
       if (labelsElement) labelsElement.style.visibility = "hidden";
       wake.current = () => {};
+      requestRender.current = () => {};
       renderer.setAnimationLoop(null);
       observer.disconnect();
       panelObserver.disconnect();
+      wheelTarget.removeEventListener("wheel", wheel);
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
@@ -1024,7 +1115,7 @@ export default function ImmersiveTeamScene({
       className="itp-canvas"
       ref={host}
       role="group"
-      aria-label="팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 드래그로 회전하고 팀원 또는 이름을 선택할 수 있습니다."
+      aria-label="팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다."
     >
       <div
         className="itp-scene-labels"
@@ -1055,7 +1146,8 @@ export default function ImmersiveTeamScene({
             hidden={focusedMemberId !== null && focusedMemberId !== member.id}
             aria-label={`${member.name} 팀원 선택`}
             onClick={() => {
-              if (control.current.scrollState.current.progress <= 0.12)
+              if (control.current.active && control.current.transitionState.current.progress === 0 &&
+                control.current.transitionState.current.sceneProgress === 0)
                 control.current.onSelectMember(member.id);
             }}
             style={
