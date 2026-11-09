@@ -22,6 +22,8 @@ function wrapNodeName(label) {
 
 /** 맞춤에서 작은 그래프를 키우는 상한. 카드가 지나치게 커지지 않게 막는다. */
 const maxFitScale = 1.6;
+/** 선택 중심에서 자손이 많아도 이보다 작게는 줄이지 않는다(그 아래는 스크롤 대신 카드가 잘려도 글씨를 지킨다). */
+const minFocusScale = 0.3;
 const fitModes = [["both", "전체 맞춤"], ["width", "가로 맞춤"], ["none", "원본 크기"], ["focus", "선택 중심"]];
 /** 방사형 간격. ring은 중심에서 1단까지, step은 단 사이, minArc는 같은 단 이웃 카드 사이 최소 호 길이(px). */
 const metrics = { ring: 300, step: 250, minArc: 150, spread: 1.4 };
@@ -46,7 +48,6 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   const [member, setMember] = useState(null);
   const [fit, setFit] = useState("both");
   const [focusKey, setFocusKey] = useState(null);
-  const scrollRequest = useRef(false);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!activity?.receivedAt) return undefined;
@@ -98,8 +99,8 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   }, [tree]);
   const { originX, originY, width, height } = scene;
   /**
-   * 배율과 스크롤. 전체·가로 맞춤은 캔버스 전체를, 선택 중심은 누른 카드와 그 부모·자식이 들어오는 상자를 기준으로 배율을 정하고
-   * 누른 카드가 뷰포트 가운데에 오도록 스크롤한다(스크롤은 카드를 눌렀을 때 한 번만, 이후 재측정에서는 배율만 갱신).
+   * 배율과 위치. 전체·가로 맞춤은 캔버스 전체를 스테이지에 맞추고, 선택 중심은 누른 카드·부모·열린 자손이 들어오는 상자를
+   * 뷰포트 크기의 스테이지 가운데에 오도록 캔버스를 이동·확대한다.
    */
   useLayoutEffect(() => {
     const frame = viewport.current;
@@ -107,19 +108,20 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     const diagram = canvas.current;
     if (!frame || !surface || !diagram) return undefined;
 
+    /** 선택 중심 상자: 누른 카드와 그 부모, 그리고 열린 자손 전체(API 호출이면 BE 경로 끝까지). 캔버스 좌표 기준이다. */
     function focusBox() {
       const target = scene.entries.find((entry) => entry.key === focusKey);
       if (!target) return null;
-      const related = scene.entries.filter((entry) => entry.key === focusKey || entry.parentKey === focusKey || entry.key === target.parentKey);
+      const related = scene.entries.filter((entry) => entry.key === focusKey || entry.key.startsWith(focusKey + "/") || entry.key === target.parentKey);
       const points = related.map(({ x, y }) => [x, y]);
       if (!target.parentKey) points.push([scene.originX, scene.originY]);
       const xs = points.map(([x]) => x);
       const ys = points.map(([, y]) => y);
-      return {
-        center: [target.x, target.y],
-        width: Math.max(...xs) - Math.min(...xs) + cardSize.width + cardSize.pad * 2,
-        height: Math.max(...ys) - Math.min(...ys) + cardSize.height + cardSize.pad * 2,
-      };
+      const minX = Math.min(...xs) - cardSize.width / 2 - cardSize.pad;
+      const maxX = Math.max(...xs) + cardSize.width / 2 + cardSize.pad;
+      const minY = Math.min(...ys) - cardSize.height / 2 - cardSize.pad;
+      const maxY = Math.max(...ys) + cardSize.height / 2 + cardSize.pad;
+      return { center: [(minX + maxX) / 2, (minY + maxY) / 2], width: maxX - minX, height: maxY - minY };
     }
 
     function measure() {
@@ -133,20 +135,22 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
       const availableWidth = Math.max(1, frame.clientWidth - paddingX);
       const availableHeight = Math.max(1, frame.clientHeight - paddingY);
       const box = fit === "focus" ? focusBox() : null;
+      if (box) {
+        // 선택 중심: 스테이지를 뷰포트 크기로 고정하고 캔버스 변환(이동+배율)만 바꾼다. 변환은 CSS 전환으로 움직여 카메라가 옮겨 가는 느낌을 준다.
+        const scale = Math.max(minFocusScale, Math.min(maxFitScale, availableWidth / box.width, availableHeight / box.height));
+        surface.style.setProperty("--tree-fit-scale", scale);
+        surface.style.setProperty("--tree-fitted-width", availableWidth + "px");
+        surface.style.setProperty("--tree-fitted-height", availableHeight + "px");
+        diagram.style.transform = `translate(${availableWidth / 2 - box.center[0] * scale}px, ${availableHeight / 2 - box.center[1] * scale}px) scale(${scale})`;
+        frame.scrollTo({ left: 0, top: 0, behavior: "auto" });
+        return;
+      }
       const scale = fit === "none" ? 1
-        : box ? Math.min(maxFitScale, availableWidth / box.width, availableHeight / box.height)
-          : Math.min(maxFitScale, availableWidth / width, fit === "width" ? Infinity : availableHeight / height);
+        : Math.min(maxFitScale, availableWidth / width, fit === "width" ? Infinity : availableHeight / height);
       surface.style.setProperty("--tree-fit-scale", scale);
       surface.style.setProperty("--tree-fitted-width", width * scale + "px");
       surface.style.setProperty("--tree-fitted-height", height * scale + "px");
-      if (box && scrollRequest.current) {
-        scrollRequest.current = false;
-        const left = Math.max(0, parseFloat(style.paddingLeft) + box.center[0] * scale - frame.clientWidth / 2);
-        const top = Math.max(0, parseFloat(style.paddingTop) + box.center[1] * scale - frame.clientHeight / 2);
-        // 새 배율로 스테이지 크기가 반영된 다음 프레임에 스크롤해야 끝이 잘리지 않는다.
-        // 부드러운 스크롤은 배율 변경으로 스테이지 크기가 바뀌면 취소되므로 즉시 이동한다.
-        requestAnimationFrame(() => frame.scrollTo({ left, top, behavior: "auto" }));
-      }
+      diagram.style.transform = "";
     }
 
     let pending;
@@ -189,7 +193,6 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
 
   /** 누른 카드를 가운데로 가져오는 선택 중심 모드로 전환한다. */
   function focusOn(key) {
-    scrollRequest.current = true;
     setFocusKey(key);
     setFit("focus");
   }
@@ -227,7 +230,7 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     <div className="dependency-fit" role="group" aria-label="그래프 크기">
       {fitModes.map(([mode, label]) => (
         <button className="dependency-fit-button" type="button" key={mode} aria-pressed={fit === mode}
-          onClick={() => { if (mode === "focus") scrollRequest.current = true; setFit(mode); }}>
+          onClick={() => setFit(mode)}>
           {label}
         </button>
       ))}

@@ -84,6 +84,9 @@
   --tree-edge-hit-width: 16px;
   --tree-focus-width: 2px;
   --tree-focus-offset: 3px;
+  --tree-camera-duration: 0.55s;
+  --tree-camera-easing: cubic-bezier(0.22, 0.8, 0.3, 1);
+  --tree-card-in-duration: 0.35s;
 
   /* 툴바 한 줄 + 그래프가 남은 높이 전부. 페이지 자체는 스크롤하지 않고 그래프 뷰포트만 스크롤한다. */
   display: grid;
@@ -237,6 +240,16 @@
   --tree-rich-height: 100px;
   transform: scale(var(--tree-fit-scale, 1));
   transform-origin: top left;
+  /* 선택 중심에서 카메라가 다음 카드로 옮겨 가는 전환. 배율과 이동을 함께 움직인다. */
+  transition: transform var(--tree-camera-duration) var(--tree-camera-easing);
+}
+@keyframes dependency-card-in {
+  from { opacity: 0; scale: 0.85; }
+}
+.dependency-radial .dependency-card { animation: dependency-card-in var(--tree-card-in-duration) ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .dependency-radial { transition: none; }
+  .dependency-radial .dependency-card { animation: none; }
 }
 .dependency-card {
   position: absolute;
