@@ -50,10 +50,12 @@ function CardNode({ data }) {
   return (
     <>
       <Handle type="target" position={Position.Top} className="dependency-handle" isConnectable={false} />
+      {/* 마우스 클릭은 React Flow의 onNodeClick이 받아 onActivate를 부른다(아래 FlowCanvas). 여기 onKeyDown은 키보드(Enter·Space) 전용이다. */}
       <button type="button" className={"dependency-card " + (root ? "dependency-root" : "dependency-node")} data-kind={kind}
         data-rich={flags.rich || undefined} data-open={flags.open || undefined} data-active={flags.active || undefined}
         data-dim={flags.dim || undefined} data-working={flags.working || undefined}
-        aria-pressed={flags.pressed} aria-expanded={flags.expanded} title={root ? "처음 화면으로" : undefined} onClick={onActivate}>
+        aria-pressed={flags.pressed} aria-expanded={flags.expanded} title={root ? "처음 화면으로" : undefined}
+        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onActivate(); } }}>
         <span className="dependency-type">{data.typeLabel}</span>
         {route ? <>
           <span className="dependency-pill dependency-pill--method">{route.method}</span>
@@ -94,6 +96,8 @@ function FlowCanvas({ nodes, edges, fit, focusIds, cameraTick }) {
   return (
     <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodeOrigin={[0.5, 0.5]}
       nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} nodesFocusable={false} edgesFocusable={false}
+      // 선택·드래그를 끄면 React Flow가 노드에 pointer-events: none을 주므로, 클릭 핸들러를 여기 등록해 포인터 이벤트를 살린다.
+      onNodeClick={(event, node) => node.data?.onActivate?.()}
       minZoom={0.1} maxZoom={maxZoom} fitView fitViewOptions={{ padding: 0.08, maxZoom }}
       zoomOnDoubleClick={false}>
       <Background gap={32} size={1} />
