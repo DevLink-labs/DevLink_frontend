@@ -67,7 +67,7 @@ DEVLINK_API_PROXY_TARGET=http://localhost:8080
 
 ## 배포 연결
 
-Vercel 프로젝트의 프레임워크는 **Vite**, 빌드 명령은 `npm run build`, 출력 폴더는 `dist`로 설정합니다. 화면은 단일 루트 페이지 안에서 전환하므로 별도의 클라이언트 라우팅 재작성 설정은 필요하지 않습니다.
+Vercel 프로젝트의 프레임워크는 **Vite**, 빌드 명령은 `npm run build`, 출력 폴더는 `dist`로 설정합니다. 루트의 `vercel.json`에서 SPA 경로를 `/index.html`로 재작성해 `/tree`와 같은 주소로 직접 접속하거나 새로고침해도 앱 라우터가 화면을 표시하도록 합니다. 이 설정은 다음 배포부터 적용됩니다.
 
 Vercel 등에서 프론트를 배포할 때 `VITE_API_BASE_URL`을 실제 HTTPS 백엔드 Origin으로 설정한 뒤 배포합니다. `/api` 또는 `/api/v1` 경로는 붙이지 않습니다.
 
