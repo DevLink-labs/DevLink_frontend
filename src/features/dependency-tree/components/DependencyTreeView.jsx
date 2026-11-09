@@ -212,6 +212,7 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   );
 
   const endpointOf = chosen?.kind === "HTTP_CLIENT" ? model.nodeById.get(model.callTarget.get(chosen.id)) : null;
+  const chosenVia = (scene.entries.find((entry) => entry.id === selected)?.via ?? []).map((id) => model.nodeById.get(id)).filter(Boolean);
   const callSites = (endpointId) => (model.callSources.get(endpointId) ?? []).map((id) => model.nodeById.get(id)).filter(Boolean);
   const pagesOf = (ids) => new Set(ids.flatMap((id) => model.pagesFor(id)));
   const panel = <>
@@ -237,6 +238,13 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
         })()}
         {chosen.kind === "COMPONENT" && model.pagesFor(chosen.id).length > 1
           && <span>사용 페이지 {model.pagesFor(chosen.id).map((id) => model.nodeById.get(id).label).join(", ")}</span>}
+        {chosenVia.length > 0 && <>
+          <span>경유 {chosenVia.map(({ label }) => label).join(" → ")}</span>
+          <ul>{chosenVia.map((step) => (
+            <li key={step.id}>{step.label} · {step.source.relativePath}:{step.source.line}
+              {people(step).length > 0 && ` · ${people(step).map(({ displayName }) => displayName).join(", ")} 작업 중`}</li>
+          ))}</ul>
+        </>}
         {people(chosen).map((person) => (
           <span key={person.userId}>{person.displayName} · {person.branchName ?? "브랜치 없음"} · {new Date(person.observedAt).toLocaleTimeString("ko-KR")} 관측</span>
         ))}
@@ -285,10 +293,15 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     const { x, y } = entry;
     const node = entry.node;
     const kind = node ? node.kind : "COMMON";
-    const editing = node ? people(node) : [];
+    // 접힌 훅·함수의 작업자는 이 카드에 함께 표시한다.
+    const viaNodes = entry.via.map((id) => model.nodeById.get(id)).filter(Boolean);
+    const editing = node ? [...new Map([...people(node), ...viaNodes.flatMap(people)].map((person) => [person.userId, person])).values()] : [];
     const shared = node?.kind === "COMPONENT" ? model.pagesFor(node.id).length : 0;
-    const meta = [entry.collapsible && !entry.open ? collapsedSummary(model, entry) : null, shared > 1 ? `사용 페이지 ${shared}` : null]
-      .filter(Boolean).join(" · ") || null;
+    const meta = [
+      viaNodes.length ? `${viaNodes.map(({ label }) => label).join(" → ")} 경유` : null,
+      entry.collapsible && !entry.open ? collapsedSummary(model, entry) : null,
+      shared > 1 ? `사용 페이지 ${shared}` : null,
+    ].filter(Boolean).join(" · ") || null;
     const endpoint = node?.kind === "ENDPOINT" && node.httpRoute;
     const schema = node?.kind === "DB_TABLE";
     return (

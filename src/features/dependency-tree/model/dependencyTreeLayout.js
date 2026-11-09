@@ -92,6 +92,34 @@ export function buildModel(graph) {
   return { nodeById, next, prev, callTarget, callSources, byFile, reach, ancestors, pagesFor };
 }
 
+/** 트리에서 접어 두는 중간 종류. 훅과 일반 함수는 카드로 그리지 않고, 거쳐 간 이름만 API 카드 부제로 남긴다. */
+const FOLDED = new Set(["HOOK", "MODULE"]);
+
+/**
+ * 훅·일반 함수를 건너뛰고 컴포넌트와 API 호출만 자식으로 돌려준다.
+ * via에는 건너뛴 노드 ID를 순서대로 담는다. 같은 자식에 여러 경로가 있으면 먼저 찾은 경로를 쓴다.
+ */
+export function foldedChildren(model, id, ancestors) {
+  const result = [];
+  const seen = new Set();
+  function walk(current, via) {
+    for (const child of model.next.get(current) ?? []) {
+      if (child === id || ancestors.has(child) || via.includes(child)) continue;
+      const node = model.nodeById.get(child);
+      if (!node) continue;
+      if (FOLDED.has(node.kind)) {
+        walk(child, [...via, child]);
+        continue;
+      }
+      if (seen.has(child)) continue;
+      seen.add(child);
+      result.push({ id: child, via });
+    }
+  }
+  walk(id, []);
+  return result;
+}
+
 /**
  * 중심 저장소의 1단 가지. FE는 페이지, BE는 엔드포인트.
  * 어느 페이지에서도 닿지 않는 API 호출(라우터·Provider 등)은 "공통" 가지 하나에 모은다.
@@ -107,7 +135,20 @@ export function rootBranches(model, repo) {
     && !(model.prev.get(node.id)?.length)
     && (node.kind === "HTTP_CLIENT" || [...model.reach(node.id)].some((key) => model.nodeById.get(key)?.kind === "HTTP_CLIENT")));
   if (common.length) {
-    branches.push({ key: "b:" + COMMON_ID, id: COMMON_ID, node: null, childIds: common.sort(byLabel).map(({ id }) => id) });
+    // 진입점이 훅·함수면 그 아래 컴포넌트·API 호출까지 접어서 공통 가지의 자식으로 삼는다.
+    const links = [];
+    const seen = new Set();
+    for (const root of common.sort(byLabel)) {
+      const folded = FOLDED.has(root.kind)
+        ? foldedChildren(model, root.id, new Set()).map(({ id, via }) => ({ id, via: [root.id, ...via] }))
+        : [{ id: root.id, via: [] }];
+      for (const link of folded) {
+        if (seen.has(link.id)) continue;
+        seen.add(link.id);
+        links.push(link);
+      }
+    }
+    branches.push({ key: "b:" + COMMON_ID, id: COMMON_ID, node: null, childLinks: links, childIds: links.map(({ id }) => id) });
   }
   return branches;
 }
@@ -134,17 +175,18 @@ function backendChain(model, endpointId, key, depth) {
 export function visibleTree(model, branches, openPath, autoOpen) {
   const onPath = (key) => Boolean(openPath && (openPath === key || openPath.startsWith(key + "/")));
   const isOpen = (key, id) => onPath(key) || Boolean(autoOpen && autoOpen(id));
-  function build(id, key, depth, ancestors) {
+  function build(id, key, depth, ancestors, via = []) {
     const node = model.nodeById.get(id);
     const collapsible = COLLAPSIBLE.has(node.kind) && (node.kind !== "ENDPOINT" || depth === 1);
     const open = !collapsible || isOpen(key, id);
-    const childIds = node.kind === "ENDPOINT" ? [] : (model.next.get(id) ?? []).filter((child) => !ancestors.has(child));
-    const entry = { key, id, node, depth, collapsible, open, childIds, children: [] };
+    const childLinks = node.kind === "ENDPOINT" ? [] : foldedChildren(model, id, ancestors);
+    const entry = { key, id, node, depth, collapsible, open, via, childIds: childLinks.map((link) => link.id), children: [] };
     if (!open) return entry;
     if (node.kind === "ENDPOINT") entry.children = backendChain(model, id, key, depth + 1);
     else {
       const seen = new Set(ancestors).add(id);
-      entry.children = childIds.map((child) => build(child, key + "/" + child, depth + 1, seen));
+      for (const skipped of childLinks.flatMap((link) => link.via)) seen.add(skipped);
+      entry.children = childLinks.map((link) => build(link.id, key + "/" + link.id, depth + 1, seen, link.via));
     }
     return entry;
   }
@@ -152,8 +194,8 @@ export function visibleTree(model, branches, openPath, autoOpen) {
     if (branch.node) return build(branch.id, branch.key, 1, new Set());
     const open = isOpen(branch.key, branch.id);
     return {
-      key: branch.key, id: branch.id, node: null, depth: 1, collapsible: true, open, childIds: branch.childIds,
-      children: open ? branch.childIds.map((child) => build(child, branch.key + "/" + child, 2, new Set())) : [],
+      key: branch.key, id: branch.id, node: null, depth: 1, collapsible: true, open, via: [], childIds: branch.childIds,
+      children: open ? branch.childLinks.map((link) => build(link.id, branch.key + "/" + link.id, 2, new Set(), link.via)) : [],
     };
   });
 }
@@ -175,7 +217,8 @@ export function collapsedSummary(model, entry) {
 /** 노드 하나를 트리에서 찾을 때 쓸 키. 상류를 거슬러 가장 가까운 페이지(또는 공통 진입점)까지의 경로를 만든다. */
 export function keyFor(model, branches, id) {
   const rootKeys = new Map(branches.filter(({ node }) => node).map(({ id: rootId, key }) => [rootId, key]));
-  const commonChildren = new Set(branches.find((branch) => branch.id === COMMON_ID)?.childIds ?? []);
+  const commonBranch = branches.find((branch) => branch.id === COMMON_ID);
+  const commonChildren = new Set((commonBranch?.childLinks ?? []).flatMap(({ id: child, via: skipped }) => [child, ...skipped]));
   const via = new Map([[id, null]]);
   const queue = [id];
   while (queue.length) {
@@ -185,7 +228,10 @@ export function keyFor(model, branches, id) {
       const chain = [];
       for (let cursor = current; cursor; cursor = via.get(cursor)) chain.push(cursor);
       let key = isRoot ? rootKeys.get(current) : "b:" + COMMON_ID;
-      for (const step of chain.slice(isRoot ? 1 : 0)) key += "/" + step;
+      // 훅·함수는 카드가 없으므로 키에서도 건너뛴다.
+      for (const step of chain.slice(isRoot ? 1 : 0)) {
+        if (!FOLDED.has(model.nodeById.get(step)?.kind)) key += "/" + step;
+      }
       return key;
     }
     for (const parent of [...(model.prev.get(current) ?? []), ...(model.callSources.get(current) ?? [])]) {
