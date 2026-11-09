@@ -29,6 +29,7 @@ const TEAM_REVEAL_SECONDS = 0.72;
 const MEMBER_REVEAL_RISE = 0.24;
 const TEAM_CHARACTER_HEIGHT = 2.7;
 const TEAM_CHARACTER_CENTER_Y = 0.5;
+const AGENT_FOCUS_DURATION_MS = 3000;
 
 async function loadTeamCharacter(): Promise<THREE.Group> {
   const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/character2.glb`);
@@ -240,6 +241,10 @@ export default function ImmersiveTeamScene({
     world.add(core);
 
     const selectables: THREE.Mesh[] = [];
+    const agentSelectables: THREE.Mesh[] = [];
+    let elapsed = 0;
+    let agentFocus: { memberId: string; agentId: string; until: number } | null = null;
+    let agentFocusTimer: number | undefined;
     let companionAsset: AgentCompanionAsset | null = null;
     let teamCharacter: THREE.Group | null = null;
     let loadingAgent: AgentCompanion | null = null;
@@ -248,6 +253,11 @@ export default function ImmersiveTeamScene({
       fadeMaterials: new Set<THREE.Material>(),
       opacity: 1,
     };
+    function clearAgentFocus() {
+      agentFocus = null;
+      window.clearTimeout(agentFocusTimer);
+      agentFocusTimer = undefined;
+    }
     function createMemberNodes(teamMembers: PreviewMember[]) {
       const asset = companionAsset;
       if (!asset) return [];
@@ -291,6 +301,9 @@ export default function ImmersiveTeamScene({
             if (object instanceof THREE.Mesh) {
               object.castShadow = true;
               object.receiveShadow = true;
+              object.userData.memberId = member.id;
+              object.userData.agentId = agent.id;
+              agentSelectables.push(object);
               fadeMeshes.push(object);
               for (const material of Array.isArray(object.material)
                 ? object.material
@@ -307,6 +320,7 @@ export default function ImmersiveTeamScene({
           member,
           index,
           satellites,
+          agentElapsed: elapsed,
           fadeMeshes,
           fadeMaterials,
           opacity: 1,
@@ -323,7 +337,6 @@ export default function ImmersiveTeamScene({
     let running = false;
     let width = 1;
     let height = 1;
-    let elapsed = 0;
     let previous = performance.now();
     let entrance = control.current.paused ? 1 : 0;
     let azimuth = 0.16;
@@ -348,6 +361,11 @@ export default function ImmersiveTeamScene({
     const desiredPosition = new THREE.Vector3();
     const focusPosition = new THREE.Vector3();
     const orbitOffset = new THREE.Vector3();
+    const agentWorldPosition = new THREE.Vector3();
+    const agentFacingMatrix = new THREE.Matrix4();
+    const agentRotation = new THREE.Quaternion();
+    const agentParentRotation = new THREE.Quaternion();
+    const agentUp = new THREE.Vector3(0, 1, 0);
     const labelPoint = new THREE.Vector3();
     const labelCenter = new THREE.Vector3();
     const createLabelPlacement = (item: (typeof memberNodes)[number]) => ({
@@ -393,14 +411,18 @@ export default function ImmersiveTeamScene({
       const labelSides = new Map(
         labelPlacements.map((placement) => [placement.item.member.id, placement.side]),
       );
+      const agentTimes = new Map(memberNodes.map((item) => [item.member.id, item.agentElapsed]));
+      clearAgentFocus();
       for (const { node, satellites } of memberNodes) {
         for (const satellite of satellites) satellite.dispose();
         world.remove(node);
         disposeObjectResources(node);
       }
       selectables.length = 0;
+      agentSelectables.length = 0;
       sceneMembers = nextMembers;
       memberNodes = createMemberNodes(sceneMembers);
+      for (const item of memberNodes) item.agentElapsed = agentTimes.get(item.member.id) ?? elapsed;
       labelPlacements = memberNodes.map((item) => ({
         ...createLabelPlacement(item),
         side: labelSides.get(item.member.id) ?? 0,
@@ -609,11 +631,15 @@ export default function ImmersiveTeamScene({
       previous = now;
       const frozen = control.current.paused;
       const blend = frozen ? 1 : 1 - Math.exp(-delta * 5);
+      const agentTurnBlend = frozen ? 1 : 1 - Math.exp(-delta * 12);
       const progress = THREE.MathUtils.clamp(control.current.scrollState.current.progress, 0, 1);
       const focusId = control.current.focusedMemberId;
       const lookingDown = control.current.topView;
       const loading = control.current.loading || !companionAsset || !teamCharacter;
       updateMembers(control.current.members);
+      if (agentFocus && (agentFocus.memberId !== focusId || now >= agentFocus.until || loading))
+        clearAgentFocus();
+      const focusedAgent = agentFocus;
       if (
         lastFocusId !== focusId ||
         lastSelectedId !== control.current.selectedMemberId ||
@@ -680,15 +706,19 @@ export default function ImmersiveTeamScene({
         );
         item.node.scale.setScalar(scale);
         fadeObject(item, memberReveal);
+        if (!frozen && focusedAgent?.memberId !== item.member.id) item.agentElapsed += delta;
         item.satellites.forEach((satellite, satelliteIndex) => {
-          const orbit = elapsed * 0.08 + satelliteIndex * 2.2 + item.index * 0.24;
+          const orbit = item.agentElapsed * 0.08 + satelliteIndex * 2.2 + item.index * 0.24;
           satellite.group.position.set(
             Math.cos(orbit) * 0.84,
-            0.1 + Math.sin(elapsed * 0.7 + satellite.phase) * 0.022,
+            0.1 + Math.sin(item.agentElapsed * 0.7 + satellite.phase) * 0.022,
             Math.sin(orbit) * 0.84,
           );
-          satellite.group.rotation.y = -orbit;
-          satellite.body.rotation.z = Math.sin(elapsed * 0.55 + satellite.phase) * 0.018;
+          if (focusedAgent?.memberId !== item.member.id || focusedAgent.agentId !== item.member.agents[satelliteIndex].id) {
+            agentRotation.setFromAxisAngle(agentUp, -orbit);
+            satellite.group.quaternion.slerp(agentRotation, agentTurnBlend);
+          }
+          satellite.body.rotation.z = Math.sin(item.agentElapsed * 0.55 + satellite.phase) * 0.018;
         });
       }
       const focusedNode = focusId
@@ -752,6 +782,18 @@ export default function ImmersiveTeamScene({
       }
       cameraInitialized = true;
       camera.lookAt(cameraTarget);
+      if (focusedAgent && focusedNode) {
+        const satelliteIndex = focusedNode.member.agents.findIndex((agent) => agent.id === focusedAgent.agentId);
+        const satellite = focusedNode.satellites[satelliteIndex];
+        if (satellite) {
+          satellite.group.getWorldPosition(agentWorldPosition);
+          agentFacingMatrix.lookAt(camera.position, agentWorldPosition, agentUp);
+          agentRotation.setFromRotationMatrix(agentFacingMatrix);
+          focusedNode.node.getWorldQuaternion(agentParentRotation);
+          agentRotation.premultiply(agentParentRotation.invert());
+          satellite.group.quaternion.slerp(agentRotation, agentTurnBlend);
+        }
+      }
       renderer.render(scene, camera);
       if (!loading && teamCharacter && teamReveal >= 0.25) updateLabels();
       else if (labelsElement) labelsElement.style.visibility = "hidden";
@@ -808,8 +850,12 @@ export default function ImmersiveTeamScene({
         ),
         camera,
       );
-      return raycaster.intersectObjects(selectables, false).find(({ object }) => object.visible)
-        ?.object.userData.memberId as string | undefined;
+      const focusedAgents = control.current.focusedMemberId
+        ? agentSelectables.filter((object) => object.userData.memberId === control.current.focusedMemberId)
+        : [];
+      return raycaster.intersectObjects([...selectables, ...focusedAgents], false)
+        .find(({ object }) => object.visible)?.object.userData as
+        { memberId: string; agentId?: string } | undefined;
     }
     function down(event: PointerEvent) {
       if (
@@ -846,8 +892,20 @@ export default function ImmersiveTeamScene({
     }
     function up(event: PointerEvent) {
       if (pointerDown && !pointerDown.moved) {
-        const memberId = hit(event);
-        if (memberId) control.current.onSelectMember(memberId);
+        const selection = hit(event);
+        if (selection?.agentId && selection.memberId === control.current.focusedMemberId) {
+          clearAgentFocus();
+          agentFocus = {
+            memberId: selection.memberId,
+            agentId: selection.agentId,
+            until: performance.now() + AGENT_FOCUS_DURATION_MS,
+          };
+          agentFocusTimer = window.setTimeout(() => {
+            agentFocusTimer = undefined;
+            start();
+          }, AGENT_FOCUS_DURATION_MS);
+          start();
+        } else if (selection) control.current.onSelectMember(selection.memberId);
       }
       pointerDown = null;
       if (renderer.domElement.hasPointerCapture(event.pointerId))
@@ -932,6 +990,7 @@ export default function ImmersiveTeamScene({
 
     return () => {
       disposed = true;
+      clearAgentFocus();
       stage?.style.removeProperty("--itp-team-reveal");
       stage?.style.removeProperty("--itp-team-reveal-visibility");
       if (labelsElement) labelsElement.style.visibility = "hidden";

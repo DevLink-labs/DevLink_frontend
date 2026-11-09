@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-type IconName = 'team' | 'agent' | 'plus' | 'arrow' | 'refresh' | 'copy' | 'logout' | 'check' | 'close' | 'key' | 'chevron' | 'chevrons' | 'book' | 'shield' | 'eye' | 'eye-off' | 'grid'
+type IconName = 'team' | 'agent' | 'plus' | 'arrow' | 'refresh' | 'copy' | 'logout' | 'check' | 'close' | 'key' | 'chevron' | 'chevrons' | 'book' | 'shield' | 'eye' | 'eye-off' | 'grid' | 'clock' | 'activity'
 
 export function Icon({ name, size = 20, className = '' }: { name: IconName; size?: number; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
@@ -21,6 +21,8 @@ export function Icon({ name, size = 20, className = '' }: { name: IconName; size
     eye: <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
     'eye-off': <><path d="m3 3 18 18M10 5.2c.7-.1 1.3-.2 2-.2 6.5 0 10 7 10 7a18 18 0 0 1-3.1 3.8M6.5 6.5A20 20 0 0 0 2 12s3.5 7 10 7c1.8 0 3.5-.5 5-1.3M10 10a3 3 0 0 0 4 4" /></>,
     grid: <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    activity: <path d="M2 12h4l3-8 6 16 3-8h4" />,
   }
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">{paths[name]}</svg>
 }
