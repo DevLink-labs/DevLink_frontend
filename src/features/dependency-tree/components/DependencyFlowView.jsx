@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  Background, Controls, Handle, MiniMap, Position, ReactFlow, ReactFlowProvider, useNodesInitialized, useReactFlow,
+  Background, Controls, Handle, MiniMap, Position, ReactFlow, ReactFlowProvider, useReactFlow, useStore,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import DependencyTreeFrame from "./DependencyTreeFrame";
@@ -79,27 +79,88 @@ function CardNode({ data }) {
 
 const nodeTypes = { card: CardNode };
 
-/** ReactFlow 캔버스와 카메라. Provider 안에서만 useReactFlow를 쓸 수 있어 따로 뗀다. */
-function FlowCanvas({ nodes, edges, fit, focusIds, cameraTick }) {
-  const { fitView, zoomTo } = useReactFlow();
-  const initialized = useNodesInitialized();
-  useEffect(() => {
-    if (!initialized) return;
-    if (fit === "focus" && focusIds.length) {
-      fitView({ nodes: focusIds.map((id) => ({ id })), duration: cameraDuration, padding: 0.15, minZoom: minFocusZoom, maxZoom });
-    } else if (fit === "none") {
-      zoomTo(1, { duration: cameraDuration });
-    } else {
-      fitView({ duration: cameraDuration, padding: 0.08, maxZoom });
+/** 카드 크기 추정치. 측정값이 아직 없는(방금 생긴) 노드의 카메라 상자 계산에 쓴다. */
+const estimate = (node) => node.data?.root ? { width: 340, height: 96 } : { width: 240, height: node.data?.flags?.rich ? 100 : 72 };
+const easeOut = (t) => 1 - (1 - t) ** 3;
+const lerp = (from, to, t) => from + (to - from) * t;
+
+/**
+ * ReactFlow 캔버스와 카메라. Provider 안에서만 useReactFlow를 쓸 수 있어 따로 뗀다.
+ * 카드 위치와 뷰포트를 한 트윈에서 함께 보간한다. React Flow의 fitView는 카메라만 움직여 카드가 먼저 튀기 때문에,
+ * 목표 좌표(targets)로 가는 동안 매 프레임 노드 좌표와 뷰포트를 같이 갱신해 선(엣지)도 따라오게 한다.
+ */
+function FlowCanvas({ nodes: targets, edges, fit, focusIds, cameraTick }) {
+  const { setViewport, getViewport, getInternalNode } = useReactFlow();
+  const width = useStore((state) => state.width);
+  const height = useStore((state) => state.height);
+  const [display, setDisplay] = useState(() => new Map(targets.map((node) => [node.id, node.position])));
+  const displayRef = useRef(display);
+  const settled = useRef(false);
+  const targetKey = targets.map((node) => `${node.id}:${Math.round(node.position.x)}:${Math.round(node.position.y)}`).join("|");
+
+  useLayoutEffect(() => {
+    if (!width || !height) return undefined;
+    const byId = new Map(targets.map((node) => [node.id, node]));
+    // 카메라 목표: 선택 중심은 focusIds, 전체 맞춤은 전부, 원본 크기는 1배로 선택 노드(없으면 중심)를 가운데에.
+    const subject = fit === "focus" && focusIds.length ? focusIds.map((id) => byId.get(id)).filter(Boolean) : targets;
+    const boxes = subject.map((node) => {
+      const size = getInternalNode(node.id)?.measured?.width ? getInternalNode(node.id).measured : estimate(node);
+      return { left: node.position.x - size.width / 2, right: node.position.x + size.width / 2, top: node.position.y - size.height / 2, bottom: node.position.y + size.height / 2 };
+    });
+    const pad = 40;
+    const left = Math.min(...boxes.map((box) => box.left)) - pad;
+    const right = Math.max(...boxes.map((box) => box.right)) + pad;
+    const top = Math.min(...boxes.map((box) => box.top)) - pad;
+    const bottom = Math.max(...boxes.map((box) => box.bottom)) + pad;
+    const zoom = fit === "none" ? 1
+      : Math.max(fit === "focus" ? minFocusZoom : 0.1, Math.min(maxZoom, width / (right - left), height / (bottom - top)));
+    const center = fit === "none" && focusIds.length && byId.get(focusIds[0])
+      ? byId.get(focusIds[0]).position : { x: (left + right) / 2, y: (top + bottom) / 2 };
+    const toViewport = { x: width / 2 - center.x * zoom, y: height / 2 - center.y * zoom, zoom };
+
+    // 시작 좌표: 이미 보이는 카드는 지금 자리, 새 카드는 부모의 지금 자리(부모에서 자라나듯 나타난다).
+    const from = new Map();
+    for (const node of targets) {
+      const current = displayRef.current.get(node.id);
+      from.set(node.id, current ?? displayRef.current.get(node.data?.parentId) ?? node.position);
     }
-  }, [initialized, fit, focusIds, cameraTick, fitView, zoomTo]);
+    const fromViewport = getViewport();
+    const finish = () => {
+      displayRef.current = new Map(targets.map((node) => [node.id, node.position]));
+      setDisplay(displayRef.current);
+      setViewport(toViewport);
+    };
+    if (!settled.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // 첫 배치와 "동작 줄이기" 설정에서는 애니메이션 없이 바로 놓는다.
+      settled.current = true;
+      finish();
+      return undefined;
+    }
+    let frame;
+    const start = performance.now();
+    const tick = (time) => {
+      const progress = easeOut(Math.min(1, (time - start) / cameraDuration));
+      const positions = new Map(targets.map((node) => {
+        const origin = from.get(node.id);
+        return [node.id, { x: lerp(origin.x, node.position.x, progress), y: lerp(origin.y, node.position.y, progress) }];
+      }));
+      displayRef.current = positions;
+      setDisplay(positions);
+      setViewport({ x: lerp(fromViewport.x, toViewport.x, progress), y: lerp(fromViewport.y, toViewport.y, progress), zoom: lerp(fromViewport.zoom, toViewport.zoom, progress) });
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetKey, fit, focusIds, cameraTick, width, height]);
+
+  const nodes = useMemo(() => targets.map((node) => ({ ...node, position: display.get(node.id) ?? node.position })), [targets, display]);
   return (
     <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodeOrigin={[0.5, 0.5]}
       nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} nodesFocusable={false} edgesFocusable={false}
       // 선택·드래그를 끄면 React Flow가 노드에 pointer-events: none을 주므로, 클릭 핸들러를 여기 등록해 포인터 이벤트를 살린다.
       onNodeClick={(event, node) => node.data?.onActivate?.()}
-      minZoom={0.1} maxZoom={maxZoom} fitView fitViewOptions={{ padding: 0.08, maxZoom }}
-      zoomOnDoubleClick={false}>
+      minZoom={0.1} maxZoom={maxZoom} zoomOnDoubleClick={false}>
       <Background gap={32} size={1} />
       <Controls showInteractive={false} position="bottom-left" />
       <MiniMap pannable zoomable position="bottom-right" nodeColor={(node) => miniMapFill[node.data?.kind] ?? "#E2E8F0"} nodeStrokeWidth={2} />
@@ -229,7 +290,7 @@ export default function DependencyFlowView({ graph, activity, frame = {} }) {
       return {
         id: entry.key, type: "card", position: { x: entry.x, y: entry.y }, draggable: false,
         data: {
-          kind, root: false, typeLabel: nodeKinds[kind] ?? kind, route, meta, editing, schema: node?.kind === "DB_TABLE",
+          kind, root: false, parentId: entry.parentKey ?? ROOT_ID, typeLabel: nodeKinds[kind] ?? kind, route, meta, editing, schema: node?.kind === "DB_TABLE",
           title: node ? node.label : kind === "SELF" ? "직접 호출" : "공통",
           flags: {
             rich: Boolean(meta || editing.length || route), open: entry.collapsible && entry.open, active: onOpenPath(entry.key),

@@ -293,7 +293,8 @@
   --tree-node-height: 72px;
   --tree-rich-height: 100px;
 }
-.dependency-flow .dependency-card { position: static; translate: none; transition: opacity 0.2s; }
+.dependency-flow .dependency-card { position: static; translate: none; transition: opacity 0.2s; animation: dependency-card-in var(--tree-card-in-duration) ease-out; }
+@media (prefers-reduced-motion: reduce) { .dependency-flow .dependency-card { animation: none; } }
 .dependency-flow [data-kind="ENDPOINT"],
 .dependency-flow [data-kind="SERVICE"] { --tree-card-width: var(--tree-node-width); }
 .dependency-flow .dependency-code { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
