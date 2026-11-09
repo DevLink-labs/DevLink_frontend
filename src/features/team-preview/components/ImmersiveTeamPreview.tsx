@@ -58,19 +58,16 @@ function TopViewIcon() {
   );
 }
 
+function SceneLoadingIndicator() {
+  return <span className="itp-loading-spinner" aria-hidden="true" />;
+}
+
 function SceneLoading({ message }: { message: string }) {
   return (
     <div className="itp-scene-message itp-scene-loading" role="status">
-      <span className="itp-loader" aria-hidden="true">
-        <span className="itp-loader-orbit"><i /></span>
-        <span className="itp-loader-float">
-          <span className="itp-loader-cube"><i /><i /><i /><i /><i /><i /></span>
-        </span>
-      </span>
+      <SceneLoadingIndicator />
       <span className="itp-loader-caption">
-        <span className="itp-loader-kicker" aria-hidden="true">TEAM SPACE</span>
         <strong>{message}</strong>
-        <span className="itp-loader-track" aria-hidden="true" />
       </span>
     </div>
   );
@@ -679,19 +676,6 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                   onAvailabilityChange={onAvailabilityChange}
                 />
               )}
-              {mountScene && availability !== "unavailable" && (
-                <div
-                  className="itp-scene-handoff-status"
-                  role={loadingMessage ? "status" : undefined}
-                  aria-hidden={!loadingMessage}
-                >
-                  <span className="itp-loader-kicker" aria-hidden="true">TEAM SPACE</span>
-                  <strong>{loadingMessage ?? "팀 정보를 불러오는 중이에요"}</strong>
-                </div>
-              )}
-              {loadingMessage && availability === "unavailable" && (
-                <SceneLoading message={loadingMessage} />
-              )}
               {sceneStatus === "empty" && (
                 <div className="itp-scene-message" role="status">
                   <strong>아직 참여한 팀이 없어요</strong>
@@ -758,6 +742,15 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                 </div>
               )}
             </div>
+            {loadingMessage && mountScene && availability !== "unavailable" && (
+              <div className="itp-scene-handoff-status" role="status">
+                <SceneLoadingIndicator />
+                <strong>{loadingMessage}</strong>
+              </div>
+            )}
+            {loadingMessage && availability === "unavailable" && (
+              <SceneLoading message={loadingMessage} />
+            )}
             <div className="itp-ambient" aria-hidden="true">
               <i />
               <i />
