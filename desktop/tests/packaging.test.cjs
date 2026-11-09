@@ -63,6 +63,10 @@ test("preload는 허용한 최상위 개발·배포 화면에만 연결 기능�
       exposed.setup.check("selection");
       assert.equal(calls[0][0], "devlink:status");
       assert.equal(calls[1][0], "devlink:checkSetup");
+      const metadata = { part: "BACKEND", roles: ["API"] };
+      exposed.setup.run("selection", "codex", undefined, metadata);
+      assert.equal(calls[2][0], "devlink:setup");
+      assert.equal(calls[2][4], metadata);
       assert.equal(exposed.ipcRenderer, undefined);
     }
   }

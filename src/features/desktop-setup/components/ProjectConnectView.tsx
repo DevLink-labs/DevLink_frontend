@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Icon, Modal } from "@/components/ui";
 import { copyText } from "@/utils";
@@ -10,6 +10,7 @@ import type {
   SetupResult,
   SetupTool,
 } from "../api/desktopApi";
+import { agentParts, createSetupAgentMetadata } from "../lib/agentMetadata";
 
 interface ProjectConnectViewProps {
   setup: DesktopSetupApi;
@@ -27,6 +28,13 @@ interface ProjectConnectViewProps {
 type View =
   | { state: "choose" | "picking" | "select-tool" | "running" }
   | SetupResult;
+
+// 같은 입력으로 다시 실행해도 결과가 바뀌지 않는 오류
+const noRetryCodes = [
+  "SETUP_REGISTRATION_UNKNOWN",
+  "SETUP_PROFILE_CONFLICT",
+  "SETUP_AGENT_BINDING_CONFLICT",
+];
 
 const toolNames: Record<SetupTool, string> = {
   codex: "Codex",
@@ -75,6 +83,12 @@ export default function ProjectConnectView({
   );
   const [project, setProject] = useState<ProjectSelection | null>(null);
   const [selectedTool, setSelectedTool] = useState<SetupTool | null>(null);
+  const [agentPart, setAgentPart] = useState("");
+  const [rolesText, setRolesText] = useState("");
+  const [metadataError, setMetadataError] = useState("");
+  // 한 번 실행한 폴더는 IPC가 도구를 고정하므로 화면에서도 변경 차단
+  const [toolLocked, setToolLocked] = useState(false);
+  const fieldId = useId();
   const [progress, setProgress] = useState<Record<string, string>>({});
   const [readiness, setReadiness] = useState<{
     userId: number;
@@ -145,12 +159,23 @@ export default function ProjectConnectView({
     tool: SetupTool,
     password?: string,
   ) {
+    if (busy) return;
+    let metadata;
+    try {
+      metadata = createSetupAgentMetadata(agentPart, rolesText);
+    } catch (error) {
+      setMetadataError(messageFrom(error));
+      setView({ state: "select-tool" });
+      return;
+    }
+    setMetadataError("");
     setSelectedTool(tool);
+    setToolLocked(true);
     setProgress({});
     setNotice("");
     setView({ state: "running" });
     try {
-      const result = await setup.run(selection.id, tool, password);
+      const result = await setup.run(selection.id, tool, password, metadata);
       if (!active.current) return;
       if (result.state === "done") complete();
       else setView(result);
@@ -163,6 +188,10 @@ export default function ProjectConnectView({
   async function pickFolder() {
     setProject(null);
     setSelectedTool(null);
+    setToolLocked(false);
+    setAgentPart("");
+    setRolesText("");
+    setMetadataError("");
     setView({ state: "picking" });
     try {
       const selection = await setup.pickFolder(account);
@@ -178,15 +207,20 @@ export default function ProjectConnectView({
           message:
             "실행 가능한 Codex 또는 Claude Code를 찾지 못했습니다. 도구를 설치하거나 실행할 수 있는지 확인해주세요.",
         });
-      } else if (selection.tools.length === 1) {
-        await run(selection, selection.tools[0]);
       } else {
+        if (selection.tools.length === 1) setSelectedTool(selection.tools[0]);
         setView({ state: "select-tool" });
       }
     } catch (error) {
       if (active.current)
         setView({ state: "error", message: messageFrom(error) });
     }
+  }
+
+  function submitConnection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!project || !selectedTool || busy) return;
+    void run(project, selectedTool);
   }
 
   function submitPassword(event: FormEvent<HTMLFormElement>) {
@@ -242,6 +276,10 @@ export default function ProjectConnectView({
     setView(presentation === "page" ? { state: "choose" } : null);
     setProject(null);
     setSelectedTool(null);
+    setToolLocked(false);
+    setAgentPart("");
+    setRolesText("");
+    setMetadataError("");
     setNotice("");
   }
 
@@ -280,26 +318,80 @@ export default function ProjectConnectView({
         </>
       )}
       {view.state === "select-tool" && project && (
-        <>
-          <p>이 프로젝트에 연결할 AI 도구를 선택해주세요.</p>
-          <div className="project-connect-tools">
-            {project.tools.map((tool) => (
-              <button
-                key={tool}
-                className="project-connect-tool"
-                type="button"
-                onClick={() => {
-                  void run(project, tool);
-                }}
-              >
-                <Icon name="agent" size={23} />
-                <strong>{toolNames[tool]}</strong>
-                <span>이 PC에서 사용 가능</span>
-                <Icon name="arrow" size={17} />
-              </button>
-            ))}
+        <form className="grid gap-4" onSubmit={submitConnection}>
+          <fieldset
+            className="project-connect-tool-selection"
+            disabled={busy || toolLocked}
+          >
+            <legend>이 프로젝트에 연결할 AI 도구</legend>
+            <div className="project-connect-tools">
+              {project.tools.map((tool) => (
+                <button
+                  key={tool}
+                  className={`project-connect-tool${selectedTool === tool ? " is-selected" : ""}`}
+                  type="button"
+                  aria-pressed={selectedTool === tool}
+                  onClick={() => setSelectedTool(tool)}
+                >
+                  <Icon name="agent" size={23} />
+                  <strong>{toolNames[tool]}</strong>
+                  <span>이 PC에서 사용 가능</span>
+                  <Icon name="arrow" size={17} />
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <div className="field">
+            <label htmlFor={`${fieldId}-part`}>담당 파트</label>
+            <select
+              id={`${fieldId}-part`}
+              value={agentPart}
+              onChange={(event) => {
+                setAgentPart(event.target.value);
+                setMetadataError("");
+              }}
+            >
+              <option value="">선택 안 함</option>
+              {agentParts.map((part) => (
+                <option key={part.value} value={part.value}>{part.label}</option>
+              ))}
+            </select>
           </div>
-        </>
+          <div className="field">
+            <label htmlFor={`${fieldId}-roles`}>역할 태그</label>
+            <input
+              id={`${fieldId}-roles`}
+              value={rolesText}
+              placeholder="예: API 개발, 인증, 테스트"
+              aria-describedby={`${fieldId}-roles-hint${metadataError ? ` ${fieldId}-metadata-error` : ""}`}
+              aria-invalid={Boolean(metadataError)}
+              onChange={(event) => {
+                setRolesText(event.target.value);
+                setMetadataError("");
+              }}
+            />
+            <span className="field-hint" id={`${fieldId}-roles-hint`}>
+              쉼표로 구분해 최대 10개, 각 64자까지 입력할 수 있어요.
+            </span>
+          </div>
+          <p className="field-hint">
+            비워 둔 항목은 기존 담당 정보를 유지해요. 이미 연결된 Agent의 담당 정보는 여기서 바꿀 수 없어요. 새 Agent는 미입력 시 기타·태그 없음으로 등록돼요.
+          </p>
+          {metadataError && (
+            <p id={`${fieldId}-metadata-error`} className="inline-error" role="alert">
+              {metadataError}
+            </p>
+          )}
+          <div className="modal-footer">
+            <button
+              className="button button-primary"
+              type="submit"
+              disabled={busy || !selectedTool}
+            >
+              연결하기
+            </button>
+          </div>
+        </form>
       )}
       {view.state === "running" && (
         <ol
@@ -480,6 +572,25 @@ export default function ProjectConnectView({
             </details>
           )}
           <div className="modal-footer">
+            {project &&
+              selectedTool &&
+              view.code === "SETUP_AGENT_BINDING_CONFLICT" &&
+              Boolean(agentPart || rolesText.trim()) && (
+              <button
+                className="button button-primary"
+                type="button"
+                onClick={() => setView({ state: "select-tool" })}
+              >
+                담당 정보 다시 입력
+              </button>
+            )}
+            {project && selectedTool && !noRetryCodes.includes(view.code ?? "") && (
+              <button className="button button-primary" type="button" onClick={() => {
+                void run(project, selectedTool);
+              }}>
+                다시 시도
+              </button>
+            )}
             {view.code === "SETUP_REGISTRATION_UNKNOWN" ? (
               <button
                 className="button button-secondary"
