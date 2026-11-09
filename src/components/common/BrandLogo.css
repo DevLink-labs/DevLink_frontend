@@ -1,0 +1,22 @@
+.service-logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--service-logo-gap, 10px);
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.service-logo-icon,
+.service-logo-wordmark {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+}
+
+.service-logo-icon { height: var(--service-logo-icon-height, 32px); }
+.service-logo-wordmark { height: calc(var(--service-logo-wordmark-height, 24px) * .9); }
+.service-logo-light .service-logo-wordmark { filter: brightness(0) invert(1); }
+.service-logo-light .service-logo-icon { padding: 3px; border-radius: 8px; background: #fff; }

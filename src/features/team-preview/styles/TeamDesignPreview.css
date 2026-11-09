@@ -10,8 +10,6 @@
 .team-preview button, .team-preview a, .team-preview select { -webkit-tap-highlight-color: transparent; }
 .team-preview button:focus-visible, .team-preview a:focus-visible, .team-preview select:focus-visible { outline: 3px solid #7eac58; outline-offset: 4px; }
 .tp-rail { width: 78px; position: fixed; inset: 0 auto 0 0; z-index: 20; background: #192a2b; display: flex; align-items: center; flex-direction: column; padding: 24px 0 20px; }
-.tp-logo { width: 37px; height: 39px; display: grid; place-items: center; color: #253529; background: #c6e995; border-radius: 12px; font-size: 27px; font-weight: 850; position: relative; letter-spacing: -2px; padding-right: 2px; }
-.tp-logo > span { position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border: 3px solid #192a2b; background: #c6e995; border-radius: 50%; }
 .tp-rail nav { display: flex; align-items: center; flex-direction: column; gap: 12px; margin-top: 35px; }
 .tp-rail-line { height: 1px; width: 24px; background: #ffffff15; margin-bottom: 16px; }
 .tp-rail nav button { border: 0; width: 45px; height: 45px; border-radius: 14px; color: #91a39a; background: transparent; display: grid; place-items: center; transition: color .2s, background .2s; }
@@ -273,7 +271,6 @@
 }
 @media (max-width: 480px) {
   .tp-rail { width: 52px; padding-top: 19px; }
-  .tp-logo { width: 30px; height: 32px; border-radius: 10px; font-size: 22px; }
   .tp-rail nav button { width: 36px; height: 38px; border-radius: 11px; }
   .tp-rail-bottom > span:last-child { font-size: 6px; letter-spacing: .6px; }
   .tp-shell { margin-left: 52px; }
@@ -326,3 +323,6 @@
   .tp-member-card, .tp-member-card:hover { transform: none; }
   .tp-card-glow { display: none; }
 }
+.tp-logo { --service-logo-icon-height: 32px; display: inline-flex; align-items: center; justify-content: center; }
+.tp-rail-wordmark { --service-logo-wordmark-height: 9px; }
+@media (max-width: 680px) { .tp-logo { --service-logo-icon-height: 28px; } }

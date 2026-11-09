@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useRef, useState } from 'react'
 import { Icon, Modal } from '../../../components/ui'
 import { copyText } from '../../../utils'
@@ -57,7 +58,7 @@ export default function MauveMainPreview() {
 
   return <div className="mauve-main-preview">
     <aside className="mvp-rail" aria-label="Mauve Studio 메뉴">
-      <a className="mvp-logo" href="/" aria-label="DevLink 서비스 홈">d<span /></a>
+      <a className="mvp-logo" href="/" aria-label="DevLink 서비스 홈"><BrandLogo variant="icon" tone="light" /></a>
       <div className="mvp-rail-divider" />
       <nav aria-label="워크스페이스 메뉴">
         <button type="button" className={section === 'overview' ? 'is-active' : ''} aria-label="워크스페이스" aria-pressed={section === 'overview'} onClick={() => navigate('overview')}><Icon name="grid" size={20} /><span>홈</span></button>
@@ -68,7 +69,7 @@ export default function MauveMainPreview() {
     </aside>
 
     <div className="mvp-shell">
-      <header className="mvp-topbar"><a href="/" className="mvp-wordmark">DevLink<span>.</span></a><span className="mvp-topbar-divider" /><span>나의 워크스페이스</span><div className="mvp-topbar-right"><span className="mvp-topbar-note"><i />A space to build, together.</span><button type="button" onClick={() => setDialog('guide')}><Icon name="book" size={15} />시작 가이드</button></div></header>
+      <header className="mvp-topbar"><a href="/" className="mvp-wordmark"><BrandLogo variant="wordmark" /></a><span className="mvp-topbar-divider" /><span>나의 워크스페이스</span><div className="mvp-topbar-right"><span className="mvp-topbar-note"><i />A space to build, together.</span><button type="button" onClick={() => setDialog('guide')}><Icon name="book" size={15} />시작 가이드</button></div></header>
 
       <main className="mvp-main" ref={overview}>
         <section className="mvp-heading">
@@ -92,7 +93,7 @@ export default function MauveMainPreview() {
           <aside className="mvp-context"><section className="mvp-team-context"><div className="mvp-context-caption"><span>IN THIS SPACE</span><span>#{team.id === 'orbit' ? '001' : '002'}</span></div><h2>{team.name}</h2><p>{team.description}</p><div className="mvp-connection-art" aria-hidden="true"><span><Icon name="team" size={25} /></span><i /><span>+</span><i /><span><Icon name="agent" size={27} /></span></div><dl><div><dt>함께하는 사람</dt><dd>{team.members.length}명</dd></div><div><dt>팀을 시작한 날</dt><dd>{team.createdAt}</dd></div></dl><button type="button" className="mvp-invite" onClick={openInvite}>함께할 동료 초대하기<Icon name="plus" size={16} /></button></section><section className="mvp-members"><div><h3>좋은 동료들</h3><span>{team.members.length}</span></div>{team.members.slice(0, 4).map((member, index) => <div className="mvp-member" key={member.id}><span className={`mvp-member-avatar mvp-member-avatar-${index % 2}`}>{member.initials}</span><span><strong>{member.name}{member.id === 'jiwoo' && <small>나</small>}</strong><small>{member.role === 'OWNER' ? 'Team owner' : 'Team member'}</small></span><span>{member.agents.length}<small>Agent</small></span></div>)}<span className="mvp-members-note">서로 다른 가능성이 모이는 곳.</span></section></aside>
         </div>
 
-        <footer className="mvp-footer"><div><strong>DevLink<span>.</span></strong><span>Mauve Studio · 목업 데이터로 구성된 메인 페이지 시안</span></div><div className="mvp-palette" aria-label="Mauve Studio 색상 팔레트">{palette.map((color) => <span key={color}><i style={{ background: color }} /><span>{color}</span></span>)}</div></footer>
+        <footer className="mvp-footer"><div><BrandLogo variant="wordmark" className="mvp-footer-logo" /><span>Mauve Studio · 목업 데이터로 구성된 메인 페이지 시안</span></div><div className="mvp-palette" aria-label="Mauve Studio 색상 팔레트">{palette.map((color) => <span key={color}><i style={{ background: color }} /><span>{color}</span></span>)}</div></footer>
       </main>
     </div>
 

@@ -30,9 +30,7 @@
 .itp-ui button, .itp-ui a, .itp-ui select, .itp-ui input { pointer-events: auto; }
 .itp-header { position: absolute; inset: 0 0 auto; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 25px; height: 108px; padding: 0 48px; }
 .itp-brand { display: flex; align-items: center; gap: 12px; color: #edf2ec; font-size: 20px; letter-spacing: -.8px; font-weight: 650; }
-.itp-brand > span:first-child { position: relative; display: grid; place-items: center; width: 33px; height: 36px; color: #091413; background: var(--itp-lime); border-radius: 10px; font-size: 25px; font-weight: 750; line-height: 1; box-shadow: 0 0 24px #c8efa00d; }
-.itp-brand > span:first-child::after { content: ''; width: 5px; height: 5px; position: absolute; right: -2px; top: -2px; border-radius: 50%; background: #e2fbc5; box-shadow: 0 0 0 3px #080e16; }
-.itp-brand-word > span { color: var(--itp-lime); }
+.itp-brand .service-logo { --service-logo-icon-height: 32px; --service-logo-wordmark-height: 24px; }
 .itp-header-actions { display: flex; align-items: center; gap: 13px; }
 .itp-back { display: inline-flex; align-items: center; gap: 9px; padding: 10px 0; margin-right: 18px; color: #8f9b9b; font-size: 15px; transition: color .2s; }
 .itp-back > svg { transform: rotate(180deg); width: 15px; height: 15px; }
@@ -339,7 +337,7 @@
   .immersive-team-preview { min-height: 760px; }
   .itp-header { height: 82px; padding: 0 22px; }
   .itp-brand { font-size: 18px; gap: 9px; }
-  .itp-brand > span:first-child { width: 28px; height: 31px; border-radius: 9px; font-size: 22px; }
+  .itp-brand .service-logo { --service-logo-icon-height: 28px; --service-logo-wordmark-height: 21px; --service-logo-gap: 8px; }
   .itp-header-actions { gap: 10px; }
   .itp-back { margin-right: 7px; font-size: 15px; gap: 6px; }
   .itp-icon-button { width: 34px; height: 34px; }

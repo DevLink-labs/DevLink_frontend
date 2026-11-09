@@ -4,6 +4,7 @@ import type { Team } from "@/features/teams/types";
 import type { PreviewMember } from "../data/previewData";
 import { Icon } from "@/components/ui";
 import PageTitle from "@/components/common/PageTitle";
+import BrandLogo from "@/components/common/BrandLogo";
 import { copyText } from "@/utils";
 import ImmersiveTeamScene from './ImmersiveTeamScene'
 import FocusedMemberDetails from './FocusedMemberDetails'
@@ -405,7 +406,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
     </div>
     <div className="itp-ambient" aria-hidden="true"><i /><i /><i /></div>
     <div className="itp-ui">
-      <header className="itp-header"><a href="/" className="itp-brand" aria-label="DevLink 워크스페이스"><span className="itp-brand-symbol">D<i /></span><span className="itp-brand-word">DevLink</span></a><div className="itp-header-actions">{focusedMemberId && <button type="button" className="itp-overview-button" onClick={returnToOverview}><Icon name="arrow" size={17} />전체 팀 보기</button>}</div></header>
+      <header className="itp-header"><a href="/" className="itp-brand" aria-label="DevLink 워크스페이스"><BrandLogo /></a><div className="itp-header-actions">{focusedMemberId && <button type="button" className="itp-overview-button" onClick={returnToOverview}><Icon name="arrow" size={17} />전체 팀 보기</button>}</div></header>
       {showTeamControls && <div className={`itp-main${availability === "ready" ? " itp-team-reveal" : ""}`}>
         <section className="itp-hero" key={activeTeamId}>
           <TeamPicker teamName={teamName} teams={teamOptions} selectedTeamId={activeTeamId}

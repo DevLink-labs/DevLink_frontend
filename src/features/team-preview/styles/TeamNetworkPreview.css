@@ -169,3 +169,4 @@
   .nt-fallback strong { flex-basis: 50%; }
 }
 @media (prefers-reduced-motion: reduce) { .team-network-preview *, .team-network-preview *::before, .team-network-preview *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.nt-brand { --service-logo-icon-height: 30px; --service-logo-wordmark-height: 23px; --service-logo-gap: 8px; display: inline-flex; align-items: center; }

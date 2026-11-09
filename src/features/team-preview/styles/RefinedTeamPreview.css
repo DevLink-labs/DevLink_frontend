@@ -9,9 +9,6 @@
 }
 .itp-stage-sticky .itp-ambient { display: none; }
 .itp-stage-sticky .itp-brand { color: #2c2d30; }
-.itp-stage-sticky .itp-brand > .itp-brand-symbol { color: #3b3c3f; border: 1px solid #dfe2e8; background: #fff; box-shadow: none; }
-.itp-stage-sticky .itp-brand-symbol::after { display: none; }
-.itp-stage-sticky .itp-brand-word > span { color: #3b3c3f; }
 .itp-stage-sticky .itp-header { height: 96px; min-height: 0; padding: 0 24px; align-items: center; }
 .itp-stage-sticky .itp-hero {
   top: 24px;

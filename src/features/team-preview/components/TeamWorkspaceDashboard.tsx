@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useId, useState } from 'react'
 import { Icon } from '../../../components/ui'
 import type { PreviewTeam } from '../data/previewData'
@@ -39,7 +40,7 @@ export default function TeamWorkspaceDashboard({
 
   return <div className="itd-dashboard">
     <aside className="itd-sidebar" aria-label="팀 메뉴">
-      <a className="itd-brand" href="/" aria-label="DevLink 홈"><span>D<i /></span>DevLink<span className="itd-brand-dot">.</span></a>
+      <a className="itd-brand" href="/" aria-label="DevLink 홈"><BrandLogo tone="light" /></a>
       <div className="itd-sidebar-menu"><span className="itd-nav-active" aria-current="page"><Icon name="team" size={20} />팀과 에이전트</span><button type="button" className="itd-scene-nav" onClick={onReturnToScene}><Icon name="agent" size={20} />3D 팀 보기<Icon name="arrow" size={16} /></button></div>
       <div className="itd-sidebar-teams"><span>참여 중인 팀</span>{teams.map((item) => <button key={item.id} type="button" className={item.id === team.id ? 'is-selected' : ''} aria-pressed={item.id === team.id} onClick={() => changeTeam(item.id)}><span>{item.name.slice(0, 1)}</span>{item.name}<Icon name="chevron" size={14} /></button>)}</div>
       <div className="itd-sidebar-footer"><Icon name="shield" size={19} /><span>팀원과 에이전트를<br />한곳에서 확인하세요.</span></div>

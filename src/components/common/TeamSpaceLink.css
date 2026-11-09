@@ -18,7 +18,7 @@
 @media (max-width: 680px) {
   .itp-header .team-space-link { padding: 7px 8px; font-size: 0; gap: 0; width: 36px; }
   .itp-header .team-space-link > svg { width: 16px; height: 16px; }
-  .itp-experience .itp-stage-sticky .itp-brand-word { display: none; }
+  .itp-experience .itp-stage-sticky .itp-brand .service-logo-wordmark { display: none; }
   .itp-experience .itp-stage-sticky .itp-header-actions { max-width: calc(100% - 48px); flex-wrap: wrap; }
   .itp-experience .itp-stage-sticky .is-focused .itp-header-actions { flex-wrap: wrap; }
 }

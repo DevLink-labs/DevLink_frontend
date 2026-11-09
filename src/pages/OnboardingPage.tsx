@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import PageTitle from "@/components/common/PageTitle";
+import BrandLogo from "@/components/common/BrandLogo";
 import { Icon } from "@/components/ui";
 import type { User } from "@/features/auth/types";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -122,10 +123,7 @@ export default function OnboardingPage({
       <PageTitle title="DevLink 시작하기" />
       <header className="onboarding-header">
         <a className="auth-brand" href="/" aria-label="DevLink 홈">
-          <span className="auth-brand-mark" aria-hidden="true">
-            D
-          </span>
-          <span>DevLink</span>
+          <BrandLogo />
         </a>
         <div className="onboarding-account">
           <span>{user.nickname || user.name}님</span>
@@ -488,7 +486,7 @@ export default function OnboardingPage({
         </section>
       </div>
       <footer className="onboarding-footer">
-        <span>DevLink Workspace</span>
+        <span className="onboarding-footer-brand"><BrandLogo variant="wordmark" /><span>Workspace</span></span>
         <span>팀과 Agent를 잇는 첫걸음</span>
       </footer>
     </main>

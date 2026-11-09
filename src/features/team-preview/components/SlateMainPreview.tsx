@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../../../components/ui'
 import { previewTeams } from '../data/previewData'
@@ -66,7 +67,7 @@ export default function SlateMainPreview({ appearance = 'slate' }: { appearance?
 
   return <div className={`slate-main-preview ${isRoseBlanc ? 'rose-blanc-main-preview' : ''}`}>
     <aside className="smp-sidebar" aria-label="워크스페이스 탐색">
-      <a className="smp-brand" href="/" aria-label="DevLink 서비스 홈"><span className="smp-brand-symbol">D<span /></span>DevLink<span className="smp-brand-period">.</span></a>
+      <a className="smp-brand" href="/" aria-label="DevLink 서비스 홈"><BrandLogo /></a>
       <div className="smp-workspace-picker"><span className="smp-workspace-icon"><Icon name="grid" size={17} /></span><div><strong>나의 워크스페이스</strong><span>Personal workspace</span></div><span className="smp-workspace-key">W</span></div>
       <p className="smp-nav-label">WORKSPACE</p>
       <nav className="smp-nav" aria-label="메인 메뉴">
@@ -104,7 +105,7 @@ export default function SlateMainPreview({ appearance = 'slate' }: { appearance?
           <aside className="smp-insights"><section className="smp-team-summary"><div className="smp-aside-caption">CURRENT SPACE<Icon name="grid" size={15} /></div><h3>{team.name}</h3><p>사람과 에이전트가 함께<br />하나의 흐름을 만들어갑니다.</p><div className="smp-summary-diagram" aria-hidden="true"><span className="smp-diagram-person"><Icon name="team" size={22} /></span><span className="smp-diagram-link"><i /><i /><i /></span><span className="smp-diagram-agent"><Icon name="agent" size={24} /></span></div><dl><div><dt>팀원</dt><dd>{team.members.length}명</dd></div><div><dt>온라인 에이전트</dt><dd>{onlineCount}개</dd></div><div><dt>팀 생성일</dt><dd>{team.createdAt}</dd></div></dl><div className="smp-summary-foot"><Icon name="shield" size={14} />우리 팀 안에서 안전하게</div></section><section className="smp-guide-card"><span><Icon name="book" size={18} />GETTING STARTED</span><h3>첫 연결도 어렵지 않아요.</h3><p>팀에 참여하고 에이전트를 연결하는<br />방법을 차근차근 알아보세요.</p><button type="button" onClick={() => setGuideOpen(true)}>연결 가이드 보기<Icon name="arrow" size={15} /></button></section></aside>
         </div>
 
-        <footer className="smp-footer"><span><strong>DevLink</strong><span>더 나은 연결, 더 나은 개발.</span></span><p><i />{isRoseBlanc ? 'Rose Blanc · ' : ''}목업 데이터로 구성된 메인 페이지 시안입니다.</p><div className="smp-palette" aria-label={isRoseBlanc ? '로즈 라벤더 색상 팔레트' : '블루 슬레이트 색상 팔레트'}>{palette.map((color) => <i key={color} title={color} />)}</div></footer>
+        <footer className="smp-footer"><span><BrandLogo variant="wordmark" className="smp-footer-logo" /><span>더 나은 연결, 더 나은 개발.</span></span><p><i />{isRoseBlanc ? 'Rose Blanc · ' : ''}목업 데이터로 구성된 메인 페이지 시안입니다.</p><div className="smp-palette" aria-label={isRoseBlanc ? '로즈 라벤더 색상 팔레트' : '블루 슬레이트 색상 팔레트'}>{palette.map((color) => <i key={color} title={color} />)}</div></footer>
       </main>
     </div>
 

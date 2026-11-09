@@ -139,7 +139,7 @@
   .itp-stage-sticky .itp-brand { margin-top: 3px; }
   .itp-stage-sticky .itp-header-actions { flex-wrap: wrap; justify-content: flex-end; gap: 7px; max-width: calc(100% - 116px); }
   .itp-stage-sticky .itp-header-actions .itp-icon-button { width: 36px; height: 36px; }
-  .itp-stage-sticky .is-focused .itp-brand-word { display: none; }
+  .itp-stage-sticky .is-focused .itp-brand .service-logo-wordmark { display: none; }
   .itp-stage-sticky .is-focused .itp-header-actions { max-width: calc(100% - 48px); flex-wrap: nowrap; }
   .itp-overview-button, .itp-dashboard-jump { min-height: 36px; gap: 6px; padding: 8px 9px; border-radius: 9px; font-size: 14px; }
   .itp-overview-button > svg, .itp-dashboard-jump > svg { width: 15px; height: 15px; }

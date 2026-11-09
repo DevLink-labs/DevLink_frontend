@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PageTitle from '../../../components/common/PageTitle'
 import { Icon } from '../../../components/ui'
@@ -152,7 +153,7 @@ export default function TeamObservatory() {
   return <div className="team-observatory">
     <PageTitle title="3D 팀 스페이스 - 2" />
     <header className="tp2-header">
-      <a className="tp2-brand" href="/" aria-label="DevLink 워크스페이스">DevLink</a>
+      <a className="tp2-brand" href="/" aria-label="DevLink 워크스페이스"><BrandLogo /></a>
       <span className="tp2-page-name">팀 스페이스 <span>2</span></span>
       <nav aria-label="스페이스 페이지"><a href="/?preview=agents">스페이스 1</a><a href="/?preview=agents-3">스페이스 3</a><a href="/?preview=team">디자인 갤러리</a><button type="button" onClick={() => setDialogView('invite')}>팀원 초대<Icon name="plus" size={15} /></button></nav>
     </header>

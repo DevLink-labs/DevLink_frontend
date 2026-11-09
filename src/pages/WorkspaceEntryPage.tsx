@@ -6,6 +6,7 @@ import { agentKeys } from "@/features/agents/hooks/useAgents";
 import { teamApi } from "@/features/teams/api/teamApi";
 import { teamKeys } from "@/features/teams/hooks/useTeams";
 import { Icon } from "@/components/ui";
+import BrandLogo from "@/components/common/BrandLogo";
 import { useNotice } from "@/hooks/useNotice";
 
 const WorkspacePage = lazy(() => import("./WorkspacePage"));
@@ -76,10 +77,10 @@ export default function WorkspaceEntryPage({ user }: { user: User }) {
   if (existingAccount.isPending)
     return (
       <div className="boot-screen" role="status">
-        <span className="brand-symbol">
-          D<span />
+        <span aria-hidden="true">
+          <BrandLogo variant="icon" className="boot-brand-icon" />
         </span>
-        <h1>DevLink</h1>
+        <h1 className="boot-brand-title"><BrandLogo variant="wordmark" className="boot-brand-wordmark" /></h1>
         <p className="muted">작업 공간을 준비하고 있어요.</p>
         <span className="loading-bar" />
       </div>

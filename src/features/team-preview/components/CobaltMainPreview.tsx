@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Icon, Modal } from '../../../components/ui'
@@ -55,7 +56,7 @@ export default function CobaltMainPreview() {
 
   return <div className="cobalt-main-preview">
     <aside className="cvp-sidebar" aria-label="코발트 워크스페이스 탐색">
-      <a className="cvp-brand" href="/" aria-label="DevLink 홈"><span className="cvp-brand-mark">d<span /></span>DevLink<span className="cvp-brand-period">.</span></a>
+      <a className="cvp-brand" href="/" aria-label="DevLink 홈"><BrandLogo /></a>
       <div className="cvp-workspace"><span><Icon name="grid" size={17} /></span><div><strong>보경님의 공간</strong><small>Personal workspace</small></div><span className="cvp-workspace-badge">W</span></div>
       <p className="cvp-nav-label">WORKSPACE</p>
       <nav className="cvp-navigation" aria-label="워크스페이스 메뉴">
@@ -91,7 +92,7 @@ export default function CobaltMainPreview() {
           <aside className="cvp-context-column"><section className="cvp-members-card" aria-labelledby="cvp-members-heading"><div className="cvp-context-heading"><h2 id="cvp-members-heading">함께하는 사람들</h2><span>{team.members.length}</span></div><p>이름을 선택하면 담당 에이전트를 볼 수 있어요.</p><div className="cvp-members-list">{team.members.map((member, index) => <button key={member.id} type="button" className={memberId === member.id ? 'is-selected' : ''} aria-pressed={memberId === member.id} onClick={() => filterByMember(member.id)}><span className={`cvp-member-avatar cvp-member-avatar-${index % 3}`}>{member.initials.slice(0, 1)}</span><span><strong>{member.name}{member.id === 'jiwoo' && <small>나</small>}</strong><small>{member.role === 'OWNER' ? 'Team owner' : 'Team member'}</small></span><span className="cvp-member-agent-count">{member.agents.length}<Icon name={memberId === member.id ? 'check' : 'agent'} size={13} /></span></button>)}</div><div className="cvp-members-note"><Icon name="team" size={14} />좋은 연결이, 더 나은 개발로.</div></section><section className="cvp-tools-card"><span className="cvp-eyebrow">TOOLS IN YOUR SPACE</span><h2>각자의 도구로,<br />하나의 팀처럼.</h2><div>{(['Codex', 'Claude Code'] as const).map((tool) => <span key={tool}><i>{tool === 'Codex' ? <Icon name="agent" size={16} /> : '✳'}</i><strong>{tool}</strong><span>{agents.filter((agent) => agent.tool === tool).length}개</span></span>)}</div><p>도구가 달라도 팀의 공간은 함께.</p></section><div className="cvp-team-created"><span>TEAM CREATED</span><strong>{team.createdAt}</strong><Icon name="grid" size={30} /></div></aside>
         </div>
 
-        <footer className="cvp-footer"><div><strong>DevLink<span>.</span></strong><span>Cobalt Workspace · 목업 데이터로 구성된 시안입니다.</span></div><div className="cvp-palette" aria-label="코발트 워크스페이스 색상 팔레트">{palette.map((color) => <span key={color}><i style={{ background: color }} /><small>{color}</small></span>)}</div></footer>
+        <footer className="cvp-footer"><div><BrandLogo variant="wordmark" className="cvp-footer-logo" /><span>Cobalt Workspace · 목업 데이터로 구성된 시안입니다.</span></div><div className="cvp-palette" aria-label="코발트 워크스페이스 색상 팔레트">{palette.map((color) => <span key={color}><i style={{ background: color }} /><small>{color}</small></span>)}</div></footer>
       </main>
     </div>
 

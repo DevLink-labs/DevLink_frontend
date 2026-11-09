@@ -3,7 +3,6 @@
 .team-observatory :is(button, a, input, select):focus-visible { outline: 2px solid var(--tp2-accent); outline-offset: 4px; }
 .tp2-header { display: flex; align-items: center; gap: 32px; height: 68px; flex-shrink: 0; padding: 0 36px; border-bottom: 1px solid var(--tp2-rule); z-index: 4; }
 .tp2-brand { display: flex; align-items: center; gap: 6px; font-size: 21px; font-weight: 750; letter-spacing: -1px; }
-.tp2-brand > span { color: var(--tp2-accent); font-size: 21px; font-weight: 400; }
 .tp2-page-name { display: flex; align-items: center; gap: 13px; border-left: 1px solid #d2d2d7; padding-left: 25px; font-size: 12px; }
 .tp2-page-name > span { color: var(--tp2-muted); font-family: 'Consolas', monospace; font-size: 11px; }
 .tp2-header nav { display: flex; align-items: center; gap: 26px; margin-left: auto; font-size: 11px; }
@@ -167,7 +166,6 @@
 @media (max-width: 580px) {
   .tp2-header { height: 60px; padding-inline: 18px; gap: 12px; }
   .tp2-brand { font-size: 19px; }
-  .tp2-brand > span { font-size: 18px; }
   .tp2-page-name { padding-left: 12px; font-size: 10px; gap: 7px; }
   .tp2-page-name > span { font-size: 9px; }
   .tp2-header nav { gap: 16px; font-size: 10px; }
@@ -199,3 +197,5 @@
   .tp2-colophon > span { gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .team-observatory *, .team-observatory *::before, .team-observatory *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.tp2-brand { --service-logo-icon-height: 29px; --service-logo-wordmark-height: 22px; --service-logo-gap: 8px; }
+@media (max-width: 580px) { .tp2-brand { --service-logo-icon-height: 26px; --service-logo-wordmark-height: 18px; --service-logo-gap: 6px; } }

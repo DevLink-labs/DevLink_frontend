@@ -23,9 +23,6 @@
 .smp-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .smp-sidebar { position: sticky; top: var(--design-toolbar-height, 76px); height: calc(100svh - var(--design-toolbar-height, 76px)); min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 29px 20px 19px; background: #fff; border-right: 1px solid var(--smp-line); }
 .smp-brand { display: flex; align-items: center; gap: 10px; width: fit-content; font-size: 25px; font-weight: 750; letter-spacing: -1.1px; padding: 0 6px; }
-.smp-brand-symbol { position: relative; height: 31px; width: 31px; display: grid; place-items: center; padding-right: 1px; border-radius: 9px; background: var(--smp-ink); color: var(--smp-paper); font-size: 23px; font-weight: 750; letter-spacing: -1px; }
-.smp-brand-symbol > span { position: absolute; top: -2px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--smp-blue); border: 2px solid #fff; }
-.smp-brand-period { color: var(--smp-slate); margin-left: -9px; }
 .smp-workspace-picker { display: flex; align-items: center; gap: 9px; padding: 12px 10px; border: 1px solid var(--smp-line); border-radius: 9px; margin-top: 29px; background: var(--smp-paper); }
 .smp-workspace-icon { width: 30px; height: 32px; display: grid; place-items: center; border-radius: 6px; background: var(--smp-blue); }
 .smp-workspace-picker > div { display: flex; flex-direction: column; min-width: 0; }
@@ -213,7 +210,7 @@
 .smp-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--smp-line); padding: 19px 0 23px; margin-top: 32px; }
 .smp-footer > span { display: flex; align-items: center; gap: 12px; }
 .smp-footer > span > strong { font-size: 12px; letter-spacing: -.5px; font-weight: 650; }
-.smp-footer > span > span { color: var(--smp-slate); font-size: 8px; }
+.smp-footer > span > span:not(.service-logo) { color: var(--smp-slate); font-size: 8px; }
 .smp-footer p { display: flex; align-items: center; gap: 5px; margin: 0 0 0 auto; font-size: 8px; color: var(--smp-slate); }
 .smp-footer p > i { width: 4px; height: 4px; border-radius: 50%; background: var(--smp-cloud); }
 .smp-palette { display: flex; align-items: center; gap: 4px; }
@@ -266,7 +263,7 @@
   .smp-stat { padding: 17px 16px 14px; }
   .smp-welcome-art { right: 17px; transform: translateY(-50%) scale(.88); }
   .smp-welcome { padding: 31px; }
-  .smp-footer > span > span { display: none; }
+  .smp-footer > span > span:not(.service-logo) { display: none; }
 }
 @media (max-width: 940px) {
   .slate-main-preview { grid-template-columns: 190px minmax(0, 1fr); }
@@ -315,7 +312,6 @@
   .slate-main-preview { display: block; }
   .smp-sidebar { position: relative; top: auto; width: 100%; height: auto; min-height: 0; padding: 16px 22px 0; display: grid; grid-template-columns: 1fr auto; border-right: 0; border-bottom: 1px solid var(--smp-line); gap: 17px; }
   .smp-brand { font-size: 22px; padding: 0; }
-  .smp-brand-symbol { width: 28px; height: 28px; border-radius: 8px; font-size: 21px; }
   .smp-workspace-picker { margin: 0; background: transparent; border: 0; padding: 0; gap: 7px; }
   .smp-workspace-icon { height: 28px; width: 28px; }
   .smp-workspace-picker > div > span { display: none; }
@@ -420,3 +416,6 @@
 @media (prefers-reduced-motion: reduce) {
   .slate-main-preview *, .slate-main-preview *::before, .slate-main-preview *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+.smp-brand { --service-logo-icon-height: 30px; --service-logo-wordmark-height: 22px; --service-logo-gap: 8px; }
+.smp-footer-logo { --service-logo-wordmark-height: 15px; }
+@media (max-width: 940px) { .smp-brand { --service-logo-icon-height: 26px; --service-logo-wordmark-height: 19px; --service-logo-gap: 6px; } }

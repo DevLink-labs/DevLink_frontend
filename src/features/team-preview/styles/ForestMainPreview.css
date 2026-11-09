@@ -21,8 +21,6 @@
 .fvp-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .fvp-sidebar { position: sticky; top: var(--design-toolbar-height, 84px); height: calc(100svh - var(--design-toolbar-height, 84px)); min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-self: start; padding: 29px 17px 20px; color: #e6eee7; background: var(--fvp-forest); scrollbar-width: thin; scrollbar-color: #658779 transparent; }
 .fvp-brand { display: flex; align-items: center; gap: 10px; width: fit-content; padding-left: 8px; font-size: 25px; font-weight: 700; letter-spacing: -1.2px; line-height: 1; }
-.fvp-brand > span { display: grid; place-items: center; width: 31px; height: 32px; border-radius: 8px; color: var(--fvp-forest); background: var(--fvp-sage); }
-.fvp-brand > i { width: 5px; height: 5px; border-radius: 50%; background: var(--fvp-sage); align-self: flex-end; margin: 0 0 4px -7px; }
 .fvp-workspace { display: flex; align-items: center; gap: 9px; border: 1px solid #ffffff13; border-radius: 8px; padding: 11px 9px; margin-top: 30px; background: #ffffff04; }
 .fvp-workspace-symbol { display: grid; place-items: center; width: 28px; height: 29px; border-radius: 6px; color: #c7dacd; background: #ffffff0d; font-size: 12px; }
 .fvp-workspace strong { display: block; font-size: 11px; font-weight: 550; letter-spacing: -.2px; }
@@ -276,8 +274,6 @@
   .forest-main-preview { display: block; }
   .fvp-sidebar { position: relative; top: auto; height: auto; padding: 17px 22px 0; display: grid; grid-template-columns: 1fr auto; gap: 17px; overflow: visible; }
   .fvp-brand { padding: 0; font-size: 23px; }
-  .fvp-brand > span { width: 28px; height: 29px; }
-  .fvp-brand svg { width: 20px; }
   .fvp-workspace { margin: 0; padding: 0; border: 0; background: transparent; }
   .fvp-workspace-symbol { width: 27px; height: 28px; }
   .fvp-workspace small { display: none; }
@@ -441,3 +437,5 @@
   .forest-main-preview .fvp-member-row strong { font-size: 12px; }
   .forest-main-preview .fvp-member-row > div > span { font-size: 9px; }
 }
+.fvp-brand { --service-logo-icon-height: 30px; --service-logo-wordmark-height: 22px; --service-logo-gap: 8px; }
+.fvp-footer-logo { --service-logo-wordmark-height: 16px; }
