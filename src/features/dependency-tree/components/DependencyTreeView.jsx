@@ -22,7 +22,7 @@ function wrapNodeName(label) {
 
 /** 맞춤에서 작은 그래프를 키우는 상한. 카드가 지나치게 커지지 않게 막는다. */
 const maxFitScale = 1.6;
-const fitModes = [["both", "전체 맞춤"], ["width", "가로 맞춤"], ["none", "원본 크기"]];
+const fitModes = [["both", "전체 맞춤"], ["width", "가로 맞춤"], ["none", "원본 크기"], ["focus", "선택 중심"]];
 /** 방사형 간격. ring은 중심에서 1단까지, step은 단 사이, minArc는 같은 단 이웃 카드 사이 최소 호 길이(px). */
 const metrics = { ring: 300, step: 250, minArc: 150, spread: 1.4 };
 /** 카드 크기 추정치. 캔버스 크기와 여백 계산에만 쓴다. */
@@ -45,6 +45,8 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   const [pair, setPair] = useState(null);
   const [member, setMember] = useState(null);
   const [fit, setFit] = useState("both");
+  const [focusKey, setFocusKey] = useState(null);
+  const scrollRequest = useRef(false);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!activity?.receivedAt) return undefined;
@@ -62,47 +64,6 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   }, [graph.repositories, pair]);
   const hasRepository = Boolean(sourceRepo);
 
-  useLayoutEffect(() => {
-    const frame = viewport.current;
-    const surface = stage.current;
-    const diagram = canvas.current;
-    if (!frame || !surface || !diagram) return undefined;
-
-    function measure() {
-      const style = getComputedStyle(frame);
-      const diagramStyle = getComputedStyle(diagram);
-      const width = parseFloat(diagramStyle.width);
-      const height = parseFloat(diagramStyle.height);
-      if (!width || !height) return;
-      const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-      const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-      const availableWidth = Math.max(1, frame.clientWidth - paddingX);
-      const availableHeight = Math.max(1, frame.clientHeight - paddingY);
-      const scale = fit === "none" ? 1 : Math.min(maxFitScale, availableWidth / width,
-        fit === "both" ? availableHeight / height : Infinity);
-      surface.style.setProperty("--tree-fit-scale", scale);
-      surface.style.setProperty("--tree-fitted-width", width * scale + "px");
-      surface.style.setProperty("--tree-fitted-height", height * scale + "px");
-    }
-
-    let pending;
-    function resize() {
-      cancelAnimationFrame(pending);
-      pending = requestAnimationFrame(measure);
-    }
-    const observer = new ResizeObserver(resize);
-    observer.observe(frame);
-    observer.observe(diagram);
-    const page = frame.closest(".dependency-page");
-    if (page) observer.observe(page);
-    window.addEventListener("resize", resize);
-    measure();
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", resize);
-      cancelAnimationFrame(pending);
-    };
-  }, [fit, hasRepository]);
 
   const activeGraph = useMemo(() => {
     const ids = new Set(visibleRepos.map(({ repoId }) => repoId));
@@ -136,6 +97,76 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     };
   }, [tree]);
   const { originX, originY, width, height } = scene;
+  /**
+   * 배율과 스크롤. 전체·가로 맞춤은 캔버스 전체를, 선택 중심은 누른 카드와 그 부모·자식이 들어오는 상자를 기준으로 배율을 정하고
+   * 누른 카드가 뷰포트 가운데에 오도록 스크롤한다(스크롤은 카드를 눌렀을 때 한 번만, 이후 재측정에서는 배율만 갱신).
+   */
+  useLayoutEffect(() => {
+    const frame = viewport.current;
+    const surface = stage.current;
+    const diagram = canvas.current;
+    if (!frame || !surface || !diagram) return undefined;
+
+    function focusBox() {
+      const target = scene.entries.find((entry) => entry.key === focusKey);
+      if (!target) return null;
+      const related = scene.entries.filter((entry) => entry.key === focusKey || entry.parentKey === focusKey || entry.key === target.parentKey);
+      const points = related.map(({ x, y }) => [x, y]);
+      if (!target.parentKey) points.push([scene.originX, scene.originY]);
+      const xs = points.map(([x]) => x);
+      const ys = points.map(([, y]) => y);
+      return {
+        center: [target.x, target.y],
+        width: Math.max(...xs) - Math.min(...xs) + cardSize.width + cardSize.pad * 2,
+        height: Math.max(...ys) - Math.min(...ys) + cardSize.height + cardSize.pad * 2,
+      };
+    }
+
+    function measure() {
+      const style = getComputedStyle(frame);
+      const diagramStyle = getComputedStyle(diagram);
+      const width = parseFloat(diagramStyle.width);
+      const height = parseFloat(diagramStyle.height);
+      if (!width || !height) return;
+      const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      const availableWidth = Math.max(1, frame.clientWidth - paddingX);
+      const availableHeight = Math.max(1, frame.clientHeight - paddingY);
+      const box = fit === "focus" ? focusBox() : null;
+      const scale = fit === "none" ? 1
+        : box ? Math.min(maxFitScale, availableWidth / box.width, availableHeight / box.height)
+          : Math.min(maxFitScale, availableWidth / width, fit === "width" ? Infinity : availableHeight / height);
+      surface.style.setProperty("--tree-fit-scale", scale);
+      surface.style.setProperty("--tree-fitted-width", width * scale + "px");
+      surface.style.setProperty("--tree-fitted-height", height * scale + "px");
+      if (box && scrollRequest.current) {
+        scrollRequest.current = false;
+        const left = Math.max(0, parseFloat(style.paddingLeft) + box.center[0] * scale - frame.clientWidth / 2);
+        const top = Math.max(0, parseFloat(style.paddingTop) + box.center[1] * scale - frame.clientHeight / 2);
+        // 새 배율로 스테이지 크기가 반영된 다음 프레임에 스크롤해야 끝이 잘리지 않는다.
+        // 부드러운 스크롤은 배율 변경으로 스테이지 크기가 바뀌면 취소되므로 즉시 이동한다.
+        requestAnimationFrame(() => frame.scrollTo({ left, top, behavior: "auto" }));
+      }
+    }
+
+    let pending;
+    function resize() {
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(measure);
+    }
+    const observer = new ResizeObserver(resize);
+    observer.observe(frame);
+    observer.observe(diagram);
+    const page = frame.closest(".dependency-page");
+    if (page) observer.observe(page);
+    window.addEventListener("resize", resize);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(pending);
+    };
+  }, [fit, hasRepository, scene, focusKey]);
   const onOpenPath = (key) => Boolean(openPath && (openPath === key || openPath.startsWith(key + "/")));
   const inFocus = (entry) => {
     if (!focus) return true;
@@ -156,7 +187,14 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     ? focus.outside.map((person) => [fileKey(person.repoId, person.relativePath), new Map([[person.userId, person]])])
     : [...workers.entries()].filter(([key, entries]) => !model.byFile.has(key) && repoIds.has(entries.values().next().value.repoId));
 
+  /** 누른 카드를 가운데로 가져오는 선택 중심 모드로 전환한다. */
+  function focusOn(key) {
+    scrollRequest.current = true;
+    setFocusKey(key);
+    setFit("focus");
+  }
   function activate(entry) {
+    focusOn(entry.key);
     if (entry.group) return;
     setSelected(entry.node ? entry.id : null);
     if (entry.collapsible) setOpenPath(onOpenPath(entry.key) ? parentKey(entry.key) : entry.key);
@@ -164,7 +202,10 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
   function locate(id) {
     setSelected(id);
     const key = keyFor(model, branches, id);
-    if (key) setOpenPath(key);
+    if (key) {
+      setOpenPath(key);
+      focusOn(key);
+    }
   }
 
   if (!sourceRepo) {
@@ -185,7 +226,8 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
     </select></label>
     <div className="dependency-fit" role="group" aria-label="그래프 크기">
       {fitModes.map(([mode, label]) => (
-        <button className="dependency-fit-button" type="button" key={mode} aria-pressed={fit === mode} onClick={() => setFit(mode)}>
+        <button className="dependency-fit-button" type="button" key={mode} aria-pressed={fit === mode}
+          onClick={() => { if (mode === "focus") scrollRequest.current = true; setFit(mode); }}>
           {label}
         </button>
       ))}
@@ -274,7 +316,7 @@ export default function DependencyTreeView({ graph, activity, frame = {} }) {
               <li key={item.id}>
                 <button type="button" className="dependency-item" aria-pressed={selected === item.id}
                   data-dim={focus && !(focus.working.has(item.id) || focus.impact.has(item.id)) || undefined}
-                  data-working={focus?.working.has(item.id) || undefined} onClick={() => setSelected(item.id)}>
+                  data-working={focus?.working.has(item.id) || undefined} onClick={() => { setSelected(item.id); focusOn(entry.key); }}>
                   <span>{wrapNodeName(item.label)}</span>
                   {editing.length > 0 && <span className={"dependency-pill " + (item.kind === "DB_TABLE" ? "dependency-pill--schema" : "dependency-pill--working")}>
                     {editing.map(({ displayName }) => displayName).join(", ")}
