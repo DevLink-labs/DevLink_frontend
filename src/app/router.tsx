@@ -14,7 +14,7 @@ const previewRoutes = [
   { path: '/team-observatory', aliases: ['agents-2'], title: '3D 팀 스페이스 - 2', component: TeamObservatory },
   { path: '/team-orbit', aliases: ['orbit', 'agents'], title: '3D 팀 스페이스', component: ImmersiveTeamPreview },
   { path: '/team-preview', aliases: ['team'], title: '팀 디자인 미리보기', component: TeamDesignPreview },
-  { path: "/tree", aliases: [], title: "코드 의존성", component: DependencyTreePage },
+  { path: "/tree", aliases: [] as string[], title: "코드 의존성", component: DependencyTreePage },
 ]
 
 export default function AppRouter() {
