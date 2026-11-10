@@ -393,7 +393,7 @@ export default function OnboardingPage({
               )}
               {desktop?.setup && desktop.getStatus ? (
                 <ProjectConnectView
-                  key={selectedTeam.teamId}
+                  key={`${user.userId}:${selectedTeam.teamId}:${user.email}`}
                   presentation="page"
                   setup={desktop.setup}
                   getStatus={desktop.getStatus}

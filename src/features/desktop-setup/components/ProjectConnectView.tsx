@@ -9,8 +9,12 @@ import type {
   SetupAccount,
   SetupResult,
   SetupTool,
+  SavedConnection,
 } from "../api/desktopApi";
+import { getDesktopApi } from "../api/desktopApi";
 import { agentParts, createSetupAgentMetadata } from "../lib/agentMetadata";
+import { localizeSetupError } from "../lib/setupErrors";
+import McpGuideView from "./McpGuideView";
 
 interface ProjectConnectViewProps {
   setup: DesktopSetupApi;
@@ -28,7 +32,15 @@ interface ProjectConnectViewProps {
 }
 
 type View =
-  | { state: "choose" | "picking" | "select-tool" | "running" }
+  | {
+      state:
+        | "choose"
+        | "picking"
+        | "select-tool"
+        | "running"
+        | "connections"
+        | "guide";
+    }
   | SetupResult;
 
 // 같은 입력으로 다시 실행해도 결과가 바뀌지 않는 오류
@@ -36,6 +48,7 @@ const noRetryCodes = [
   "SETUP_REGISTRATION_UNKNOWN",
   "SETUP_PROFILE_CONFLICT",
   "SETUP_AGENT_BINDING_CONFLICT",
+  "SETUP_AGENT_REJECTED",
 ];
 
 const toolNames: Record<SetupTool, string> = {
@@ -100,9 +113,25 @@ export default function ProjectConnectView({
   } | null>(null);
   const [checking, setChecking] = useState(false);
   const [notice, setNotice] = useState("");
+  const [connections, setConnections] = useState<SavedConnection[]>([]);
+  const [guideBusy, setGuideBusy] = useState(false);
+  const [mcpMode, setMcpMode] = useState<"automatic" | "manual">("automatic");
+  const manualSetup =
+    getDesktopApi()?.capabilities?.manualMcpSetup === 1 &&
+    Boolean(
+      setup.getGuide &&
+        setup.inspect &&
+        setup.listConnections &&
+        setup.resume &&
+        setup.resetContext,
+    );
   const active = useRef(false);
+  const operationVersion = useRef(0);
   const busy =
-    view?.state === "picking" || view?.state === "running" || checking;
+    view?.state === "picking" ||
+    view?.state === "running" ||
+    checking ||
+    guideBusy;
   const { userId, teamId, email } = account;
   const ready =
     readiness?.userId === userId && readiness.teamId === teamId
@@ -119,14 +148,18 @@ export default function ProjectConnectView({
 
   useEffect(() => {
     active.current = true;
+    const operations = operationVersion;
+    if (manualSetup) void setup.resetContext!().catch(() => {});
     const unsubscribe = setup.onProgress(({ step, status }) => {
       setProgress((previous) => ({ ...previous, [step]: status }));
     });
     return () => {
       active.current = false;
+      operations.current++;
       unsubscribe();
+      if (manualSetup) void setup.resetContext!().catch(() => {});
     };
-  }, [setup]);
+  }, [setup, manualSetup, userId, teamId, email]);
 
   useEffect(() => {
     let current = true;
@@ -148,7 +181,7 @@ export default function ProjectConnectView({
               previous.ready),
         }));
       })
-      .catch(() => { });
+      .catch(() => {});
     return () => {
       current = false;
     };
@@ -165,6 +198,7 @@ export default function ProjectConnectView({
     selection: ProjectSelection,
     tool: SetupTool,
     password?: string,
+    mode = mcpMode,
   ) {
     if (busy) return;
     let metadata;
@@ -176,33 +210,45 @@ export default function ProjectConnectView({
       return;
     }
     setMetadataError("");
+    setMcpMode(mode);
+    const version = operationVersion.current;
     setSelectedTool(tool);
     setToolLocked(true);
     setProgress({});
     setNotice("");
     setView({ state: "running" });
     try {
-      const result = await setup.run(selection.id, tool, password, metadata);
-      if (!active.current) return;
+      const result = await setup.run(
+        selection.id,
+        tool,
+        password,
+        metadata,
+        manualSetup ? { mcpMode: mode } : undefined,
+      );
+      if (!active.current || version !== operationVersion.current) return;
       if (result.state === "done") complete();
-      else setView(result);
+      else if (result.state === "manual" && manualSetup)
+        setView({ state: "guide" });
+      else setView(localizeSetupError(result));
     } catch (error) {
-      if (active.current)
+      if (active.current && version === operationVersion.current)
         setView({ state: "error", message: messageFrom(error) });
     }
   }
 
   async function pickFolder() {
+    const version = ++operationVersion.current;
     setProject(null);
     setSelectedTool(null);
     setToolLocked(false);
+    setMcpMode("automatic");
     setAgentPart("");
     setRolesText("");
     setMetadataError("");
     setView({ state: "picking" });
     try {
       const selection = await setup.pickFolder(account);
-      if (!active.current) return;
+      if (!active.current || version !== operationVersion.current) return;
       if (!selection) {
         setView({ state: "choose" });
         return;
@@ -219,7 +265,7 @@ export default function ProjectConnectView({
         setView({ state: "select-tool" });
       }
     } catch (error) {
-      if (active.current)
+      if (active.current && version === operationVersion.current)
         setView({ state: "error", message: messageFrom(error) });
     }
   }
@@ -227,7 +273,34 @@ export default function ProjectConnectView({
   function submitConnection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!project || !selectedTool || busy) return;
-    void run(project, selectedTool);
+    void run(project, selectedTool, undefined, "automatic");
+  }
+
+  async function openConnections() {
+    const version = ++operationVersion.current;
+    setProject(null);
+    setSelectedTool(null);
+    setChecking(true);
+    setView({ state: "connections" });
+    setNotice("");
+    setConnections([]);
+    try {
+      const saved = await setup.listConnections!(account);
+      if (active.current && version === operationVersion.current)
+        setConnections(saved);
+    } catch (error) {
+      if (active.current && version === operationVersion.current)
+        setNotice(messageFrom(error));
+    } finally {
+      if (active.current && version === operationVersion.current)
+        setChecking(false);
+    }
+  }
+
+  function markProjectReady() {
+    setReadiness({ userId, teamId, ready: true });
+    onRefreshAgents();
+    onConnected?.();
   }
 
   function submitPassword(event: FormEvent<HTMLFormElement>) {
@@ -280,6 +353,7 @@ export default function ProjectConnectView({
 
   function close() {
     if (busy) return;
+    operationVersion.current++;
     setView(presentation === "page" ? { state: "choose" } : null);
     setProject(null);
     setSelectedTool(null);
@@ -298,6 +372,93 @@ export default function ProjectConnectView({
           {project.name}
           {selectedTool && <span>{toolNames[selectedTool]}</span>}
         </p>
+      )}
+      {view.state === "connections" && (
+        <div className="grid gap-3">
+          <p>
+            현재 계정·팀에서 이 PC에 준비한 프로젝트입니다. 설정을 여는 것만으로
+            연결 프로그램을 시작하거나 Agent를 생성하지 않습니다.
+          </p>
+          {checking && <p role="status">프로젝트 목록을 읽고 있습니다…</p>}
+          {!checking &&
+            connections.map((connection) => (
+              <button
+                className="button button-secondary text-left"
+                type="button"
+                key={connection.id}
+                onClick={() => {
+                  setProject({
+                    id: connection.id,
+                    name: connection.name,
+                    tools: [connection.tool],
+                    saved: true,
+                    authRequired: connection.availability === "auth_required",
+                  });
+                  setSelectedTool(connection.tool);
+                  setView({ state: "guide" });
+                }}
+              >
+                <span>
+                  {connection.name} · {toolNames[connection.tool]} · Agent{" "}
+                  {connection.agentId}
+                  <br />
+                  <span className="field-hint break-all">
+                    {connection.projectPath}
+                  </span>
+                  <br />
+                  <span className="field-hint">
+                    {connection.availability === "auth_required"
+                      ? "로그인 만료 · 비밀번호 입력 후 재개"
+                      : connection.availability !== "ready"
+                        ? "로컬 연결 준비 필요"
+                        : connection.fileState === "matches"
+                          ? "설정 파일 일치"
+                          : "설정 확인 필요"}
+                  </span>
+                </span>
+              </button>
+            ))}
+          {!checking && connections.length === 0 && !notice && (
+            <p>
+              준비된 프로젝트가 없습니다. ‘이 PC 연결’에서 폴더를 선택해주세요.
+            </p>
+          )}
+          {notice && (
+            <p role="alert" className="inline-error">
+              {notice}
+            </p>
+          )}
+          <button
+            className="button button-primary"
+            type="button"
+            disabled={busy}
+            onClick={() => void pickFolder()}
+          >
+            이 PC 연결
+          </button>
+        </div>
+      )}
+      {view.state === "guide" && project && (
+        <>
+          <McpGuideView
+            key={project.id}
+            setup={setup}
+            id={project.id}
+            authRequired={project.authRequired}
+            onBusyChange={setGuideBusy}
+            onReady={markProjectReady}
+          />
+          <div className="modal-footer">
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={busy}
+              onClick={close}
+            >
+              나중에 하기
+            </button>
+          </div>
+        </>
       )}
       {(view.state === "choose" || view.state === "picking") && (
         <>
@@ -360,7 +521,9 @@ export default function ProjectConnectView({
             >
               <option value="">선택 안 함</option>
               {agentParts.map((part) => (
-                <option key={part.value} value={part.value}>{part.label}</option>
+                <option key={part.value} value={part.value}>
+                  {part.label}
+                </option>
               ))}
             </select>
           </div>
@@ -382,14 +545,33 @@ export default function ProjectConnectView({
             </span>
           </div>
           <p className="field-hint">
-            비워 둔 항목은 기존 담당 정보를 유지해요. 이미 연결된 Agent의 담당 정보는 여기서 바꿀 수 없어요. 새 Agent는 미입력 시 기타·태그 없음으로 등록돼요.
+            비워 둔 항목은 기존 담당 정보를 유지해요. 이미 연결된 Agent의 담당
+            정보는 여기서 바꿀 수 없어요. 새 Agent는 미입력 시 기타·태그
+            없음으로 등록돼요.
           </p>
           {metadataError && (
-            <p id={`${fieldId}-metadata-error`} className="inline-error" role="alert">
+            <p
+              id={`${fieldId}-metadata-error`}
+              className="inline-error"
+              role="alert"
+            >
               {metadataError}
             </p>
           )}
           <div className="modal-footer">
+            {manualSetup && (
+              <button
+                className="button button-secondary"
+                type="button"
+                disabled={busy || !selectedTool}
+                onClick={() => {
+                  if (selectedTool)
+                    void run(project, selectedTool, undefined, "manual");
+                }}
+              >
+                직접 설정하기
+              </button>
+            )}
             <button
               className="button button-primary"
               type="submit"
@@ -398,6 +580,12 @@ export default function ProjectConnectView({
               연결하기
             </button>
           </div>
+          {manualSetup && (
+            <p className="field-hint">
+              직접 설정은 Agent와 이 PC의 연결을 준비한 뒤, AI 도구 설정을 직접
+              적용하는 방식입니다.
+            </p>
+          )}
         </form>
       )}
       {view.state === "running" && (
@@ -511,7 +699,7 @@ export default function ProjectConnectView({
                 void checkManual();
               }}
             >
-              {checking ? "연결 확인 중…" : "적용했어요, 다시 확인"}
+              {checking ? "연결 확인 중…" : "설정 확인"}
             </button>
           </div>
         </>
@@ -591,13 +779,19 @@ export default function ProjectConnectView({
                   담당 정보 다시 입력
                 </button>
               )}
-            {project && selectedTool && !noRetryCodes.includes(view.code ?? "") && (
-              <button className="button button-primary" type="button" onClick={() => {
-                void run(project, selectedTool);
-              }}>
-                다시 시도
-              </button>
-            )}
+            {project &&
+              selectedTool &&
+              !noRetryCodes.includes(view.code ?? "") && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={() => {
+                    void run(project, selectedTool);
+                  }}
+                >
+                  다시 시도
+                </button>
+              )}
             {view.code === "SETUP_REGISTRATION_UNKNOWN" ? (
               <button
                 className="button button-secondary"
@@ -647,12 +841,28 @@ export default function ProjectConnectView({
         type="button"
         onClick={() => setView({ state: "choose" })}
       >
-        PC 연결
+       PC 연결
       </button>
+      {manualSetup && (
+        <button
+          className="button button-secondary"
+          type="button"
+          disabled={busy}
+          onClick={() => void openConnections()}
+        >
+          AI 도구 설정
+        </button>
+      )}
       {view && (
         <Modal
-          title="PC 연결"
-          description={`${teamName} 팀에 이 PC의 프로젝트를 연결합니다.`}
+          title={
+            view.state === "guide"
+              ? "AI 도구 직접 설정"
+              : view.state === "connections"
+                ? "AI 도구 설정"
+                : "PC 연결"
+          }
+          description={`${teamName} 팀의 이 PC 프로젝트 설정입니다.`}
           onClose={close}
           busy={busy}
         >

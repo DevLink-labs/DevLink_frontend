@@ -1,6 +1,7 @@
 const { app, BrowserWindow, dialog, shell } = require("electron");
 const path = require("node:path");
 const { registerSetupHandlers } = require("./setup-ipc");
+const { registerUpdateHandlers } = require("./update-ipc");
 const { loadApplicationPaths } = require("./runtime-paths");
 
 const webOrigin = app.isPackaged ? "https://devlink.ai.kr" : "http://localhost:5173";
@@ -42,6 +43,7 @@ function createWindow() {
   });
 
   registerSetupHandlers(window, webOrigin, () => loadApplicationPaths(app));
+  registerUpdateHandlers(window, webOrigin, () => loadApplicationPaths(app));
 
   void window.loadURL(webOrigin).catch(() => {
     if (!window.isDestroyed()) return window.loadFile(path.join(__dirname, "offline.html"));

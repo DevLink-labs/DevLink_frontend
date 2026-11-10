@@ -1,5 +1,26 @@
 # DevLink 데스크톱 개발
 
+## 직접 설정과 설정 다시 보기
+
+프로젝트 연결에서 ‘직접 설정하기’를 선택하면 Agent·로컬 연결을 준비한 뒤 Host 파일의 적용 안내를 표시합니다. 파일이 없는 경우의 전체 설정과 기존 파일에 추가·교체할 DevLink 항목을 구분합니다. 기존 파일은 사용자가 백업하고 다른 MCP·프로젝트 설정을 유지해 편집합니다.
+
+Agents 패널의 ‘AI 도구 설정’은 현재 계정·팀에 속한 로컬 프로필을 다시 읽습니다. 브로커가 중지돼도 안내를 볼 수 있고, ‘연결 재개’를 눌렀을 때만 기존 Agent로 setup을 실행합니다. ‘설정 확인’과 ‘사용 상태 확인’은 읽기 전용입니다. 설정 준비 완료와 실제 AI 도구 세션의 연결 관측은 별도로 표시합니다.
+
+이 기능에는 `setup mcp-guide`가 포함된 최신 CLI가 필요합니다. preload의 `capabilities.manualMcpSetup=1`을 확인하며 구형 앱은 기존 수동 안내 화면을 유지합니다. CLI·데스크톱 변경 후 설치 파일을 다시 생성해야 합니다. 로컬 UI 테스트가 실제 설치 앱·Codex 수용 검사를 대체하지는 않습니다.
+
+## 작업 알림
+
+로그인한 사용자가 속한 팀의 로컬 프로필마다 5초 간격으로 `devlink updates`를 실행해 새 작업·질문·답변, 보낸 작업의 완료·실패·거절, 결과 지연을 알립니다. 브로커에 저장된 소식만 읽으며 작업 수락·읽음 처리·ACK를 하지 않습니다.
+
+- 조회 위치와 최근 알린 이벤트는 앱 데이터 폴더의 `update-cursors.json`에 프로필별로 저장합니다. AI 도구 훅·MCP의 조회 위치와 독립입니다.
+- 처음 조회하는 프로필은 기존 이력을 건너뜁니다. 저장소 정리 등으로 이력이 처음부터 다시 나오면 알리지 않고 위치만 옮깁니다.
+- 앱 창을 보고 있으면 앱 안 알림만, 아니면 PC 알림도 표시합니다. 한 번에 4건 이상이면 PC 알림은 요약 한 건입니다. 알림을 누르면 해당 팀의 작업 대화 화면을 엽니다.
+- 앱을 닫으면 알림도 멈춥니다. 다시 열면 저장한 위치부터 이어서 알립니다.
+
+이 기능에는 `devlink updates`가 포함된 최신 CLI가 필요합니다. 명령 계약은 DevLink_client `rust/docs/desktop-updates.md`에 있습니다.
+
+## 개발 환경
+
 Windows에서 Node.js 24와 로컬 DevLink 서버를 준비합니다. CLI와 MCP 서버는 `DevLink_client`에서 빌드한 결과물을 사용합니다.
 
 도구 감지와 계정 전환 시 MCP 설정 갱신에는 `devlink setup tools` 및 `mcp.mode=replace`를 지원하는 최신 CLI가 필요합니다. 기존 바이너리를 사용 중이라면 `DevLink_client/rust`에서 `cargo build --release -p devlink-cli`로 다시 빌드합니다.
@@ -39,7 +60,7 @@ if ($LASTEXITCODE -ne 0) { throw '테스트 프로필 초기화 실패' }
 npm run dev
 ```
 
-창 아이콘은 `public/devlink.svg`를 Windows용으로 변환한 `desktop/assets/devlink.ico`를 사용합니다. 아이콘 설정 변경 후에는 프론트 새로고침 대신 Electron 앱을 종료하고 다시 실행합니다. Windows 실행 파일 패키징에도 같은 아이콘을 사용합니다.
+창 아이콘은 `src/assets/image/logo/logo-icon.webp`를 원본 비율과 투명 배경을 유지해 Windows용으로 변환한 `desktop/assets/devlink.ico`를 사용합니다. 16~256px의 여러 해상도를 포함하며, Windows 실행 파일 패키징에도 같은 아이콘을 사용합니다. 개발 앱에는 Electron을 종료하고 다시 실행하면 반영되고, 설치본에는 재패키징 후 새 버전을 설치해야 반영됩니다.
 
 Electron이 최초 실행 시 Windows 런타임을 내려받습니다. 로그인 후 팀 대시보드의 **Agent → 이 PC 연결**에서 프로젝트의 루트 폴더를 선택합니다. Codex와 Claude Code 중 하나만 감지되면 자동으로 사용하고, 둘 다 감지되면 선택할 수 있습니다. 해당 계정의 CLI 세션이 없거나 다른 계정으로 인증돼 있으면 현재 계정의 비밀번호를 입력합니다.
 

@@ -296,6 +296,7 @@ export default function AgentsPanel({
         <div className="section-actions management-actions">
           {desktop?.setup && desktop.getStatus && (
             <ProjectConnectView
+              key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
               setup={desktop.setup}
               getStatus={desktop.getStatus}
               account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}

@@ -255,7 +255,6 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
         </div>
         <div className="tc-header-actions">
           {detail && <span className={`dashboard-task-badge dashboard-task-${detail.status.toLowerCase()}`}>{taskStatusLabels[detail.status]}</span>}
-          <button type="button" className="icon-button refresh-button" onClick={refresh} disabled={refreshing && !accessError} aria-label="대화 기록 새로고침" title="대화 기록 새로고침" aria-busy={refreshing}><Icon name="refresh" size={18} /></button>
         </div>
       </header>
 

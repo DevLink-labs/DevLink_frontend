@@ -113,6 +113,27 @@ async function listTeamProfiles(paths, account) {
   return profiles;
 }
 
+// CLI 세션 만료로 안내를 조회할 수 없을 때 표시할 저장된 Agent 연결
+async function readSavedBinding(paths, account) {
+  const scope = accountScope(paths, account);
+  const binding = await readJson(runtimeFile(paths.config, "agent-profile.json"));
+  const agent = binding?.state?.agent;
+  const toolType = { CODEX: "codex", CLAUDE_CODE: "claude_code" }[agent?.toolType];
+  if (
+    !boundTo(binding, scope) ||
+    typeof binding.projectRoot !== "string" ||
+    !["ready", "needs_token"].includes(binding.state.kind) ||
+    !Number.isSafeInteger(agent.agentId) ||
+    agent.agentId <= 0 ||
+    agent.ownerUserId !== scope.userId ||
+    agent.teamId !== scope.teamId ||
+    !toolType
+  ) {
+    return null;
+  }
+  return { projectPath: binding.projectRoot, agentId: String(agent.agentId), toolType };
+}
+
 async function prepareAccountProfile(paths) {
   if (!paths.accountProfile) return;
   try {
@@ -122,4 +143,4 @@ async function prepareAccountProfile(paths) {
   }
 }
 
-module.exports = { listTeamProfiles, prepareAccountProfile, resolveProjectPaths };
+module.exports = { listTeamProfiles, prepareAccountProfile, readSavedBinding, resolveProjectPaths };
