@@ -14,7 +14,8 @@ export default function NoticeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!notice) return
-    const timer = window.setTimeout(() => setNotice(null), notice.kind === 'error' ? 8000 : 5000)
+    // 닫히기 직전에 새 알림이 오면 이전 타이머가 새 알림을 지우지 않도록 자기 알림만 닫음
+    const timer = window.setTimeout(() => setNotice((current) => (current === notice ? null : current)), notice.kind === 'error' ? 8000 : 5000)
     return () => window.clearTimeout(timer)
   }, [notice])
 
