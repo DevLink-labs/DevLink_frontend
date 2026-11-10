@@ -72,12 +72,19 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
     email: user.email,
     teamIds,
     onUpdates: (items) => {
-      const [first] = items;
-      notify(
-        items.length > 1 ? `${first.body} 외 ${items.length - 1}건` : first.body,
-        "success",
-        { label: "열기", onClick: () => openTask(Number(first.teamId), Number(first.taskId)) },
-      );
+      const tasks = items.filter((item) => item.taskId);
+      const notices = items.filter((item) => !item.taskId);
+      // 한 번만 오는 폴더 누락 안내는 작업 소식에 묻히지 않도록 모두 표시
+      if (notices.length) {
+        const rest = tasks.length ? ` 작업 소식 ${tasks.length}건도 도착했습니다.` : "";
+        notify(`${notices.map((notice) => notice.body).join(" ")}${rest}`, "error");
+      } else {
+        const [first] = tasks;
+        notify(tasks.length > 1 ? `${first.body} 외 ${tasks.length - 1}건` : first.body, "success", {
+          label: "열기",
+          onClick: () => openTask(Number(first.teamId), Number(first.taskId)),
+        });
+      }
       void tasksQuery.refetch();
     },
     onOpenTask: ({ teamId, taskId }) => openTask(teamId, taskId),

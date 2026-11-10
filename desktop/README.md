@@ -60,7 +60,7 @@ if ($LASTEXITCODE -ne 0) { throw '테스트 프로필 초기화 실패' }
 npm run dev
 ```
 
-창 아이콘은 `public/devlink.svg`를 Windows용으로 변환한 `desktop/assets/devlink.ico`를 사용합니다. 아이콘 설정 변경 후에는 프론트 새로고침 대신 Electron 앱을 종료하고 다시 실행합니다. Windows 실행 파일 패키징에도 같은 아이콘을 사용합니다.
+창 아이콘은 `src/assets/image/logo/logo-icon.webp`를 원본 비율과 투명 배경을 유지해 Windows용으로 변환한 `desktop/assets/devlink.ico`를 사용합니다. 16~256px의 여러 해상도를 포함하며, Windows 실행 파일 패키징에도 같은 아이콘을 사용합니다. 개발 앱에는 Electron을 종료하고 다시 실행하면 반영되고, 설치본에는 재패키징 후 새 버전을 설치해야 반영됩니다.
 
 Electron이 최초 실행 시 Windows 런타임을 내려받습니다. 로그인 후 팀 대시보드의 **Agent → 이 PC 연결**에서 프로젝트의 루트 폴더를 선택합니다. Codex와 Claude Code 중 하나만 감지되면 자동으로 사용하고, 둘 다 감지되면 선택할 수 있습니다. 해당 계정의 CLI 세션이 없거나 다른 계정으로 인증돼 있으면 현재 계정의 비밀번호를 입력합니다.
 

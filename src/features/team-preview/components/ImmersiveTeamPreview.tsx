@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { Team } from "@/features/teams/types";
 import type { PreviewMember } from "../data/previewData";
@@ -420,13 +420,30 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   }, []);
 
   const dashboardRequest = workspace?.dashboardRequest ?? 0;
+  const dashboardPending = useRef(false);
+  // 3D 화면에서는 대시보드로 전환한 뒤 대시보드 위치로 이동
+  const openRequestedDashboard = useEffectEvent(() => {
+    // 화면 전환 중이면 전환이 끝난 뒤 처리
+    if (transitionRunning.current) {
+      dashboardPending.current = true;
+      return;
+    }
+    navigateTo("dashboard", () => {
+      const section = dashboardSection.current;
+      if (!section) return;
+      section.focus({ preventScroll: true });
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top, behavior: reduced ? "auto" : "smooth" });
+    });
+  });
   useEffect(() => {
-    const section = dashboardSection.current;
-    if (!dashboardRequest || !section) return;
-    section.focus({ preventScroll: true });
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top, behavior: reduced ? "auto" : "smooth" });
+    if (dashboardRequest) openRequestedDashboard();
   }, [dashboardRequest]);
+  useEffect(() => {
+    if (transitioning || sceneReturning || !dashboardPending.current) return;
+    dashboardPending.current = false;
+    openRequestedDashboard();
+  }, [transitioning, sceneReturning]);
 
   useEffect(() => {
     const dialog = inviteDialog.current;

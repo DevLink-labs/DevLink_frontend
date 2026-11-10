@@ -128,7 +128,8 @@ export interface UpdatesAccount {
 export interface DesktopTaskUpdate {
   kind: string;
   teamId: string;
-  taskId: string;
+  // 연결 폴더 누락 같은 안내에는 없음
+  taskId?: string;
   title: string;
   body: string;
 }
