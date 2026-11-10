@@ -41,6 +41,14 @@
 .itp-stage-sticky .itp-stats strong { color: #3a3b3e; font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
 .itp-stage-sticky .itp-stats span { color: #656c77; font-size: 12px; letter-spacing: -.2px; }
 .itp-stage-sticky .itp-stats .itp-stat-line { width: 1px; height: 12px; margin: 0; background: #dcdde0; }
+.itp-stage-sticky .itp-stats .itp-session-stat > strong { color: #397eaf; }
+.itp-stage-sticky .itp-stats .itp-session-stat > span { display: inline-flex; align-items: center; gap: 6px; color: #477995; }
+.itp-session-signal { position: relative; display: inline-block; width: 19px; height: 8px; overflow: hidden; }
+.itp-session-signal::before { content: ""; position: absolute; inset: 3px 0; border-radius: 2px; background: #89b8d2; }
+.itp-session-signal::after { content: ""; position: absolute; top: 1px; left: 0; width: 6px; height: 6px; border-radius: 2px; background: #4389b7; box-shadow: 0 0 5px #79c6e680; animation: itp-session-transfer 2s ease-in-out infinite; }
+.is-paused .itp-session-signal::after { animation-play-state: paused; }
+@keyframes itp-session-transfer { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(13px); } }
+@media (prefers-reduced-motion: reduce) { .itp-session-signal::after { animation: none; } }
 .itp-stage-sticky .itp-back { color: #717275; }
 .itp-stage-sticky .itp-back:hover { color: #37383b; }
 .itp-stage-sticky .itp-icon-button,

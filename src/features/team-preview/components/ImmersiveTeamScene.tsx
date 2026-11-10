@@ -6,11 +6,15 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createMemberLaptop } from "../lib/memberLaptop.js";
 import { loadAgentCompanionAsset } from "../lib/agentCompanionAsset";
 import type { AgentCompanion, AgentCompanionAsset } from "../lib/agentCompanionAsset";
+import { createAgentSessionLinks } from "../lib/agentSessionLinks.js";
+import type { AgentSessionAnchor } from "../lib/agentSessionLinks.js";
+import type { AgentSessionConnection } from "../lib/agentSessionConnections.js";
 import type { PreviewMember } from "../data/previewData";
 
 interface ImmersiveTeamSceneProps {
   teamName: string;
   members: PreviewMember[];
+  connections: AgentSessionConnection[];
   loading: boolean;
   selectedMemberId: string;
   focusedMemberId: string | null;
@@ -93,6 +97,7 @@ function disposeObjectResources(root: THREE.Object3D) {
 export default function ImmersiveTeamScene({
   teamName,
   members,
+  connections,
   loading,
   selectedMemberId,
   focusedMemberId,
@@ -113,6 +118,7 @@ export default function ImmersiveTeamScene({
   const control = useRef({
     teamName,
     members,
+    connections,
     loading,
     selectedMemberId,
     focusedMemberId,
@@ -128,6 +134,7 @@ export default function ImmersiveTeamScene({
     control.current = {
       teamName,
       members,
+      connections,
       loading,
       selectedMemberId,
       focusedMemberId,
@@ -142,6 +149,7 @@ export default function ImmersiveTeamScene({
   }, [
     teamName,
     members,
+    connections,
     loading,
     selectedMemberId,
     focusedMemberId,
@@ -192,6 +200,9 @@ export default function ImmersiveTeamScene({
     const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 80);
     const world = new THREE.Group();
     scene.add(world);
+    const sessionLinks = createAgentSessionLinks();
+    const sessionAnchors = new Map<string, AgentSessionAnchor>();
+    world.add(sessionLinks.group);
     const pmrem = new THREE.PMREMGenerator(renderer);
     const room = new RoomEnvironment();
     let environment: THREE.WebGLRenderTarget | undefined;
@@ -318,6 +329,7 @@ export default function ImmersiveTeamScene({
             }
           });
           node.add(satellite.group);
+          sessionAnchors.set(agent.id, { object: satellite.group, memberId: member.id });
           return satellite;
         });
         world.add(node);
@@ -431,6 +443,7 @@ export default function ImmersiveTeamScene({
       }
       selectables.length = 0;
       agentSelectables.length = 0;
+      sessionAnchors.clear();
       sceneMembers = nextMembers;
       memberNodes = createMemberNodes(sceneMembers);
       for (const item of memberNodes) item.agentElapsed = agentTimes.get(item.member.id) ?? elapsed;
@@ -836,6 +849,7 @@ export default function ImmersiveTeamScene({
           satellite.group.quaternion.slerp(agentRotation, agentTurnBlend);
         }
       }
+      sessionLinks.update(control.current.connections, sessionAnchors, elapsed, reveal, focusId);
       renderer.render(scene, camera);
       if (!loading && teamCharacter && teamReveal >= 0.25) updateLabels();
       else if (labelsElement) labelsElement.style.visibility = "hidden";
@@ -1101,6 +1115,8 @@ export default function ImmersiveTeamScene({
       for (const { satellites } of memberNodes) {
         for (const satellite of satellites) satellite.dispose();
       }
+      world.remove(sessionLinks.group);
+      sessionLinks.dispose();
       disposeObjectResources(scene);
       companionAsset?.dispose();
       key.shadow.dispose();
@@ -1115,7 +1131,7 @@ export default function ImmersiveTeamScene({
       className="itp-canvas"
       ref={host}
       role="group"
-      aria-label="팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다."
+      aria-label={`팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 진행 중인 세션의 Agent 연결 ${connections.length}개. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다.`}
     >
       <div
         className="itp-scene-labels"

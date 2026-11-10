@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { Team } from "@/features/teams/types";
 import type { PreviewMember } from "../data/previewData";
+import type { AgentSessionConnection } from "../lib/agentSessionConnections.js";
 import { Icon } from "@/components/ui";
 import PageTitle from "@/components/common/PageTitle";
 import BrandLogo from "@/components/common/BrandLogo";
@@ -262,6 +263,7 @@ interface LiveWorkspace {
   teams: Team[];
   selectedTeam: Team | null;
   members: PreviewMember[];
+  connections: AgentSessionConnection[];
   agentCount: number;
   sceneStatus: "loading" | "error" | "empty" | "ready";
   onSelectTeam: (teamId: number) => void;
@@ -329,6 +331,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
     showTeam && activeSelection?.focused && selectedMember ? selectedMember.id : null;
   const agentCount =
     workspace?.agentCount ?? members.reduce((count, item) => count + item.agents.length, 0);
+  const activeSessionCount = workspace?.connections.reduce((count, connection) => count + connection.sessionCount, 0) ?? 0;
   const color = memberColors[member?.color] ?? memberColors.sage;
   const sceneActive = activeView === "scene";
   const sceneVisible = sceneActive || transitioning;
@@ -664,6 +667,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                 <ImmersiveTeamScene
                   teamName={teamName}
                   members={loadingTeam ? loadingMembers : members}
+                  connections={loadingTeam ? [] : workspace?.connections ?? []}
                   loading={loadingTeam}
                   selectedMemberId={member?.id ?? ""}
                   focusedMemberId={focusedMemberId}
@@ -789,7 +793,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                     />
                     <div
                       className="itp-stats"
-                      aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개`}
+                      aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개, 진행 중인 세션 ${activeSessionCount}개`}
                     >
                       <div>
                         <strong>{members.length}</strong>
@@ -800,6 +804,13 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                         <strong>{agentCount}</strong>
                         <span>에이전트</span>
                       </div>
+                      {activeSessionCount > 0 && <>
+                        <span className="itp-stat-line" />
+                        <div className="itp-session-stat" title="블루 연결선은 진행 중인 세션의 Agent를 연결합니다.">
+                          <strong>{activeSessionCount}</strong>
+                          <span><i className="itp-session-signal" aria-hidden="true" />진행 중</span>
+                        </div>
+                      </>}
                     </div>
                   </section>
                   {focusedMemberId && member && (
