@@ -1,5 +1,15 @@
 # DevLink 데스크톱 개발
 
+## 직접 설정과 설정 다시 보기
+
+프로젝트 연결에서 ‘직접 설정하기’를 선택하면 Agent·로컬 연결을 준비한 뒤 Host 파일의 적용 안내를 표시합니다. 파일이 없는 경우의 전체 설정과 기존 파일에 추가·교체할 DevLink 항목을 구분합니다. 기존 파일은 사용자가 백업하고 다른 MCP·프로젝트 설정을 유지해 편집합니다.
+
+Agents 패널의 ‘AI 도구 설정’은 현재 계정·팀에 속한 로컬 프로필을 다시 읽습니다. 브로커가 중지돼도 안내를 볼 수 있고, ‘연결 재개’를 눌렀을 때만 기존 Agent로 setup을 실행합니다. ‘설정 확인’과 ‘사용 상태 확인’은 읽기 전용입니다. 설정 준비 완료와 실제 AI 도구 세션의 연결 관측은 별도로 표시합니다.
+
+이 기능에는 `setup mcp-guide`가 포함된 최신 CLI가 필요합니다. preload의 `capabilities.manualMcpSetup=1`을 확인하며 구형 앱은 기존 수동 안내 화면을 유지합니다. CLI·데스크톱 변경 후 설치 파일을 다시 생성해야 합니다. 로컬 UI 테스트가 실제 설치 앱·Codex 수용 검사를 대체하지는 않습니다.
+
+## 개발 환경
+
 Windows에서 Node.js 24와 로컬 DevLink 서버를 준비합니다. CLI와 MCP 서버는 `DevLink_client`에서 빌드한 결과물을 사용합니다.
 
 도구 감지와 계정 전환 시 MCP 설정 갱신에는 `devlink setup tools` 및 `mcp.mode=replace`를 지원하는 최신 CLI가 필요합니다. 기존 바이너리를 사용 중이라면 `DevLink_client/rust`에서 `cargo build --release -p devlink-cli`로 다시 빌드합니다.

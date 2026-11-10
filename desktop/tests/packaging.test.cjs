@@ -59,6 +59,7 @@ test("preload는 허용한 최상위 개발·배포 화면에만 연결 기능�
     });
     assert.equal(Boolean(exposed?.setup), expected);
     if (expected) {
+      assert.equal(exposed.capabilities.manualMcpSetup, 1);
       exposed.getStatus({ userId: 5 });
       exposed.setup.check("selection");
       assert.equal(calls[0][0], "devlink:status");

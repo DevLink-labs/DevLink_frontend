@@ -70,6 +70,7 @@ async function connect(account, project, password, scenario, manual = false) {
   await waitFor("Boolean(document.querySelector('#verification input[type=password], #verification .project-connect-tools')) || window.verificationConnected", "도구·계정 확인");
   if (await window.webContents.executeJavaScript("Boolean(document.querySelector('#verification .project-connect-tools'))")) {
     await click("Codex");
+    await click("연결하기");
   }
   await waitFor("Boolean(document.querySelector('#verification input[type=password]')) || window.verificationConnected", "비밀번호 확인");
   if (await window.webContents.executeJavaScript("Boolean(document.querySelector('#verification input[type=password]'))")) {
@@ -82,7 +83,7 @@ async function connect(account, project, password, scenario, manual = false) {
     const target = path.join(project, ".codex", "config.toml");
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, snippet);
-    await click("적용했어요, 다시 확인");
+    await click("설정 확인");
     await waitFor("window.verificationConnected", "직접 적용 후 확인");
   } else {
     await waitFor("window.verificationConnected", "연결 완료");
