@@ -1,6 +1,6 @@
 const { app, ipcMain, Notification } = require("electron");
 const path = require("node:path");
-const { listTeamProfiles } = require("./setup-profiles");
+const { listTeamProfiles, readSavedBinding } = require("./setup-profiles");
 const { loadDevelopmentPaths, runUpdates } = require("./setup-runner");
 const { createUpdateNotifier } = require("./update-notifier");
 
@@ -52,7 +52,8 @@ function registerUpdateHandlers(
     if (window.isMinimized()) window.restore();
     window.show();
     window.focus();
-    if (item) {
+    // 작업이 없는 안내는 창만 표시
+    if (item?.taskId) {
       send("devlink:open-task", {
         teamId: Number(item.teamId),
         taskId: Number(item.taskId),
@@ -81,20 +82,26 @@ function registerUpdateHandlers(
       !Notification.isSupported()
     )
       return;
-    if (items.length > MAX_POPUPS) {
+    // 폴더 누락 같은 안내는 요약하지 않고 각각 표시
+    const tasks = items.filter((item) => item.taskId);
+    for (const item of items)
+      if (!item.taskId) popup(item.title, item.body, item);
+    if (tasks.length > MAX_POPUPS) {
       popup(
         "DevLink 새 소식",
-        `작업·질문·답변 소식 ${items.length}건이 도착했습니다.`,
+        `작업·질문·답변 소식 ${tasks.length}건이 도착했습니다.`,
       );
       return;
     }
-    for (const item of items) popup(item.title, item.body, item);
+    for (const item of tasks) popup(item.title, item.body, item);
   }
 
   const notifier = createUpdateNotifier({
     loadPaths,
     listProfiles: listTeamProfiles,
     runUpdates,
+    projectOf: async (paths, account) =>
+      (await readSavedBinding(paths, account))?.projectPath,
     statePath: path.join(app.getPath("userData"), "update-cursors.json"),
     show,
   });

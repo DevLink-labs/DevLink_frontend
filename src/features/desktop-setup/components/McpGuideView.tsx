@@ -6,6 +6,7 @@ import type {
   McpGuide,
   SetupInspection,
 } from "../api/desktopApi";
+import { localizeSetupError } from "../lib/setupErrors";
 
 interface Props {
   setup: DesktopSetupApi;
@@ -147,7 +148,7 @@ export default function McpGuideView({
 
   async function resume(password?: string) {
     const version = generation.current;
-    const result = await setup.resume!(id, password);
+    const result = localizeSetupError(await setup.resume!(id, password));
     if (version !== generation.current) return;
     setPasswordRequired(result.state === "password");
     if (result.state === "error" || result.state === "password") {

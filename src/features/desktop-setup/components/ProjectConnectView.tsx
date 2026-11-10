@@ -13,6 +13,7 @@ import type {
 } from "../api/desktopApi";
 import { getDesktopApi } from "../api/desktopApi";
 import { agentParts, createSetupAgentMetadata } from "../lib/agentMetadata";
+import { localizeSetupError } from "../lib/setupErrors";
 import McpGuideView from "./McpGuideView";
 
 interface ProjectConnectViewProps {
@@ -47,6 +48,7 @@ const noRetryCodes = [
   "SETUP_REGISTRATION_UNKNOWN",
   "SETUP_PROFILE_CONFLICT",
   "SETUP_AGENT_BINDING_CONFLICT",
+  "SETUP_AGENT_REJECTED",
 ];
 
 const toolNames: Record<SetupTool, string> = {
@@ -227,7 +229,7 @@ export default function ProjectConnectView({
       if (result.state === "done") complete();
       else if (result.state === "manual" && manualSetup)
         setView({ state: "guide" });
-      else setView(result);
+      else setView(localizeSetupError(result));
     } catch (error) {
       if (active.current && version === operationVersion.current)
         setView({ state: "error", message: messageFrom(error) });
@@ -839,7 +841,7 @@ export default function ProjectConnectView({
         type="button"
         onClick={() => setView({ state: "choose" })}
       >
-        이 PC 연결
+       PC 연결
       </button>
       {manualSetup && (
         <button

@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { mkdtemp, readFile, rm } = require("node:fs/promises");
+const { mkdir, mkdtemp, readFile, rm } = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
 const { test } = require("node:test");
@@ -30,7 +30,7 @@ function page(updates, extra = {}) {
   };
 }
 
-async function fixture(t, { profiles = { 2: ["a"] } } = {}) {
+async function fixture(t, { profiles = { 2: ["a"] }, projectOf } = {}) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "devlink-updates-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const statePath = path.join(dir, "state", "update-cursors.json");
@@ -53,6 +53,7 @@ async function fixture(t, { profiles = { 2: ["a"] } } = {}) {
         });
         return replies.shift() ?? page([]);
       },
+      projectOf,
       statePath,
       show: (items) => shown.push(items),
       intervalMs: 60_000,
@@ -258,6 +259,74 @@ test("감시를 멈추거나 계정이 바뀌는 중이면 조회 결과를 알�
   notifier.watch({ ...account, userId: 6 });
   release();
   await pending;
+  assert.equal(f.shown.length, 0);
+  notifier.stop();
+});
+
+test("연결 폴더가 사라지면 프로필마다 한 번만 알림 중단을 안내하고 복구 후 다시 사라지면 또 안내한다", async (t) => {
+  const missing = path.join(
+    os.tmpdir(),
+    `devlink-missing-project-${process.pid}`,
+  );
+  await rm(missing, { recursive: true, force: true });
+  t.after(() => rm(missing, { recursive: true, force: true }));
+  // CLI는 Windows 확장 경로 형식으로 저장
+  const f = await fixture(t, { projectOf: async () => "\\\\?\\" + missing });
+  const mismatch = {
+    exitCode: 1,
+    result: { schemaVersion: 1, error: { code: "UPDATES_BINDING_MISMATCH" } },
+  };
+  f.replies.push(mismatch);
+  const notifier = await started(f);
+  assert.equal(f.shown.length, 1);
+  const [notice] = f.shown[0];
+  assert.equal(notice.kind, "PROJECT_MISSING");
+  assert.equal(notice.teamId, "2");
+  assert.equal(notice.taskId, undefined);
+  assert.ok(
+    notice.body.startsWith(
+      `[${path.basename(missing)}] 연결한 프로젝트 폴더를 찾을 수 없어`,
+    ),
+  );
+
+  // 같은 상태가 이어지면 재시작 후에도 다시 알리지 않음
+  f.replies.push(mismatch);
+  await notifier.poll();
+  notifier.stop();
+  const restarted = f.create();
+  f.replies.push(mismatch);
+  await started(f, restarted);
+  assert.equal(f.shown.length, 1);
+
+  // 폴더가 복구되면 안내 상태를 지우고, 다시 사라지면 한 번 더 안내
+  await mkdir(missing);
+  f.replies.push(page([], { nextCursor: "c1" }));
+  await restarted.poll();
+  await rm(missing, { recursive: true });
+  f.replies.push(mismatch);
+  await restarted.poll();
+  assert.equal(f.shown.length, 2);
+  assert.equal(f.shown[1][0].kind, "PROJECT_MISSING");
+  restarted.stop();
+});
+
+test("폴더가 남아 있거나 다른 이유로 거부되면 알림 중단을 안내하지 않는다", async (t) => {
+  const f = await fixture(t, { projectOf: async () => os.tmpdir() });
+  f.replies.push(
+    {
+      exitCode: 1,
+      result: { schemaVersion: 1, error: { code: "UPDATES_BINDING_MISMATCH" } },
+    },
+    {
+      exitCode: 1,
+      result: {
+        schemaVersion: 1,
+        error: { code: "LOCAL_UPDATES_UNAVAILABLE" },
+      },
+    },
+  );
+  const notifier = await started(f);
+  await notifier.poll();
   assert.equal(f.shown.length, 0);
   notifier.stop();
 });

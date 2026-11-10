@@ -1,5 +1,11 @@
 const { createHash } = require("node:crypto");
-const { mkdir, readFile, rename, writeFile } = require("node:fs/promises");
+const {
+  mkdir,
+  readFile,
+  rename,
+  stat,
+  writeFile,
+} = require("node:fs/promises");
 const path = require("node:path");
 
 const MAX_PAGES = 5;
@@ -77,6 +83,7 @@ function createUpdateNotifier({
   loadPaths,
   listProfiles,
   runUpdates,
+  projectOf,
   statePath,
   show,
   intervalMs = 5_000,
@@ -106,7 +113,38 @@ function createUpdateNotifier({
     await rename(temporary, statePath);
   }
 
-  async function pollProfile(paths, current) {
+  // 연결한 프로젝트 폴더가 사라져 조회가 거부되면 프로필마다 한 번만 안내
+  async function missingProject(paths, current, teamId, entry, result) {
+    if (
+      result?.error?.code !== "UPDATES_BINDING_MISMATCH" ||
+      entry.missingProject ||
+      !projectOf
+    )
+      return [];
+    const project = await projectOf(paths, { ...current, teamId }).catch(
+      () => undefined,
+    );
+    if (!project) return [];
+    const folder = project.replace(/^\\\\\?\\/, "");
+    if (
+      await stat(folder).then(
+        () => true,
+        () => false,
+      )
+    )
+      return [];
+    entry.missingProject = true;
+    return [
+      {
+        title: "알림 중단",
+        body: `[${path.basename(folder) || folder}] 연결한 프로젝트 폴더를 찾을 수 없어 이 프로젝트의 알림을 받을 수 없습니다. 폴더를 복구하거나 다시 연결해주세요.`,
+        kind: "PROJECT_MISSING",
+        teamId: String(teamId),
+      },
+    ];
+  }
+
+  async function pollProfile(paths, current, teamId) {
     const key = createHash("sha256")
       .update(path.resolve(paths.config))
       .digest("hex");
@@ -114,9 +152,12 @@ function createUpdateNotifier({
     // 처음 조회는 기존 이력을 건너뛰고 시작 위치만 저장
     if (!entry.cursor) {
       const { exitCode, result } = await runUpdates(paths, ["--latest"]);
-      if (exitCode === 0 && validPage(result, current))
+      if (exitCode === 0 && validPage(result, current)) {
         entry.cursor = result.nextCursor;
-      return [];
+        delete entry.missingProject;
+        return [];
+      }
+      return missingProject(paths, current, teamId, entry, result);
     }
     const items = [];
     for (let page = 0; page < MAX_PAGES; page++) {
@@ -130,7 +171,13 @@ function createUpdateNotifier({
         delete entry.cursor;
         break;
       }
-      if (exitCode !== 0 || !validPage(result, current)) break;
+      if (exitCode !== 0 || !validPage(result, current)) {
+        items.push(
+          ...(await missingProject(paths, current, teamId, entry, result)),
+        );
+        break;
+      }
+      delete entry.missingProject;
       const project =
         path.basename(result.scope.projectPath) || result.scope.projectPath;
       for (const update of result.updates) {
@@ -197,7 +244,9 @@ function createUpdateNotifier({
         for (const profile of profiles) {
           if (configs.has(profile.config)) continue;
           configs.add(profile.config);
-          items.push(...(await pollProfile(profile, current).catch(() => [])));
+          items.push(
+            ...(await pollProfile(profile, current, teamId).catch(() => [])),
+          );
         }
       }
       if (started !== version) return;
