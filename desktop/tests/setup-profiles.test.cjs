@@ -17,6 +17,7 @@ const { test } = require("node:test");
 const {
   listTeamProfiles,
   prepareAccountProfile,
+  readSavedBinding,
   resolveProjectPaths,
 } = require("../setup-profiles");
 const { checkSession, runStatus } = require("../setup-runner");
@@ -221,6 +222,8 @@ async function ipcFixture(t) {
   let picked = f.root;
   let authenticatedUser = 5;
   let guideBarrier;
+  let sessionState;
+  const guideFailures = new Set();
   let setupError = {
     code: "SETUP_MANUAL_ACTION_REQUIRED",
     manualConfig: { snippet: "test config" },
@@ -228,15 +231,16 @@ async function ipcFixture(t) {
   const runner = {
     loadDevelopmentPaths: async () => f.paths,
     detectTools: async () => ["codex", "claude-code"],
-    checkSession: async () => ({
-      authenticated: true,
-      user: { userId: authenticatedUser },
-    }),
+    checkSession: async () =>
+      sessionState
+        ? { state: sessionState, authenticated: false }
+        : { authenticated: true, user: { userId: authenticatedUser } },
     runGuide: async (paths) => {
       calls.push({ kind: "guide", config: paths.config });
       if (guideBarrier) await guideBarrier;
       const input = inputs.get(paths.config);
-      if (!input) return { exitCode: 6, result: {} };
+      if (!input || guideFailures.has(paths.config))
+        return { exitCode: 6, result: {} };
       const project = input.project.path;
       const toolType = input.tool.type === "codex" ? "codex" : "claude_code";
       return {
@@ -362,7 +366,12 @@ async function ipcFixture(t) {
         };
       if (name === "./setup-runner") return runner;
       if (name === "./setup-profiles")
-        return { listTeamProfiles, prepareAccountProfile, resolveProjectPaths };
+        return {
+          listTeamProfiles,
+          prepareAccountProfile,
+          readSavedBinding,
+          resolveProjectPaths,
+        };
       return require(name);
     },
   });
@@ -372,6 +381,7 @@ async function ipcFixture(t) {
     calls,
     window,
     notReady,
+    guideFailures,
     statusErrors,
     statusOverrides,
     pick: (folder) => {
@@ -385,6 +395,9 @@ async function ipcFixture(t) {
     },
     setGuideBarrier: (promise) => {
       guideBarrier = promise;
+    },
+    setSessionState: (state) => {
+      sessionState = state;
     },
     invoke: (name, ...args) => handlers.get(`devlink:${name}`)(event, ...args),
   };
@@ -762,6 +775,74 @@ test("기존 Agent 재개에서 CLI 로그인 만료가 확인돼도 비밀번�
     f.calls.filter((call) => call.kind === "setup").at(-1).agent.action,
     "use",
   );
+});
+
+test("재개 중 비밀번호가 틀려도 같은 연결에서 다시 입력해 이어간다", async (t) => {
+  const f = await ipcFixture(t);
+  const selected = await f.invoke("pickFolder", accountB);
+  await f.invoke("setup", selected.id, "codex");
+  const saved = (await f.invoke("listConnections", accountB))[0];
+  f.setAuthenticatedUser(0);
+  assert.equal((await f.invoke("resumeSetup", saved.id)).state, "password");
+  f.setSetupError({ step: "authenticate", code: "SETUP_AUTH_REJECTED" });
+  const rejected = await f.invoke("resumeSetup", saved.id, "wrong-password");
+  assert.equal(rejected.state, "password");
+  assert.match(rejected.message, /비밀번호/);
+  f.setSetupError({
+    code: "SETUP_MANUAL_ACTION_REQUIRED",
+    manualConfig: { snippet: "test config" },
+  });
+  const result = await f.invoke("resumeSetup", saved.id, "fixture-password");
+  assert.equal(result.state, "manual");
+  const last = f.calls.filter((call) => call.kind === "setup").at(-1);
+  assert.equal(last.input.user.mode, "login");
+  assert.equal(last.agent.id, "201");
+});
+
+test("CLI 로그인이 만료된 저장 프로젝트는 목록에 남기고 비밀번호로 재개한다", async (t) => {
+  const f = await ipcFixture(t);
+  const selected = await f.invoke("pickFolder", accountB);
+  await f.invoke("setup", selected.id, "codex");
+  const config = f.calls.find((call) => call.kind === "setup").config;
+  const runtime = path.join(path.dirname(config), ".devlink-runtime");
+  await mkdir(runtime, { recursive: true });
+  await writeFile(
+    path.join(runtime, "agent-profile.json"),
+    JSON.stringify({
+      schemaVersion: 1,
+      origin,
+      userId: 5,
+      teamId: 4,
+      projectRoot: f.root,
+      state: {
+        kind: "ready",
+        agent: { agentId: 201, teamId: 4, ownerUserId: 5, toolType: "CODEX" },
+        token: "fixture",
+      },
+    }),
+  );
+  f.guideFailures.add(config);
+
+  f.setSessionState("authenticated");
+  assert.equal((await f.invoke("listConnections", accountB)).length, 0);
+
+  f.setSessionState("expired");
+  const saved = await f.invoke("listConnections", accountB);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].availability, "auth_required");
+  assert.equal(saved[0].agentId, "201");
+  assert.equal(saved[0].projectPath, f.root);
+  await assert.rejects(f.invoke("getGuide", saved[0].id));
+
+  assert.equal((await f.invoke("resumeSetup", saved[0].id)).state, "password");
+  f.guideFailures.delete(config);
+  f.setSessionState(undefined);
+  const result = await f.invoke("resumeSetup", saved[0].id, "fixture-password");
+  assert.equal(result.state, "manual");
+  const last = f.calls.filter((call) => call.kind === "setup").at(-1);
+  assert.equal(last.input.user.mode, "login");
+  assert.equal(last.agent.action, "use");
+  assert.equal(last.agent.id, "201");
 });
 
 test("프로젝트별 검사는 다른 Agent의 준비 상태를 사용하지 않고 중지 상태는 성공으로 바꾸지 않는다", async (t) => {

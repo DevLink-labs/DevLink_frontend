@@ -155,6 +155,8 @@ interface LiveWorkspace {
   onRetry: () => void;
   onInvite?: () => void;
   renderDashboard: (showScene: () => void) => ReactNode;
+  // 값이 바뀔 때마다 대시보드로 이동
+  dashboardRequest?: number;
 }
 
 export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWorkspace }) {
@@ -284,6 +286,15 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   }, [inviteOpen])
 
   useEffect(() => () => { copyAttempt.current++ }, [])
+
+  const dashboardRequest = workspace?.dashboardRequest ?? 0;
+  useEffect(() => {
+    const section = dashboardSection.current;
+    if (!dashboardRequest || !section) return;
+    section.focus({ preventScroll: true });
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top, behavior: reduced ? "auto" : "smooth" });
+  }, [dashboardRequest]);
 
   useEffect(() => {
     if (!focusedMemberId || inviteOpen) return

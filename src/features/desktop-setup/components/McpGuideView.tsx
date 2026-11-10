@@ -10,6 +10,7 @@ import type {
 interface Props {
   setup: DesktopSetupApi;
   id: string;
+  authRequired?: boolean;
   onBusyChange: (busy: boolean) => void;
   onReady: () => void;
 }
@@ -77,32 +78,35 @@ function observationLabel(value: string) {
 export default function McpGuideView({
   setup,
   id,
+  authRequired = false,
   onBusyChange,
   onReady,
 }: Props) {
   const [guide, setGuide] = useState<McpGuide | null>(null);
   const [inspection, setInspection] = useState<SetupInspection | null>(null);
   const [busy, setBusy] = useState(false);
-  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [passwordRequired, setPasswordRequired] = useState(authRequired);
   const [notice, setNotice] = useState("");
   const generation = useRef(0);
 
   useEffect(() => {
     const version = ++generation.current;
-    void setup.getGuide!(id)
-      .then((data) => {
-        if (version === generation.current) setGuide(data);
-      })
-      .catch(() => {
-        if (version === generation.current)
-          setNotice(
-            "설정을 읽지 못했습니다. 프로젝트 설정을 다시 선택하거나 연결 프로필을 확인해주세요.",
-          );
-      });
+    // 로그인 만료 연결은 비밀번호로 재개한 뒤 안내 조회
+    if (!authRequired)
+      void setup.getGuide!(id)
+        .then((data) => {
+          if (version === generation.current) setGuide(data);
+        })
+        .catch(() => {
+          if (version === generation.current)
+            setNotice(
+              "설정을 읽지 못했습니다. 프로젝트 설정을 다시 선택하거나 연결 프로필을 확인해주세요.",
+            );
+        });
     return () => {
       generation.current = version + 1;
     };
-  }, [id, setup]);
+  }, [authRequired, id, setup]);
 
   useEffect(() => {
     onBusyChange(busy);
@@ -332,7 +336,13 @@ export default function McpGuideView({
             )}
         </>
       )}
-      {!guide && !notice && <p role="status">프로젝트 설정을 읽고 있습니다…</p>}
+      {!guide && !notice && (
+        <p role="status">
+          {passwordRequired
+            ? "이 PC의 DevLink 로그인이 만료됐습니다. 현재 계정 비밀번호를 입력해 연결을 재개해주세요."
+            : "프로젝트 설정을 읽고 있습니다…"}
+        </p>
+      )}
       {passwordRequired && (
         <form className="grid gap-2" onSubmit={submitPassword}>
           <label className="field">
