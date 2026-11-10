@@ -42,7 +42,16 @@ div.workspace-dashboard.app-shell {
 .workspace-dashboard .dashboard-chat-item:hover { background: var(--color-workspace); }
 .workspace-dashboard .dashboard-chat-item.is-selected { background: var(--workspace-accent); border-color: var(--workspace-border); }
 .workspace-dashboard .dashboard-chat-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.workspace-dashboard .dashboard-chat-title strong { flex: 1; min-width: 0; overflow: hidden; color: var(--workspace-action); font-size: 13px; font-weight: 550; line-height: 1.5; white-space: nowrap; mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+.workspace-dashboard .dashboard-chat-title-clip { display: block; flex: 1; min-width: 0; overflow: hidden; mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+.workspace-dashboard .dashboard-chat-title-clip > strong { display: inline-block; width: max-content; color: var(--workspace-action); font-size: 13px; font-weight: 550; line-height: 1.5; white-space: nowrap; }
+.workspace-dashboard .dashboard-chat-item.is-selected .dashboard-chat-title-clip[data-overflowing="true"] > strong { animation: dashboard-chat-title-scroll var(--chat-title-duration, 7s) linear infinite; }
+@keyframes dashboard-chat-title-scroll {
+  0%, 12% { transform: translateX(0); opacity: 1; }
+  72%, 86% { transform: translateX(calc(-1 * var(--chat-title-distance))); opacity: 1; }
+  92% { transform: translateX(calc(-1 * var(--chat-title-distance))); opacity: 0; }
+  93% { transform: translateX(0); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
 .workspace-dashboard .dashboard-task-badge { display: inline-flex; align-items: center; flex-shrink: 0; padding: 2px 6px; border: 1px solid; border-radius: 5px; font-size: 12px; font-weight: 600; line-height: 1.5; white-space: nowrap; }
 .workspace-dashboard .dashboard-task-pending { color: #805c18; background: #fff6df; border-color: #ebd9ad; }
 .workspace-dashboard .dashboard-task-in_progress { color: #315f91; background: #eaf2fc; border-color: #c3d6ed; }
@@ -174,4 +183,8 @@ div.workspace-dashboard.app-shell {
   .workspace-dashboard .dashboard-topbar-context { gap: 4px; }
   .workspace-dashboard .topbar-actions { gap: 5px; }
   .workspace-dashboard .workspace-main { padding-inline: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-dashboard .dashboard-chat-item.is-selected .dashboard-chat-title-clip[data-overflowing="true"] > strong { animation: none; transform: none; opacity: 1; }
 }

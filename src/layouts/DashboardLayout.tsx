@@ -44,6 +44,40 @@ function SettingsIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9.3 3-.6 2.3-2 .9-2.2-.7L3 8l1.6 1.7v2.6L3 14l1.5 2.5 2.2-.7 2 .9.6 2.3h3.4l.6-2.3 2-.9 2.2.7L19 14l-1.6-1.7V9.7L19 8l-1.5-2.5-2.2.7-2-.9-.6-2.3Z" transform="translate(1 1)" /><circle cx="12" cy="12" r="3" /></svg>;
 }
 
+function ChatSessionTitle({ title, active, visible }: { title: string; active: boolean; visible: boolean }) {
+  const clipRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const clip = clipRef.current;
+    const text = textRef.current;
+    if (!clip || !text || !active || !visible) return;
+
+    function measure() {
+      if (!clip || !text) return;
+      const overflow = text.scrollWidth - clip.clientWidth;
+      const distance = clip.clientWidth > 0 && overflow > 1 ? overflow + 20 : 0;
+      clip.dataset.overflowing = String(distance > 0);
+      clip.style.setProperty("--chat-title-distance", `${distance}px`);
+      clip.style.setProperty("--chat-title-duration", `${Math.max(7, distance / 32 + 3.2)}s`);
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(clip);
+    observer.observe(text);
+    const frame = requestAnimationFrame(measure);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      delete clip.dataset.overflowing;
+      clip.style.removeProperty("--chat-title-distance");
+      clip.style.removeProperty("--chat-title-duration");
+    };
+  }, [title, active, visible]);
+
+  return <span className="dashboard-chat-title-clip" ref={clipRef}><strong ref={textRef}>{title}</strong></span>;
+}
+
 function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam }: {
   teams: Team[];
   selectedTeamId: number | null;
@@ -185,7 +219,7 @@ export default function DashboardLayout({
           {taskList.map((task) => {
             const active = view === "conversation" && selectedTaskId === task.taskId;
             return <button className={`dashboard-chat-item${active ? " is-selected" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} title={taskTitle(task)} disabled={!onSelectTask}>
-              <span className="dashboard-chat-title"><strong>{taskTitle(task)}</strong><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
+              <span className="dashboard-chat-title"><ChatSessionTitle title={taskTitle(task)} active={active} visible={!mobile || menuOpen} /><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
             </button>;
           })}
           {taskList.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p></div>}
