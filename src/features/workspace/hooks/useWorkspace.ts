@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSession } from "@/features/auth/hooks/useSession";
 import { authKeys } from "@/features/auth/api/authKeys";
 import { useTeams, useTeam, useTeamMembers, teamKeys } from "@/features/teams/hooks/useTeams";
-import { useAgents, agentKeys } from "@/features/agents/hooks/useAgents";
+import { useAgents, agentKeys, isAgentAccessError } from "@/features/agents/hooks/useAgents";
 import type { Agent } from "@/features/agents/types";
 import type { TeamMember } from "@/features/teams/types";
 
@@ -20,18 +20,22 @@ export function useWorkspace(userId: number, initialTeamId?: number) {
     ?? teams[0]?.teamId ?? null
   const teamQuery = useTeam(userId, selectedTeamId)
   const membersQuery = useTeamMembers(userId, selectedTeamId)
-  const agentsQuery = useAgents(userId, selectedTeamId)
-  const error = teamsQuery.error ?? teamQuery.error ?? membersQuery.error ?? agentsQuery.error
+  const agentsQuery = useAgents(userId, selectedTeamId, true)
+  const agentAccessError = isAgentAccessError(agentsQuery.error)
+  const agentError = agentsQuery.data === undefined || agentAccessError ? agentsQuery.error : null
+  const teamError = teamsQuery.error ?? teamQuery.error ?? membersQuery.error
+  const error = teamError ?? agentError
+  const notificationError = teamError ?? (agentAccessError ? agentError : null)
   const sceneQueries = selectedTeamId === null ? [teamsQuery] : [teamsQuery, teamQuery, membersQuery, agentsQuery];
-  const sceneStatus: "error" | "loading" | "empty" | "ready" = sceneQueries.some((query) => query.isError && query.data === undefined)
+  const sceneStatus: "error" | "loading" | "empty" | "ready" = agentAccessError || sceneQueries.some((query) => query.isError && query.data === undefined)
     ? "error"
     : sceneQueries.some((query) => query.isPending)
       ? "loading"
       : selectedTeamId === null ? "empty" : "ready";
 
   useEffect(() => {
-    if (error) onError(error)
-  }, [error, onError])
+    if (notificationError) onError(notificationError)
+  }, [notificationError, onError])
 
   const refreshWorkspace = () => {
     if (selectedTeamId === null) return
@@ -50,10 +54,10 @@ export function useWorkspace(userId: number, initialTeamId?: number) {
     selectedTeamId,
     selectedTeam: teamQuery.data ?? teams.find((team) => team.teamId === selectedTeamId) ?? null,
     members: membersQuery.data ?? emptyMembers,
-    agents: agentsQuery.data ?? emptyAgents,
+    agents: agentAccessError ? emptyAgents : agentsQuery.data ?? emptyAgents,
     teamsLoading: teamsQuery.isFetching,
     workspaceLoading: selectedTeamId !== null
-      && (teamQuery.isFetching || membersQuery.isFetching || agentsQuery.isFetching),
+      && (teamQuery.isFetching || membersQuery.isFetching || (agentsQuery.isFetching && agentsQuery.data === undefined)),
     workspaceError: error instanceof Error ? error.message : null,
     sceneStatus,
     selectTeam: (teamId?: number) => setPreferredTeamId(teamId ?? null),
