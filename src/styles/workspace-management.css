@@ -1,0 +1,130 @@
+.workspace-dashboard :is(.agents-panel, .team-panel) {
+  border-color: var(--workspace-divider);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.workspace-dashboard :is(.agents-panel, .team-panel) > .panel-heading {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 24px;
+  padding: 24px;
+  border-bottom: 0;
+}
+
+.workspace-dashboard .management-heading { flex: 1; min-width: 180px; }
+.workspace-dashboard .management-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .section-title { color: var(--color-ink); font-size: 17px; font-weight: 650; letter-spacing: -.4px; line-height: 1.4; }
+.workspace-dashboard .management-count { color: var(--workspace-muted); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.workspace-dashboard .management-description { margin: 6px 0 0; color: var(--workspace-muted); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .management-actions { flex-shrink: 0; flex-wrap: wrap; gap: 8px; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .button { min-height: 35px; padding: 8px 12px; border-radius: 7px; font-size: 13px; font-weight: 550; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .button-small { min-height: 30px; padding: 5px 9px; font-size: 12px; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 550; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .badge-online { color: var(--workspace-action); background: var(--workspace-accent); }
+.workspace-dashboard :is(.agents-panel, .team-panel) .badge-offline { color: var(--workspace-muted); background: #f2f4f6; }
+.workspace-dashboard :is(.agents-panel, .team-panel) :is(.badge-online, .badge-offline)::before { display: none; }
+.workspace-dashboard :is(.agents-panel, .team-panel) .badge-owner { border: 1px solid var(--workspace-divider); color: var(--workspace-action); background: var(--color-workspace); }
+.workspace-dashboard :is(.agents-panel, .team-panel) .badge-member { color: var(--workspace-muted); background: transparent; }
+
+.workspace-dashboard .agents-panel .agents-toolbar {
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  padding: 0 24px 18px;
+}
+
+.workspace-dashboard .management-filters { display: flex; align-items: center; gap: 5px; }
+.workspace-dashboard .management-filters > button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 33px; padding: 6px 11px; border: 1px solid transparent; border-radius: 6px; color: var(--workspace-muted); background: transparent; font-size: 12px; }
+.workspace-dashboard .management-filters > button > span { font-size: 11px; font-variant-numeric: tabular-nums; }
+.workspace-dashboard .management-filters > button[aria-pressed="true"] { border-color: var(--workspace-divider); color: var(--color-ink); background: var(--color-workspace); font-weight: 600; }
+.workspace-dashboard .management-filters > button:hover { color: var(--color-ink); background: var(--color-workspace); }
+.workspace-dashboard .agents-panel .search-field { flex: 0 1 300px; width: 300px; max-width: 100%; margin-left: auto; }
+.workspace-dashboard .agents-panel .search-field input { min-height: 35px; padding: 7px 11px; border-color: var(--workspace-divider); border-radius: 7px; font-size: 13px; }
+.workspace-dashboard .agents-panel .data-table { min-width: 1060px; font-size: 14px; }
+.workspace-dashboard .agents-panel .data-table th { padding: 12px 20px; font-size: 12px; font-weight: 500; }
+.workspace-dashboard .agents-panel .data-table td { padding: 18px 20px; color: var(--workspace-action); }
+.workspace-dashboard .agents-panel .data-table th:first-child,
+.workspace-dashboard .agents-panel .data-table td:first-child { padding-left: 24px; }
+.workspace-dashboard .agents-panel .data-table th:last-child,
+.workspace-dashboard .agents-panel .data-table td:last-child { padding-right: 24px; }
+.workspace-dashboard .agents-panel .agent-cell { gap: 12px; }
+.workspace-dashboard .agents-panel .agent-icon { width: 38px; height: 38px; border: 1px solid var(--workspace-divider); border-radius: 9px; background: var(--workspace-surface); }
+.workspace-dashboard .agents-panel .agent-icon img { display: block; width: 22px; height: 22px; object-fit: contain; }
+.workspace-dashboard .agents-panel .agent-name-button { color: var(--color-ink); font-size: 15px; font-weight: 600; }
+.workspace-dashboard .agents-panel .agent-meta { margin-top: 5px; font-size: 12px; line-height: 1.6; }
+.workspace-dashboard .agents-panel .management-tool-name { color: var(--workspace-muted); font-size: 13px; white-space: nowrap; }
+.workspace-dashboard .agents-panel .status-cell { justify-items: start; }
+.workspace-dashboard .agents-panel .status-detail { margin-top: 6px; font-size: 11px; }
+.workspace-dashboard .agents-panel .self-label { font-size: 11px; font-weight: 500; }
+.workspace-dashboard .agents-panel .agents-footnote { flex-wrap: wrap; align-items: baseline; gap: 8px 18px; padding: 16px 24px; font-size: 12px; }
+.workspace-dashboard .management-result-count { flex-shrink: 0; color: var(--workspace-action); font-variant-numeric: tabular-nums; }
+.workspace-dashboard .management-tool-detail { display: flex; align-items: center; gap: 8px; }
+.workspace-dashboard .management-tool-detail img { display: block; object-fit: contain; }
+
+.workspace-dashboard .team-panel .team-selector { flex-wrap: wrap; gap: 12px; padding: 0 24px 22px; border-bottom: 1px solid var(--workspace-divider); }
+.workspace-dashboard .team-panel .team-selector label { font-size: 12px; font-weight: 500; }
+.workspace-dashboard .team-panel .team-selector select { width: 280px; max-width: calc(100% - 104px); min-height: 36px; padding: 7px 11px; border-color: var(--workspace-divider); border-radius: 7px; font-size: 13px; }
+.workspace-dashboard .team-panel .team-selector .icon-button { width: 36px; height: 36px; border-color: var(--workspace-divider); border-radius: 7px; background: var(--workspace-surface); }
+.workspace-dashboard .team-panel .team-workspace { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); }
+.workspace-dashboard .team-panel .team-summary { padding: 25px 24px; background: var(--color-workspace); }
+.workspace-dashboard .team-panel .team-summary-heading { margin-bottom: 21px; }
+.workspace-dashboard .management-label { display: block; margin-bottom: 9px; color: var(--workspace-muted); font-size: 12px; }
+.workspace-dashboard .team-panel .team-summary-heading h3 { margin-bottom: 10px; color: var(--color-ink); font-size: 20px; font-weight: 600; line-height: 1.5; letter-spacing: -.5px; }
+.workspace-dashboard .team-panel .team-meta { display: flex; flex-direction: column; gap: 0; margin: 0 0 22px; }
+.workspace-dashboard .team-panel .team-meta > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--workspace-divider); }
+.workspace-dashboard .team-panel .team-meta dt { flex-shrink: 0; font-size: 12px; }
+.workspace-dashboard .team-panel .team-meta dd { text-align: right; color: var(--workspace-action); font-size: 13px; overflow-wrap: anywhere; }
+.workspace-dashboard .team-panel .team-summary > .button { width: 100%; justify-content: center; }
+.workspace-dashboard .team-panel .team-summary > .field-hint { margin: 0; font-size: 12px; line-height: 1.8; }
+.workspace-dashboard .team-panel .team-members { padding: 25px 24px 12px; }
+.workspace-dashboard .team-panel .team-members-heading { margin-bottom: 17px; }
+.workspace-dashboard .team-panel .team-members-heading h3 { display: flex; align-items: center; gap: 9px; color: var(--color-ink); font-size: 16px; font-weight: 650; }
+.workspace-dashboard .team-panel .member-list { display: block; max-height: none; overflow: visible; }
+.workspace-dashboard .team-panel .member-row { min-height: 78px; gap: 13px; padding: 16px 0; border-top: 1px solid var(--workspace-divider); }
+.workspace-dashboard .team-panel .member-row .avatar { width: 36px; height: 36px; border-radius: 10px; color: var(--color-ink); font-size: 11px; font-weight: 600; }
+.workspace-dashboard .team-panel .member-row:nth-child(3n + 2) .avatar { background: var(--workspace-divider); }
+.workspace-dashboard .team-panel .member-row:nth-child(3n) .avatar { color: var(--workspace-surface); background: var(--workspace-focus); }
+.workspace-dashboard .team-panel .member-identity strong { color: var(--color-ink); font-size: 15px; font-weight: 550; }
+.workspace-dashboard .team-panel .member-identity .muted { margin-top: 4px; font-size: 12px; }
+.workspace-dashboard .team-panel .member-self { color: var(--workspace-muted); font-size: 10px; font-weight: 500; }
+.workspace-dashboard .team-panel .member-joined { display: flex; flex-shrink: 0; flex-direction: column; gap: 5px; width: 125px; margin-left: 16px; color: var(--workspace-muted); }
+.workspace-dashboard .team-panel .member-joined > span { font-size: 10px; }
+.workspace-dashboard .team-panel .member-joined time { font-size: 12px; }
+.workspace-dashboard .team-panel .member-row > .badge { flex-shrink: 0; min-width: 48px; margin-left: 10px; }
+
+@media (max-width: 1100px) {
+  .workspace-dashboard .team-panel .team-workspace { grid-template-columns: minmax(190px, 240px) minmax(0, 1fr); }
+  .workspace-dashboard .team-panel .member-joined { width: 105px; margin-left: 4px; }
+  .workspace-dashboard .team-panel .member-row { flex-wrap: wrap; }
+  .workspace-dashboard .team-panel .member-identity { min-width: 120px; }
+}
+
+@media (max-width: 900px) {
+  .workspace-dashboard .team-panel .team-workspace { grid-template-columns: minmax(0, 1fr); }
+  .workspace-dashboard .team-panel .team-summary { border-right: 0; border-bottom: 1px solid var(--workspace-divider); }
+  .workspace-dashboard .team-panel .team-meta { max-width: 420px; }
+  .workspace-dashboard .team-panel .team-summary > .button { width: auto; }
+}
+
+@media (max-width: 720px) {
+  .workspace-dashboard :is(.agents-panel, .team-panel) > .panel-heading { padding: 20px; }
+  .workspace-dashboard :is(.agents-panel, .team-panel) .management-actions { margin-left: auto; }
+  .workspace-dashboard .agents-panel .agents-toolbar { gap: 15px; padding: 0 20px 18px; }
+  .workspace-dashboard .agents-panel .search-field { flex-basis: 100%; width: 100%; }
+  .workspace-dashboard .agents-panel .data-table td:first-child,
+  .workspace-dashboard .agents-panel .data-table th:first-child { padding-left: 20px; }
+  .workspace-dashboard .agents-panel .agents-footnote { padding: 15px 20px; }
+  .workspace-dashboard .team-panel .team-selector { padding: 0 20px 20px; }
+  .workspace-dashboard .team-panel .team-summary { padding: 22px 20px; }
+  .workspace-dashboard .team-panel .team-members { padding: 22px 20px 10px; }
+}
+
+@media (max-width: 420px) {
+  .workspace-dashboard :is(.agents-panel, .team-panel) > .panel-heading { padding: 18px; }
+  .workspace-dashboard .management-description { font-size: 12px; }
+  .workspace-dashboard .management-filters { gap: 2px; }
+  .workspace-dashboard .management-filters > button { padding-inline: 9px; }
+  .workspace-dashboard .team-panel .member-joined { width: auto; }
+  .workspace-dashboard .team-panel .member-row > .badge { margin-left: 0; }
+  .workspace-dashboard .team-panel .member-identity { min-width: 100px; }
+}

@@ -2,8 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, Ref } from "react";
 import type { Team, TeamMember } from '../types'
 import { useTeamMutations } from '../hooks/useTeams'
-import { copyText, formatDate } from '../../../utils'
-import { EmptyState, Icon, Modal } from '../../../components/ui'
+import { copyText, formatDate } from "@/utils";
+import { EmptyState, Icon, Modal } from "@/components/ui";
+import "@/styles/workspace-management.css";
 
 export interface TeamsPanelProps {
   teams: Team[]
@@ -167,10 +168,14 @@ export default function TeamsPanel({
   return (
     <section className="panel team-panel" aria-labelledby={`${fieldId}-title`}>
       <div className="panel-heading">
-        <div>
-          <h2 className="section-title" id={`${fieldId}-title`}>참여 팀</h2>
+        <div className="management-heading">
+          <div className="management-title-row">
+            <h2 className="section-title" id={`${fieldId}-title`}>참여 팀</h2>
+            <span className="management-count">{loading ? "—" : teams.length}</span>
+          </div>
+          <p className="management-description">참여 중인 팀과 팀원 정보를 관리하세요.</p>
         </div>
-        <div className="section-actions">
+        <div className="section-actions management-actions">
           <button className="button button-secondary" type="button" onClick={openJoin} disabled={pending}>
             <Icon name="arrow" size={16} /> 코드로 참여
           </button>
@@ -220,11 +225,11 @@ export default function TeamsPanel({
         <div className="team-workspace">
           <div className="team-summary">
             <div className="team-summary-heading">
-              <div className="team-mark" aria-hidden="true"><Icon name="team" size={24} /></div>
               <div>
+                <span className="management-label">팀 정보</span>
                 <h3>{selectedTeam.name}</h3>
                 <span className={`badge ${selectedTeam.myRole === 'OWNER' ? 'badge-owner' : 'badge-member'}`}>
-                  {selectedTeam.myRole}
+                  {selectedTeam.myRole === 'OWNER' ? '소유자' : '팀원'}
                 </span>
               </div>
             </div>
@@ -250,8 +255,7 @@ export default function TeamsPanel({
 
           <div className="team-members">
             <div className="team-members-heading">
-              <h3>함께하는 팀원</h3>
-              <span className="badge">{loading ? '…' : `${members.length}명`}</span>
+              <h3>팀원 목록 <span className="management-count">{loading ? '—' : members.length}</span></h3>
             </div>
             {loading ? (
               <p className="loading-copy" role="status">팀원 정보를 불러오는 중입니다.</p>
@@ -261,16 +265,17 @@ export default function TeamsPanel({
               <ul className="member-list">
                 {members.map((member) => (
                   <li className="member-row" key={member.userId}>
-                    <span className="avatar" aria-hidden="true">{Array.from(member.name.trim())[0] ?? '?'}</span>
+                    <span className="avatar" aria-hidden="true">{Array.from(member.name.trim()).slice(0, 2).join('') || '—'}</span>
                     <div className="member-identity">
                       <strong>
                         {member.name}
                         {member.userId === currentUserId && <span className="member-self">나</span>}
                       </strong>
-                      <span className="muted">{member.nickname || `사용자 #${member.userId}`}</span>
+                      <span className="muted">{member.nickname ? `@${member.nickname}` : `사용자 #${member.userId}`}</span>
                     </div>
+                    <div className="member-joined"><span>참여일</span><time dateTime={member.joinedAt}>{formatDate(member.joinedAt)}</time></div>
                     <span className={`badge ${member.role === 'OWNER' ? 'badge-owner' : 'badge-member'}`}>
-                      {member.role}
+                      {member.role === 'OWNER' ? '소유자' : '팀원'}
                     </span>
                   </li>
                 ))}

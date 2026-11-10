@@ -1,12 +1,15 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { Agent, CreateAgentInput } from "../types";
-import type { Team, TeamMember } from "../../teams/types";
+import type { Team, TeamMember } from "@/features/teams/types";
 import { useAgent, useAgentMutations } from "../hooks/useAgents";
-import { copyText, formatDate } from "../../../utils";
-import { EmptyState, Icon, Modal } from "../../../components/ui";
+import { copyText, formatDate } from "@/utils";
+import { EmptyState, Icon, Modal } from "@/components/ui";
+import chatgptLogo from "@/assets/image/agent-logo/chatgpt.svg";
+import claudeLogo from "@/assets/image/agent-logo/claude.svg";
 import { getDesktopApi } from "@/features/desktop-setup/api/desktopApi";
 import ProjectConnectView from "@/features/desktop-setup/components/ProjectConnectView";
+import "@/styles/workspace-management.css";
 
 interface AgentsPanelProps {
   team: Team;
@@ -60,6 +63,7 @@ export default function AgentsPanel({
   const active = useRef(true);
   const mutations = useAgentMutations(currentUserId, team.teamId);
   const [search, setSearch] = useState("");
+  const [connection, setConnection] = useState<Agent["status"] | "all">("all");
   const [pcReady, setPcReady] = useState<boolean | null>(null);
   const [formTarget, setFormTarget] = useState<Agent | "register" | null>(null);
   const [form, setForm] = useState<AgentForm>(emptyForm);
@@ -104,7 +108,8 @@ export default function AgentsPanel({
     form.roleDescription !== (editingAgent.roleDescription ?? "");
   const teamAgents = agents.filter((agent) => agent.teamId === team.teamId);
   const visibleAgents = teamAgents.filter((agent) =>
-    [agent.name, agent.projectName, agent.roleDescription ?? ""].some((value) =>
+    (connection === "all" || agent.status === connection)
+    && [agent.name, agent.projectName, agent.roleDescription ?? ""].some((value) =>
       value.toLocaleLowerCase().includes(query),
     ),
   );
@@ -276,20 +281,19 @@ export default function AgentsPanel({
   return (
     <section className="panel agents-panel" aria-labelledby={`${fieldId}-heading`}>
       <div className="panel-heading">
-        <div className="section-actions">
-          <h2 className="section-title" id={`${fieldId}-heading`}>
-            Agent 목록
-          </h2>
-          {pcReady !== null && (
-            <span
-              className={`badge ${pcReady ? "badge-online" : "badge-offline"}`}
-              role="status"
-            >
-              PC : {pcReady ? "연결" : "미연결"}
-            </span>
-          )}
+        <div className="management-heading">
+          <div className="management-title-row">
+            <h2 className="section-title" id={`${fieldId}-heading`}>Agent 목록</h2>
+            <span className="management-count">{loading ? "—" : teamAgents.length}</span>
+            {pcReady !== null && (
+              <span className={`badge ${pcReady ? "badge-online" : "badge-offline"}`} role="status">
+                PC : {pcReady ? "연결" : "미연결"}
+              </span>
+            )}
+          </div>
+          <p className="management-description">{team.name}의 Agent와 프로젝트 연결 현황</p>
         </div>
-        <div className="section-actions">
+        <div className="section-actions management-actions">
           {desktop?.setup && desktop.getStatus && (
             <ProjectConnectView
               key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
@@ -313,8 +317,16 @@ export default function AgentsPanel({
       </div>
 
       <div className="agents-toolbar">
+        <div className="management-filters" aria-label="Agent 연결 상태 필터">
+          {(["all", "ONLINE", "OFFLINE"] as const).map((value) => (
+            <button key={value} type="button" aria-pressed={connection === value} onClick={() => setConnection(value)}>
+              {value === "all" ? "전체" : value === "ONLINE" ? "온라인" : "오프라인"}
+              <span>{loading ? "—" : value === "all" ? teamAgents.length : teamAgents.filter((agent) => agent.status === value).length}</span>
+            </button>
+          ))}
+        </div>
         <label className="search-field" htmlFor={`${fieldId}-search`}>
-          <Icon name="agent" size={18} />
+          <span className="sr-only">Agent, 프로젝트, 역할 검색</span>
           <input
             id={`${fieldId}-search`}
             value={search}
@@ -323,9 +335,6 @@ export default function AgentsPanel({
             type="search"
           />
         </label>
-        <span className="muted">
-          {query ? `${visibleAgents.length}개 검색 결과` : `전체 ${teamAgents.length}개`}
-        </span>
       </div>
 
       {loading && (
@@ -359,7 +368,7 @@ export default function AgentsPanel({
                     <td>
                       <div className="agent-cell">
                         <span className="agent-icon">
-                          <Icon name="agent" size={20} />
+                          <img src={agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt={toolName(agent.toolType)} width={22} height={22} />
                         </span>
                         <div>
                           <button
@@ -375,7 +384,7 @@ export default function AgentsPanel({
                     </td>
                     <td>{agent.projectName}</td>
                     <td>
-                      <span className="badge badge-tool">{toolName(agent.toolType)}</span>
+                      <span className="management-tool-name">{toolName(agent.toolType)}</span>
                     </td>
                     <td>
                       {ownerName(agent)}
@@ -434,7 +443,7 @@ export default function AgentsPanel({
                 {visibleAgents.length === 0 && (
                   <tr>
                     <td className="empty-table-cell" colSpan={6}>
-                      검색 조건에 맞는 Agent가 없습니다.
+                      조건에 맞는 Agent가 없습니다.
                     </td>
                   </tr>
                 )}
@@ -444,6 +453,7 @@ export default function AgentsPanel({
         )
       )}
       <p className="field-hint agents-footnote">
+        {!loading && <span className="management-result-count">{visibleAgents.length}개 표시</span>}
         등록 직후에는 오프라인으로 표시됩니다. 실제 접속 상태는 로컬 연결이 보고된 뒤 반영됩니다.
       </p>
 
@@ -629,7 +639,7 @@ export default function AgentsPanel({
               </div>
               <div className="detail-item">
                 <dt>도구</dt>
-                <dd>{toolName(detail.agent.toolType)}</dd>
+                <dd className="management-tool-detail"><img src={detail.agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt="" width={18} height={18} />{toolName(detail.agent.toolType)}</dd>
               </div>
               <div className="detail-item">
                 <dt>소유자</dt>

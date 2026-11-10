@@ -9,6 +9,7 @@ const ImmersiveTeamPreview = lazy(() => import('../features/team-preview/compone
 const TeamObservatory = lazy(() => import('../features/team-preview/components/TeamObservatory'))
 const TeamNetworkPreview = lazy(() => import('../features/team-preview/components/TeamNetworkPreview'))
 const DependencyTreePage = lazy(() => import("@/pages/DependencyTreePage.jsx"));
+const DashboardDesignPage = lazy(() => import("@/pages/DashboardDesignPage.jsx"));
 
 const previewRoutes = [
   { path: '/team-network', aliases: ['agents-3'], title: '3D 팀 스페이스 - 3', component: TeamNetworkPreview },
@@ -16,6 +17,7 @@ const previewRoutes = [
   { path: '/team-orbit', aliases: ['orbit', 'agents'], title: '3D 팀 스페이스', component: ImmersiveTeamPreview },
   { path: '/team-preview', aliases: ['team'], title: '팀 디자인 미리보기', component: TeamDesignPreview },
   { path: "/tree", aliases: [] as string[], title: "코드 의존성", component: DependencyTreePage },
+  { path: "/dashboard-design", aliases: ["dashboard"], title: "대시보드 디자인 시안", component: DashboardDesignPage },
 ]
 
 export default function AppRouter() {

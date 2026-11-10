@@ -8,7 +8,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
-    files: ['**/*.{ts,tsx}', 'src/components/common/**/*.{js,jsx}', 'src/features/dependency-tree/**/*.{js,jsx}', 'src/pages/DependencyTreePage.jsx'],
+    files: ['**/*.{ts,tsx}', 'src/components/common/**/*.{js,jsx}', 'src/features/dependency-tree/**/*.{js,jsx}', 'src/pages/DependencyTreePage.jsx', 'src/features/dashboard-design/**/*.{js,jsx}', 'src/pages/DashboardDesignPage.jsx'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,

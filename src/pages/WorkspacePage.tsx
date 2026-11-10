@@ -12,6 +12,7 @@ import AgentsPanel from "@/features/agents/components/AgentsPanel";
 import { useDesktopUpdates } from "@/features/desktop-setup/hooks/useDesktopUpdates";
 import ImmersiveTeamPreview from "@/features/team-preview/components/ImmersiveTeamPreview";
 import type { PreviewMember } from "@/features/team-preview/data/previewData";
+import { getAgentSessionConnections } from "@/features/team-preview/lib/agentSessionConnections.js";
 import { EmptyState, Icon } from "@/components/ui";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import type { WorkspaceView } from "@/layouts/DashboardLayout";
@@ -42,7 +43,10 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
   const tasksQuery = useTeamTasks(user.userId, selectedTeamId, autoRefresh);
   const taskAccessDenied = tasksQuery.error instanceof ApiError
     && [401, 403, 404].includes(tasksQuery.error.status);
-  const tasks = taskAccessDenied ? [] : tasksQuery.data ?? [];
+  const tasks = useMemo(
+    () => taskAccessDenied ? [] : tasksQuery.data ?? [],
+    [taskAccessDenied, tasksQuery.data],
+  );
   const tasksLoading = selectedTeamId !== null && tasksQuery.isPending;
   const tasksError = tasksQuery.error instanceof Error ? tasksQuery.error.message : null;
   const selectedTaskId = conversation?.teamId === selectedTeamId ? conversation.taskId : null;
@@ -125,6 +129,11 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
     }));
   }, [members, agents]);
 
+  const sceneConnections = useMemo(
+    () => getAgentSessionConnections(tasks, selectedTeamId, sceneMembers),
+    [tasks, selectedTeamId, sceneMembers],
+  );
+
   const canInvite = selectedTeam?.myRole === "OWNER" && !teamsLoading && !workspaceLoading;
 
   function openTeamInvite() {
@@ -137,6 +146,7 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
       teams,
       selectedTeam,
       members: sceneMembers,
+      connections: sceneConnections,
       agentCount: agents.length,
       sceneStatus,
       onSelectTeam: selectTeam,
