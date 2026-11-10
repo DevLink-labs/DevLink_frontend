@@ -71,13 +71,17 @@ export default function AgentsPanel({
   const [formError, setFormError] = useState<string | null>(null);
   const [detailAgentId, setDetailAgentId] = useState<number | null>(null);
   const detailQuery = useAgent(currentUserId, detailAgentId);
+  const listedDetailAgent = agents.find((agent) => agent.agentId === detailAgentId);
   const detail =
     detailAgentId === null
       ? null
       : {
-        agent: detailQuery.data ?? null,
-        loading: detailQuery.isFetching,
-        error: detailQuery.error ? errorMessage(detailQuery.error) : null,
+        agent: detailQuery.data && listedDetailAgent
+          ? { ...detailQuery.data, status: listedDetailAgent.status, lastSeenAt: listedDetailAgent.lastSeenAt }
+          : null,
+        loading: !!listedDetailAgent && detailQuery.isFetching && detailQuery.data === undefined,
+        error: detailQuery.error ? errorMessage(detailQuery.error)
+          : listedDetailAgent ? null : "현재 팀의 Agent 목록에서 찾을 수 없습니다.",
       };
   const [tokenAgent, setTokenAgent] = useState<Agent | null>(null);
   const [issuedToken, setIssuedToken] = useState<string | null>(null);

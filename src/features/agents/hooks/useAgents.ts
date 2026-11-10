@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ApiError } from '@/lib/apiClient'
 import { agentApi } from '../api/agentApi'
 import type { CreateAgentInput, UpdateAgentInput } from '../types'
 
@@ -8,11 +9,19 @@ export const agentKeys = {
   detail: (userId: number, agentId: number | null) => [...agentKeys.all(userId), 'detail', agentId] as const,
 }
 
-export function useAgents(userId: number, teamId: number | null) {
+export function isAgentAccessError(error: unknown) {
+  return error instanceof ApiError && [401, 403, 404].includes(error.status)
+}
+
+export function useAgents(userId: number, teamId: number | null, refreshPresence = false) {
   return useQuery({
     queryKey: agentKeys.list(userId, teamId),
     queryFn: ({ signal }) => agentApi.listAgents(teamId!, signal),
     enabled: teamId !== null,
+    refetchInterval: refreshPresence
+      ? ({ state }) => isAgentAccessError(state.error) ? false : 5_000
+      : false,
+    ...(refreshPresence ? { refetchIntervalInBackground: false, refetchOnWindowFocus: 'always' as const } : {}),
   })
 }
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Team, TeamMember } from "@/features/teams/types";
 import type { Agent } from "@/features/agents/types";
 import type { TaskListItem, TaskStatus } from "@/features/tasks/types";
@@ -31,7 +31,7 @@ export default function WorkspaceOverviewView({
   onManageTeams, onManageAgents, onGuide, onInvite, onRetryTasks,
 }: WorkspaceOverviewViewProps) {
   const [status, setStatus] = useState<TaskStatus | "all">("all");
-  const taskScrollRef = useRef<HTMLDivElement>(null);
+  const taskTableRef = useRef<HTMLTableElement>(null);
   const ready = team !== null && !workspaceLoading && !workspaceError;
   const onlineAgents = agents.filter((agent) => agent.status === "ONLINE");
   const tasksReady = team !== null && !tasksLoading && !tasksError;
@@ -40,10 +40,47 @@ export default function WorkspaceOverviewView({
     : tasksError ? "요청 현황을 불러오지 못했어요."
       : tasksLoading ? "대기 요청을 확인하고 있어요."
         : pendingTasks.length > 0 ? "Agent의 수락을 기다리는 요청이 있어요." : "수락을 기다리는 요청이 없어요.";
-  const visibleTasks = status === "all" ? tasks : tasks.filter((task) => task.status === status);
+  const visibleTasks = useMemo(
+    () => status === "all" ? tasks : tasks.filter((task) => task.status === status),
+    [tasks, status],
+  );
   const owners = new Map(members.map((member) => [member.userId, member.nickname || member.name]));
   const agentTools = new Map(agents.map((agent) => [agent.agentId, agent.toolType]));
   const sortedAgents = [...agents].sort((a, b) => Number(b.status === "ONLINE") - Number(a.status === "ONLINE"));
+
+  useLayoutEffect(() => {
+    const table = taskTableRef.current;
+    if (!table) return;
+    const names = Array.from(table.querySelectorAll<HTMLSpanElement>(".overview-task-agent-name"));
+    let active = true;
+    let frame = 0;
+
+    function fitAgentNames() {
+      const labels = names.map((name) => name.firstElementChild as HTMLSpanElement);
+      labels.forEach((label) => label.style.removeProperty("--overview-agent-name-scale"));
+      const scales = names.map((name, index) => {
+        const available = name.getBoundingClientRect().width;
+        const natural = labels[index].getBoundingClientRect().width;
+        return available > 0 && natural > available ? Math.max(0, available - 1) / natural : 1;
+      });
+      labels.forEach((label, index) => label.style.setProperty("--overview-agent-name-scale", String(scales[index])));
+    }
+
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fitAgentNames);
+    });
+    observer.observe(table);
+    fitAgentNames();
+    void document.fonts.ready.then(() => {
+      if (active) fitAgentNames();
+    });
+    return () => {
+      active = false;
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [visibleTasks, tasksLoading, tasksError]);
 
   function renderTaskAgentLogo(agentId: number) {
     const toolType = agentTools.get(agentId);
@@ -51,11 +88,6 @@ export default function WorkspaceOverviewView({
       {toolType ? <img src={toolType === "CODEX" ? chatgptLogo : claudeLogo} alt={toolType === "CODEX" ? "Codex" : "Claude Code"} width={18} height={18} />
         : <Icon name="agent" size={18} />}
     </span>;
-  }
-
-  function filterTasks(nextStatus: TaskStatus | "all") {
-    setStatus(nextStatus);
-    taskScrollRef.current?.scrollTo({ top: 0 });
   }
 
   return <div className="workspace-overview">
@@ -87,7 +119,7 @@ export default function WorkspaceOverviewView({
             <p className="overview-pending-value">
               {tasksReady ? pendingTasks.length : "—"}<span>건</span>
             </p>
-            <button type="button" className="overview-summary-action" onClick={() => filterTasks("PENDING")} disabled={!tasksReady || pendingTasks.length === 0}>요청 확인하기<Icon name="arrow" size={17} /></button>
+            <button type="button" className="overview-summary-action" onClick={() => setStatus("PENDING")} disabled={!tasksReady || pendingTasks.length === 0}>요청 확인하기<Icon name="arrow" size={17} /></button>
           </div>
         </section>
       </div>
@@ -100,7 +132,7 @@ export default function WorkspaceOverviewView({
           </div>
           <label className="overview-task-filter">
             <span className="sr-only">작업 상태 필터</span>
-            <select value={status} onChange={(event) => filterTasks(event.target.value as TaskStatus | "all")}>
+            <select value={status} onChange={(event) => setStatus(event.target.value as TaskStatus | "all")}>
               <option value="all">모든 상태</option>
               {Object.entries(taskStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
@@ -110,8 +142,8 @@ export default function WorkspaceOverviewView({
           {tasksError ? <div className="overview-inline-error" role="alert"><Icon name="shield" /><div><strong>작업 기록을 불러오지 못했어요</strong><p>{tasksError}</p></div><button type="button" className="button button-secondary button-small" onClick={onRetryTasks}>다시 불러오기</button></div>
             : tasksLoading ? <div className="overview-loading" role="status">작업 기록을 불러오고 있어요<span className="loading-bar" /></div>
               : visibleTasks.length === 0 ? <EmptyState title={!team ? "팀 선택" : status === "all" ? "작업 기록 없음" : "해당 상태의 작업 없음"} description={!team ? "팀 관리에서 새 팀을 만들거나 초대 코드로 참여하세요." : undefined} icon={<Icon name="book" size={26} />} />
-                : <div className="overview-table-scroll" ref={taskScrollRef} role="region" aria-label="Agent 대화 목록" tabIndex={0}>
-                  <table className="overview-task-table">
+                : <div className="overview-task-list">
+                  <table className="overview-task-table" ref={taskTableRef} aria-label="Agent 대화 목록">
                     <thead><tr><th scope="col">작업</th><th scope="col">참여 Agent</th><th scope="col">상태</th><th scope="col">최근 활동</th></tr></thead>
                     <tbody>{visibleTasks.map((task) => <tr key={task.taskId} className={task.status === "IN_PROGRESS" ? "is-in-progress" : undefined}>
                       <td>
@@ -130,12 +162,12 @@ export default function WorkspaceOverviewView({
                         <span className="overview-task-agents" title={`${task.requesterAgent.name} → ${task.receiverAgent.name}`}>
                           <span className="overview-task-agent">
                             {renderTaskAgentLogo(task.requesterAgent.agentId)}
-                            <span>{task.requesterAgent.name}</span>
+                            <span className="overview-task-agent-name"><span>{task.requesterAgent.name}</span></span>
                           </span>
                           <span className="overview-task-direction" aria-hidden="true">→</span>
                           <span className="overview-task-agent">
                             {renderTaskAgentLogo(task.receiverAgent.agentId)}
-                            <span>{task.receiverAgent.name}</span>
+                            <span className="overview-task-agent-name"><span>{task.receiverAgent.name}</span></span>
                           </span>
                         </span>
                       </td>
