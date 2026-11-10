@@ -22,8 +22,10 @@ div.workspace-dashboard.app-shell {
   border-right: 1px solid var(--workspace-divider);
 }
 
-.workspace-dashboard .dashboard-sidebar-brand { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 34px; margin: 0 10px 22px; }
+.workspace-dashboard .dashboard-sidebar-brand { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 34px; margin: 0 10px 22px; }
+.workspace-dashboard .dashboard-sidebar-brand > .icon-button { position: absolute; top: 50%; right: 0; translate: 0 -50%; }
 .workspace-dashboard .dashboard-sidebar-brand .brand { margin: 0; gap: 10px; font-size: 25px; letter-spacing: -1.1px; }
+.workspace-dashboard .dashboard-sidebar-brand .service-logo { --service-logo-icon-height: 30px; --service-logo-wordmark-height: 22px; --service-logo-gap: 9px; }
 .workspace-dashboard .dashboard-nav-label { display: block; padding: 0 10px; margin-bottom: 8px; color: var(--workspace-muted); font-size: 11px; font-weight: 650; letter-spacing: .3px; }
 .workspace-dashboard.app-shell .main-nav { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; order: initial; width: 100%; gap: 2px; margin: 0; flex-shrink: 0; }
 .workspace-dashboard.app-shell .main-nav .nav-item { justify-content: flex-start; width: 100%; min-height: 38px; padding: 8px 10px; gap: 10px; font-size: 13px; }
@@ -121,7 +123,6 @@ div.workspace-dashboard.app-shell {
 .workspace-dashboard .dashboard-team-options button:focus-visible { outline: 2px solid var(--workspace-focus); outline-offset: -2px; }
 .workspace-dashboard .dashboard-team-initial { display: grid; place-items: center; width: 27px; height: 27px; flex-shrink: 0; border: 1px solid #e1e8ef; border-radius: 7px; color: #66819d; background: #f8fafc; font-size: 12px; font-weight: 600; }
 .workspace-dashboard .dashboard-team-option-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.workspace-dashboard .dashboard-return-scene,
 .workspace-dashboard .dashboard-team-trigger,
 .workspace-dashboard .dashboard-refresh { height: var(--dashboard-control-height); min-height: var(--dashboard-control-height); }
 .workspace-dashboard .dashboard-return-scene { justify-self: center; }

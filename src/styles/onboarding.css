@@ -26,6 +26,19 @@
   font-size: 13px;
 }
 
+.onboarding-header .auth-brand .service-logo {
+  --service-logo-icon-height: 30px;
+  --service-logo-wordmark-height: 22px;
+  --service-logo-gap: 8px;
+}
+
+.onboarding-footer-brand {
+  --service-logo-wordmark-height: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .onboarding-layout {
   display: grid;
   grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
@@ -560,6 +573,10 @@
   }
   .onboarding-header {
     padding: 22px 20px;
+  }
+  .onboarding-header .auth-brand .service-logo {
+    --service-logo-icon-height: 28px;
+    --service-logo-wordmark-height: 20px;
   }
   .onboarding-account > span {
     display: none;

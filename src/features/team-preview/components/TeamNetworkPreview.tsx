@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PageTitle from '../../../components/common/PageTitle'
 import { Icon } from '../../../components/ui'
@@ -152,7 +153,7 @@ export default function TeamNetworkPreview() {
 
   return <div className="team-network-preview">
     <PageTitle title="3D 팀 스페이스 - 3" />
-    <header className="nt-header"><a className="nt-brand" href="/" aria-label="DevLink 워크스페이스">DevLink</a><nav aria-label="3D 스페이스 선택"><a href="/?preview=agents" aria-label="3D 팀 스페이스 열기">스페이스 1</a><a href="/?preview=agents-2" aria-label="3D 팀 스페이스 - 2 열기">스페이스 2</a><a href="/?preview=agents-3" aria-current="page">스페이스 3</a></nav><button ref={listTrigger} type="button" className="nt-list-trigger" onClick={() => { setSelectedAgentId(null); setDialog('agents') }}><Icon name="team" size={19} />에이전트 목록</button></header>
+    <header className="nt-header"><a className="nt-brand" href="/" aria-label="DevLink 워크스페이스"><BrandLogo /></a><nav aria-label="3D 스페이스 선택"><a href="/?preview=agents" aria-label="3D 팀 스페이스 열기">스페이스 1</a><a href="/?preview=agents-2" aria-label="3D 팀 스페이스 - 2 열기">스페이스 2</a><a href="/?preview=agents-3" aria-current="page">스페이스 3</a></nav><button ref={listTrigger} type="button" className="nt-list-trigger" onClick={() => { setSelectedAgentId(null); setDialog('agents') }}><Icon name="team" size={19} />에이전트 목록</button></header>
 
     <main>
       <section className="nt-intro" aria-label="전체 팀 현황"><div><div className="nt-team-picker"><h1>{team.name}</h1><Icon name="chevron" size={20} /><select aria-label="살펴볼 팀 선택" value={team.id} onChange={(event) => changeTeam(event.target.value)}>{immersivePreviewTeams.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><p>팀원 {team.members.length}명<span>·</span>에이전트 {entries.length}개</p></div><div className="nt-counts" role="group" aria-label="연결 상태 필터"><button type="button" className={filter === 'online' ? 'is-active' : ''} aria-pressed={filter === 'online'} onClick={() => changeFilter(filter === 'online' ? 'all' : 'online')}><strong>{onlineCount}</strong><NetworkStatus online /></button><button type="button" className={filter === 'offline' ? 'is-active' : ''} aria-pressed={filter === 'offline'} onClick={() => changeFilter(filter === 'offline' ? 'all' : 'offline')}><strong>{entries.length - onlineCount}</strong><NetworkStatus online={false} /></button></div></section>

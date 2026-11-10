@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useState } from 'react'
 import { Icon, Modal } from '../../../components/ui'
 import { copyText } from '../../../utils'
@@ -39,7 +40,7 @@ export default function RoseMainPreview() {
 
   return <div className="rose-main-preview">
     <aside className="rmp-sidebar" aria-label="로즈 시안 메뉴">
-      <a className="rmp-brand" href="/" aria-label="DevLink 워크스페이스로"><span className="rmp-brand-mark">d<span /></span>devlink<span className="rmp-brand-dot">.</span></a>
+      <a className="rmp-brand" href="/" aria-label="DevLink 워크스페이스로"><BrandLogo /></a>
       <div className="rmp-space-label"><span>MY WORKSPACE</span><span>01</span></div>
       <nav className="rmp-nav" aria-label="워크스페이스 메뉴">
         <button type="button" className={section === 'overview' ? 'is-active' : ''} aria-current={section === 'overview' ? 'page' : undefined} onClick={() => navigate('overview')}><Icon name="grid" size={18} />워크스페이스<span className="rmp-nav-dot" /></button>
@@ -65,7 +66,7 @@ export default function RoseMainPreview() {
           <div className="rmp-hero-art" aria-hidden="true">
             <span className="rmp-art-orbit rmp-art-orbit-one" /><span className="rmp-art-orbit rmp-art-orbit-two" />
             <span className="rmp-art-spark rmp-art-spark-one">✦</span><span className="rmp-art-spark rmp-art-spark-two">✳</span>
-            <div className="rmp-art-window"><div className="rmp-art-window-bar"><i /><i /><i /><span>our little workspace</span></div><div className="rmp-art-window-body"><span className="rmp-art-logo">d<span /></span><span className="rmp-art-line" /><span className="rmp-art-line rmp-art-line-short" /><div className="rmp-art-people"><span>보경</span><span>정민</span><span>효민</span><b>+3</b></div><div className="rmp-art-window-footer"><i />Better, together.</div></div></div>
+            <div className="rmp-art-window"><div className="rmp-art-window-bar"><i /><i /><i /><span>our little workspace</span></div><div className="rmp-art-window-body"><BrandLogo variant="icon" className="rmp-art-logo" /><span className="rmp-art-line" /><span className="rmp-art-line rmp-art-line-short" /><div className="rmp-art-people"><span>보경</span><span>정민</span><span>효민</span><b>+3</b></div><div className="rmp-art-window-footer"><i />Better, together.</div></div></div>
             <div className="rmp-art-agent"><span className="rmp-art-agent-antenna" /><div className="rmp-art-agent-face"><i /><i /><b /></div><span>your little co-builder</span></div>
             <div className="rmp-art-chip"><span><Icon name="check" size={12} /></span>함께할 준비 완료</div>
             <span className="rmp-art-caption">PEOPLE + AGENTS = POSSIBILITIES</span>
@@ -88,7 +89,7 @@ export default function RoseMainPreview() {
           <section className="rmp-members-panel" aria-labelledby="rmp-members-title"><div className="rmp-panel-heading"><div><span className="rmp-eyebrow">GOOD COMPANY</span><h2 id="rmp-members-title">함께여서 좋은 사람들</h2></div><span className="rmp-member-total">{team.members.length}</span></div><div className="rmp-member-list">{team.members.slice(0, 4).map((member, index) => <div className="rmp-member-row" key={member.id}><span className={`rmp-member-avatar rmp-member-avatar-${index % 3}`}>{member.initials}</span><div><strong>{member.name}{member.id === 'jiwoo' && <small>나</small>}</strong><span>{member.role === 'OWNER' ? 'Team owner' : 'Team member'}</span></div><span>{member.agents.length} Agent</span></div>)}</div><div className="rmp-members-note"><span aria-hidden="true">♡</span><p>각자의 가능성을 모아,<br />함께 더 멀리 나아가요.</p></div></section>
         </div>
 
-        <footer className="rmp-footer"><span>devlink<span>.</span><small>A space to build, together.</small></span><span>Rose Atelier · 목업 데이터로 구성된 메인 페이지 시안</span></footer>
+        <footer className="rmp-footer"><span><BrandLogo variant="wordmark" className="rmp-footer-logo" /><small>A space to build, together.</small></span><span>Rose Atelier · 목업 데이터로 구성된 메인 페이지 시안</span></footer>
       </main>
     </div>
 

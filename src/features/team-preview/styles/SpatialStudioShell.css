@@ -1,6 +1,6 @@
 .tp-studio-preview { --tp-muted: #566452; background: #f7f8f5; }
 .tp-studio-preview .tp-topbar { min-height: 56px; background: #fff; }
-.tp-studio-preview .tp-preview-label, .tp-studio-preview .tp-logo > span { display: none; }
+.tp-studio-preview .tp-preview-label { display: none; }
 .tp-studio-preview .tp-main { padding-bottom: 40px; }
 .tp-studio-preview .tp-page-heading h1 { font-size: 28px; letter-spacing: -.7px; }
 .tp-studio-preview .tp-page-heading p { color: #566452; }

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import PageTitle from "@/components/common/PageTitle";
+import BrandLogo from "@/components/common/BrandLogo";
 import { Icon } from "@/components/ui";
 import { useSession } from "@/features/auth/hooks/useSession";
 import type { Team } from "@/features/teams/types";
@@ -168,7 +169,7 @@ export default function DashboardLayout({
   function sidebarContent(mobile = false) {
     return <>
       <div className="dashboard-sidebar-brand">
-        <a className="brand" href="/" aria-label="DevLink 홈"><span className="brand-symbol">D</span><span>DevLink</span></a>
+        <a className="brand" href="/" aria-label="DevLink 홈"><BrandLogo /></a>
         {mobile && <button type="button" className="icon-button" aria-label="메뉴 닫기" onClick={() => setMenuOpen(false)}><Icon name="close" /></button>}
       </div>
       <span className="dashboard-nav-label">워크스페이스</span>

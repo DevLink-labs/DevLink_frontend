@@ -20,9 +20,6 @@
 .cvp-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .cvp-sidebar { position: sticky; top: var(--design-toolbar-height, 84px); height: calc(100svh - var(--design-toolbar-height, 84px)); overflow-y: auto; display: flex; flex-direction: column; align-self: start; padding: 27px 17px 19px; border-right: 1px solid var(--cvp-line); background: #fff; }
 .cvp-brand { display: flex; align-items: center; gap: 9px; width: fit-content; margin: 0 8px 26px; font-size: 26px; font-weight: 750; letter-spacing: -1.2px; }
-.cvp-brand-mark { position: relative; display: grid; place-items: center; width: 31px; height: 32px; border-radius: 9px; background: var(--cvp-cobalt); color: #fff; font-size: 31px; font-weight: 750; line-height: 1; padding-bottom: 5px; letter-spacing: -2px; }
-.cvp-brand-mark > span { position: absolute; right: -3px; top: -2px; width: 9px; height: 9px; background: #a8bbff; border: 2px solid #fff; border-radius: 50%; }
-.cvp-brand-period { margin-left: -8px; color: var(--cvp-cobalt); }
 .cvp-workspace { display: flex; align-items: center; gap: 8px; padding: 11px 10px; background: #f8f9fd; border: 1px solid var(--cvp-line); border-radius: 9px; }
 .cvp-workspace > span:first-child { display: grid; place-items: center; width: 29px; height: 31px; border-radius: 6px; color: var(--cvp-cobalt); background: var(--cvp-ice); }
 .cvp-workspace > div { display: grid; gap: 1px; }
@@ -328,7 +325,6 @@
 @media (max-width: 480px) {
   .cvp-sidebar { padding-inline: 18px; gap: 15px; }
   .cvp-brand { font-size: 22px; }
-  .cvp-brand-mark { width: 28px; height: 29px; font-size: 28px; border-radius: 8px; }
   .cvp-workspace > span:first-child { display: none; }
   .cvp-workspace strong { font-size: 9px; color: var(--cvp-muted); }
   .cvp-navigation { gap: 20px; }
@@ -413,3 +409,5 @@
 @media (prefers-reduced-motion: reduce) {
   .cobalt-main-preview *, .cobalt-main-preview *::before, .cobalt-main-preview *::after { transition: none !important; animation: none !important; }
 }
+.cvp-brand { --service-logo-icon-height: 30px; --service-logo-wordmark-height: 22px; --service-logo-gap: 8px; }
+.cvp-footer-logo { --service-logo-wordmark-height: 16px; }

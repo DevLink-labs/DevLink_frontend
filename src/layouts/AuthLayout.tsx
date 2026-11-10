@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
+import BrandLogo from "@/components/common/BrandLogo";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="auth-layout">
       <section className="auth-story" aria-labelledby="auth-story-title">
         <a className="auth-brand" href="/" aria-label="DevLink 홈">
-          <span className="auth-brand-mark" aria-hidden="true">D</span>
-          <span>DevLink</span>
+          <BrandLogo />
         </a>
         <div className="auth-story-content">
           <div className="auth-story-copy">

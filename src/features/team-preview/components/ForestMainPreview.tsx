@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useState } from 'react'
 import { Icon, Modal } from '../../../components/ui'
 import { previewTeams } from '../data/previewData'
@@ -40,7 +41,7 @@ export default function ForestMainPreview() {
 
   return <div className="forest-main-preview">
     <aside className="fvp-sidebar" aria-label="Forest Desk 워크스페이스 탐색">
-      <a className="fvp-brand" href="/" aria-label="DevLink 홈"><span><Icon name="grid" size={22} /></span>DevLink<i /></a>
+      <a className="fvp-brand" href="/" aria-label="DevLink 홈"><BrandLogo tone="light" /></a>
       <div className="fvp-workspace"><span className="fvp-workspace-symbol">W</span><div><strong>나의 워크스페이스</strong><small>Personal workspace</small></div><span className="fvp-workspace-number">01</span></div>
       <p className="fvp-nav-label">WORKSPACE</p>
       <nav className="fvp-nav" aria-label="워크스페이스 메뉴">
@@ -72,7 +73,7 @@ export default function ForestMainPreview() {
           <aside className="fvp-members" id="fvp-members" aria-labelledby="fvp-members-title"><div className="fvp-section-heading"><div><span className="fvp-eyebrow">THE PEOPLE BEHIND IT</span><h2 id="fvp-members-title">함께하는 팀원<span>{team.members.length}</span></h2></div></div><div className="fvp-members-card"><div className="fvp-members-heading"><Icon name="team" size={17} /><span>같은 방향을 바라보는 동료들</span></div>{team.members.map((member, index) => <div className="fvp-member-row" key={member.id}><span className={`fvp-member-avatar fvp-member-avatar-${index % 3}`}>{member.initials.slice(0, 1)}</span><div><strong>{member.name}{member.id === 'jiwoo' && <small>나</small>}</strong><span>{member.role === 'OWNER' ? 'Team owner' : `${member.agents.length} Agent와 함께`}</span></div>{member.role === 'OWNER' ? <span className="fvp-owner-badge">OWNER</span> : <span className="fvp-member-agent-count">{String(member.agents.length).padStart(2, '0')}</span>}</div>)}<div className="fvp-members-footer"><span className="fvp-member-leaf" aria-hidden="true" /><p>함께할수록,<br />더 멀리 자라는 가능성.</p></div></div></aside>
         </div>
 
-        <footer className="fvp-footer"><div><strong>DevLink<span>.</span></strong><p>Forest Desk · 목업 데이터로 구성된 메인 페이지 시안</p></div><div className="fvp-palette" aria-label="Forest Desk 색상 팔레트">{forestPalette.map((color) => <span key={color}><i style={{ background: color }} /><code>{color}</code></span>)}</div></footer>
+        <footer className="fvp-footer"><div><BrandLogo variant="wordmark" className="fvp-footer-logo" /><p>Forest Desk · 목업 데이터로 구성된 메인 페이지 시안</p></div><div className="fvp-palette" aria-label="Forest Desk 색상 팔레트">{forestPalette.map((color) => <span key={color}><i style={{ background: color }} /><code>{color}</code></span>)}</div></footer>
       </main>
     </div>
 

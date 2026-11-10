@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/common/BrandLogo";
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent } from 'react'
 import { Icon, Modal } from '../../../components/ui'
@@ -168,9 +169,9 @@ export default function TeamDesignPreview() {
     <DesignPreviewNavigation view={view} onChange={changeView} />
     <div id="design-preview-panel" role="tabpanel" aria-labelledby={`design-tab-${view}`} tabIndex={0} className={`team-preview ${calm ? 'tp-calm' : ''} ${view === 'studio' ? 'tp-studio-preview' : ''}`}>
     <aside className="tp-rail">
-      <a className="tp-logo" href="/" aria-label="DevLink 워크스페이스로">D<span /></a>
+      <a className="tp-logo" href="/" aria-label="DevLink 워크스페이스로"><BrandLogo variant="icon" tone="light" /></a>
       <nav aria-label="디자인 미리보기"><span className="tp-rail-line" /><button type="button" className={view === 'gallery' ? 'is-active' : ''} aria-label="Glass Deck 보기" aria-pressed={view === 'gallery'} title="Glass Deck" onClick={() => changeView('gallery')}><Icon name="grid" size={21} /></button><button type="button" className={view === 'studio' ? 'is-active' : ''} aria-label="Spatial Studio 보기" aria-pressed={view === 'studio'} title="Spatial Studio" onClick={() => changeView('studio')}><span className="tp-cube-icon" /></button></nav>
-      <div className="tp-rail-bottom"><span className="tp-rail-monogram">JW</span><span>DEVLINK</span></div>
+      <div className="tp-rail-bottom"><span className="tp-rail-monogram">JW</span><BrandLogo variant="wordmark" tone="light" className="tp-rail-wordmark" /></div>
     </aside>
 
     <div className="tp-shell">
