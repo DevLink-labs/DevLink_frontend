@@ -218,6 +218,7 @@ export default function DashboardLayout({
         <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-current={view === "workspace" ? "page" : undefined}><Icon name="grid" size={19} /><span>대시보드</span></button>
         <button type="button" className={`nav-item${view === "agents" ? " active" : ""}`} onClick={() => changeView("agents")} aria-current={view === "agents" ? "page" : undefined}><Icon name="agent" size={19} /><span>Agent 관리</span></button>
         <button type="button" className={`nav-item${view === "teams" ? " active" : ""}`} onClick={() => changeView("teams")} aria-current={view === "teams" ? "page" : undefined}><Icon name="team" size={19} /><span>팀 관리</span></button>
+        <a className="nav-item" href="/tree"><Icon name="activity" size={19} /><span>소스코드 맵</span></a>
       </nav>
       <section className="dashboard-chats" aria-label="최근 채팅">
         <div className="dashboard-chats-heading"><h2>최근 채팅</h2><span>{taskList.length}</span>{tasksLoading && <span className="dashboard-chat-updating" role="status">갱신 중</span>}</div>

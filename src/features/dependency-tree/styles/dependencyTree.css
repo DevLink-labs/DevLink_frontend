@@ -183,6 +183,21 @@
   font-weight: var(--tree-weight-bold);
 }
 
+.dependency-navigation .dependency-return-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tree-gap-sm);
+  flex-shrink: 0;
+  padding: var(--tree-gap-sm) var(--tree-gap-md);
+  border-color: var(--tree-focus);
+  background: var(--tree-focus);
+  color: var(--tree-canvas);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.dependency-return-link svg { flex-shrink: 0; transform: rotate(180deg); }
+.dependency-navigation .dependency-return-link:hover { background: var(--tree-ink); border-color: var(--tree-ink); }
+
 .dependency-page label { display: grid; gap: var(--tree-gap-xs); font-size: var(--tree-meta-size); color: var(--tree-muted); }
 /* 툴바의 컨트롤은 라벨과 선택 상자를 한 줄에 둔다. */
 .dependency-controls > label { display: flex; align-items: center; gap: var(--tree-gap-sm); min-inline-size: 0; max-inline-size: 100%; white-space: nowrap; }
