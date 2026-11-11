@@ -269,7 +269,8 @@ interface LiveWorkspace {
   onSelectTeam: (teamId: number) => void;
   onRetry: () => void;
   onInvite?: () => void;
-  renderDashboard: (showScene: () => void) => ReactNode;
+  renderDashboard: (showScene: () => void, visible: boolean) => ReactNode;
+  unreadCount?: number;
   // 값이 바뀔 때마다 대시보드로 이동
   dashboardRequest?: number;
 }
@@ -928,8 +929,9 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                 className="space-navigation-button itp-scroll-prompt"
                 data-direction="down"
                 onClick={showDashboard}
+                aria-label={workspace?.unreadCount ? `대시보드로 가기, 읽지 않은 채팅 ${workspace.unreadCount}개` : undefined}
               >
-                <span>대시보드로 가기</span>
+                <span>대시보드로 가기{(workspace?.unreadCount ?? 0) > 0 && <span className="itp-unread-count">{workspace?.unreadCount}</span>}</span>
                 <Icon name="chevrons" size={20} className="space-navigation-arrows" />
               </button>
             </div>
@@ -947,7 +949,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
       >
         <div className="itp-dashboard-frame">
           {workspace
-            ? workspace.renderDashboard(showScene)
+            ? workspace.renderDashboard(showScene, !sceneActive && !transitioning)
             : member && (
                 <TeamWorkspaceDashboard
                   key={team.id}

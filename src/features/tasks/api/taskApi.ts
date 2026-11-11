@@ -26,6 +26,11 @@ export const taskApi = {
       signal,
     );
   },
+
+  getTaskEventsAfter: (teamId: number, taskId: number, afterSequence: string, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ limit: "50", afterSequence });
+    return apiClient.get<TaskHistory>(`${teamTasksPath(teamId)}/${taskId}/events?${params}`, signal);
+  },
 };
 
 export async function getAllTeamTasks(teamId: number, signal?: AbortSignal): Promise<TaskListItem[]> {
@@ -55,19 +60,16 @@ export async function getTaskUpdates(
   signal?: AbortSignal,
 ): Promise<TaskHistory[]> {
   const pages: TaskHistory[] = [];
-  let beforeSequence: string | null = null;
+  let afterSequence = anchorSequence;
 
-  // 최초에 읽은 순번까지 모두 회수해 갱신 사이에 쌓인 기록의 누락 방지
+  // 마지막으로 받은 순번 이후 기록을 순서대로 회수해 누락 방지
   while (true) {
-    const response = await taskApi.getTaskHistory(teamId, taskId, beforeSequence, signal);
-    const reachedAnchor = response.items.some((event) => compareSequences(event.sequence, anchorSequence) <= 0);
-    pages.push({
-      ...response,
-      items: response.items.filter((event) => compareSequences(event.sequence, anchorSequence) > 0),
-    });
+    const response = await taskApi.getTaskEventsAfter(teamId, taskId, afterSequence, signal);
+    pages.push(response);
 
-    if (reachedAnchor || !response.hasNext || response.nextBeforeSequence === null) break;
-    beforeSequence = response.nextBeforeSequence;
+    const next = response.nextAfterSequence;
+    if (!response.hasNext || !next || compareSequences(next, afterSequence) <= 0) break;
+    afterSequence = next;
   }
 
   return pages;

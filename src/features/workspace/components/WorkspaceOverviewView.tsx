@@ -23,12 +23,14 @@ interface WorkspaceOverviewViewProps {
   onGuide: () => void;
   onInvite: () => void;
   onRetryTasks: () => void;
+  unreadTaskIds?: ReadonlySet<number>;
 }
 
 export default function WorkspaceOverviewView({
   team, members, agents, workspaceLoading,
   workspaceError, tasks, tasksLoading, tasksError, onSelectTask,
   onManageTeams, onManageAgents, onGuide, onInvite, onRetryTasks,
+  unreadTaskIds,
 }: WorkspaceOverviewViewProps) {
   const [status, setStatus] = useState<TaskStatus | "all">("all");
   const taskTableRef = useRef<HTMLTableElement>(null);
@@ -150,11 +152,12 @@ export default function WorkspaceOverviewView({
                         <button
                           type="button"
                           className="overview-task-link"
-                          aria-label={`${taskTitle(task)} 대화 열기`}
+                          aria-label={`${taskTitle(task)} 대화 열기${unreadTaskIds?.has(task.taskId) ? ", 읽지 않은 새 내용 있음" : ""}`}
                           title={`${taskTitle(task)} · ${task.requesterAgent.name} → ${task.receiverAgent.name}`}
                           onClick={() => onSelectTask(task.taskId)}
                         >
                           <span className="overview-task-number">#{task.taskId}</span>
+                          {unreadTaskIds?.has(task.taskId) && <span className="overview-task-unread" aria-hidden="true" />}
                           <strong>{taskTitle(task)}</strong>
                         </button>
                       </td>

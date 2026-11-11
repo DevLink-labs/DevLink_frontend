@@ -1,4 +1,7 @@
 import type { TaskEvent, TaskHistory, TaskListItem, TaskStatus } from "../types";
+import { compareSequences } from "./taskSequence.js";
+
+export { compareSequences } from "./taskSequence.js";
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
   PENDING: "수락 대기",
@@ -46,13 +49,6 @@ export function formatTaskTime(value: string | null | undefined, utc = false): s
   if (Number.isNaN(date.getTime())) return "기록 없음";
   // 오프셋 없는 시스템 시각은 서버 시간대를 추정하지 않고 원래 시각으로 표시
   return utc || hasOffset ? localFormatter.format(date) : wallClockFormatter.format(date);
-}
-
-export function compareSequences(left: string, right: string): number {
-  const normalizedLeft = left.replace(/^0+/, "") || "0";
-  const normalizedRight = right.replace(/^0+/, "") || "0";
-  return normalizedLeft.length - normalizedRight.length
-    || normalizedLeft.localeCompare(normalizedRight);
 }
 
 export function mergeTaskEvents(pages: TaskHistory[] | undefined): TaskEvent[] {
