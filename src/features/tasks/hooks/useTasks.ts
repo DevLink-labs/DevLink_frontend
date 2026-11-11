@@ -85,7 +85,13 @@ export function useTaskHistory(
   const connected = useStreamConnected(userId);
   const historyKey = taskKeys.history(userId, teamId, taskId);
   const liveKey = taskKeys.live(userId, teamId, taskId);
-  const history = useInfiniteQuery({
+  const history = useInfiniteQuery<
+    TaskHistory,
+    Error,
+    InfiniteData<TaskHistory, string | null>,
+    typeof historyKey,
+    string | null
+  >({
     queryKey: historyKey,
     queryFn: ({ signal, pageParam }) => taskApi.getTaskHistory(teamId!, taskId!, pageParam, signal),
     initialPageParam: null as string | null,
