@@ -35,6 +35,17 @@
 .task-conversation .tc-receiver .tc-bubble { border-radius: 13px 3px 13px 13px; }
 .task-conversation .tc-message-kind { display: block; margin-bottom: 8px; font-size: 10px; font-weight: 700; opacity: .65; }
 .task-conversation .tc-message-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; tab-size: 2; font-size: 13px; line-height: 1.95; }
+.task-conversation .tc-collapsible { --tc-preview-height: 320px; min-width: 0; max-width: 100%; }
+.task-conversation .tc-collapsible-clip { max-height: var(--tc-preview-height); overflow: hidden; }
+.task-conversation .tc-collapsible-content { display: flow-root; }
+.task-conversation .tc-collapsible.is-expanded > .tc-collapsible-clip { max-height: none; }
+.task-conversation .tc-collapsible.is-collapsed > .tc-collapsible-clip { mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent); }
+.task-conversation .tc-collapse-toggle { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin: 6px 0 0; padding: 9px 12px; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 7px; background: color-mix(in srgb, currentColor 4%, transparent); color: inherit; font-size: 11px; font-weight: 650; cursor: pointer; }
+.task-conversation .tc-collapse-toggle:hover { background: color-mix(in srgb, currentColor 9%, transparent); }
+.task-conversation .tc-collapse-toggle:focus-visible { outline: 2px solid var(--workspace-focus, #6a91b3); outline-offset: 3px; }
+.task-conversation .tc-collapse-toggle > svg { transform: rotate(90deg); transition: transform .2s ease; }
+.task-conversation .tc-collapse-toggle[aria-expanded="true"] > svg { transform: rotate(-90deg); }
+.task-conversation .tc-request-card .tc-collapse-toggle { width: calc(100% - 40px); margin: 0 20px 16px; }
 .task-conversation .tc-initial-request .tc-message-content { width: min(78%, 760px); max-width: 760px; }
 .task-conversation .tc-initial-request .tc-request-card { width: 100%; padding: 0; box-shadow: 0 3px 12px #1f2c3905; overflow: hidden; }
 .task-conversation .tc-request-heading { padding: 18px 20px 16px; border-bottom: 1px solid #ffffff0d; background: #141e28; }
@@ -129,6 +140,8 @@
   .task-conversation .tc-initial-request .tc-message-content { width: calc(100% - 42px); max-width: none; }
   .task-conversation .tc-request-heading { padding: 15px 16px 13px; }
   .task-conversation .tc-request-description { padding: 15px 16px 17px; }
+  .task-conversation .tc-collapsible { --tc-preview-height: 280px; }
+  .task-conversation .tc-request-card .tc-collapse-toggle { width: calc(100% - 32px); margin: 0 16px 14px; }
   .task-conversation .tc-bubble { padding: 13px 14px; }
   .task-conversation .tc-system-record { padding: 0 7px; }
   .task-conversation .tc-result-card { margin: 25px 0 0; padding: 17px; }
@@ -143,4 +156,4 @@
   .task-conversation .tc-message-content { max-width: calc(100% - 34px); }
   .task-conversation .tc-initial-request .tc-message-content { width: calc(100% - 34px); }
 }
-@media (prefers-reduced-motion: reduce) { .task-conversation .tc-spinning, .task-conversation .tc-record-enter { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .task-conversation .tc-spinning, .task-conversation .tc-record-enter { animation: none; } .task-conversation .tc-collapse-toggle > svg { transition: none; } }

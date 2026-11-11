@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from "react";
 import { useQueryClient } from '@tanstack/react-query'
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -43,6 +44,77 @@ function RecordTime({ value, utc = false, className }: { value: string; utc?: bo
   return <time className={className} title={localTime ? '내 기기의 시간대 기준' : '서버에 기록된 시각'}>{formatTaskTime(value, utc)}<span className="tc-time-basis">· {localTime ? '내 시간' : '서버 시각'}</span></time>
 }
 
+function CollapsibleMessage({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const contentId = useId();
+  const container = useRef<HTMLDivElement>(null);
+  const clip = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const collapseFrame = useRef<number | null>(null);
+  const [overflowing, setOverflowing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const collapsed = overflowing && !expanded;
+
+  useEffect(() => {
+    const body = content.current;
+    const viewport = clip.current;
+    if (!body || !viewport) return;
+
+    const observer = new ResizeObserver(() => {
+      const previewHeight = Number.parseFloat(getComputedStyle(viewport).getPropertyValue("--tc-preview-height"));
+      setOverflowing(body.scrollHeight > previewHeight + 1);
+    });
+    observer.observe(body);
+    observer.observe(viewport);
+    return () => {
+      observer.disconnect();
+      if (collapseFrame.current !== null) cancelAnimationFrame(collapseFrame.current);
+    };
+  }, []);
+
+  function toggle() {
+    setExpanded(!expanded);
+    if (!expanded) return;
+    collapseFrame.current = requestAnimationFrame(() => {
+      collapseFrame.current = null;
+      const message = container.current;
+      const viewport = message?.closest<HTMLElement>(".tc-viewport");
+      if (!message || !viewport) return;
+      const messageBounds = message.getBoundingClientRect();
+      const viewportBounds = viewport.getBoundingClientRect();
+      if (messageBounds.top < viewportBounds.top || messageBounds.bottom > viewportBounds.bottom) {
+        viewport.scrollTop += messageBounds.top - viewportBounds.top - 16;
+      }
+    });
+  }
+
+  return (
+    <div ref={container} className={`tc-collapsible ${overflowing ? expanded ? "is-expanded" : "is-collapsed" : ""} ${className}`}>
+      <div ref={clip} id={contentId} className="tc-collapsible-clip" onFocusCapture={() => {
+        if (collapsed) setExpanded(true);
+      }}>
+        <div ref={content} className="tc-collapsible-content">{children}</div>
+      </div>
+      {overflowing && (
+        <button type="button" className="tc-collapse-toggle" aria-expanded={expanded} aria-controls={contentId} onClick={toggle}>
+          <span>{expanded ? "접기" : "펼치기"}</span><Icon name="chevron" size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function eventMessage(event: TaskEvent) {
+  if (event.eventType !== "STATUS_CHANGED" || event.message === null) return event.message;
+  const transition = event.message.match(/^\s*(PENDING|IN_PROGRESS)\s*(?:→|->)\s*(IN_PROGRESS|COMPLETED)(?:\s*:.*)?\s*$/s);
+  if (transition?.[1] === "PENDING" && transition[2] === "IN_PROGRESS") {
+    return "작업요청을 수락했습니다. (IN_PROGRESS)";
+  }
+  if (transition?.[1] === "IN_PROGRESS" && transition[2] === "COMPLETED") {
+    return "작업이 완료되었습니다. (COMPLETED)";
+  }
+  return event.message;
+}
+
 function InitialTaskRequest({ prompt, fallbackTitle }: { prompt: string; fallbackTitle: string }) {
   const request = parseTaskPrompt(prompt);
 
@@ -52,19 +124,21 @@ function InitialTaskRequest({ prompt, fallbackTitle }: { prompt: string; fallbac
         <span className="tc-message-kind">최초 작업 요청</span>
         <h3>{request.title || fallbackTitle}</h3>
       </header>
-      <div className="tc-request-description">
-        {request.description.trim() ? (
-          <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
-            h1: "h4",
-            h2: "h4",
-            h3: "h5",
-            table: ({ children }) => <div className="tc-request-table"><table>{children}</table></div>,
-            a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
-          }}>
-            {request.description}
-          </Markdown>
-        ) : <p>등록된 요청 설명이 없습니다.</p>}
-      </div>
+      <CollapsibleMessage>
+        <div className="tc-request-description">
+          {request.description.trim() ? (
+            <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
+              h1: "h4",
+              h2: "h4",
+              h3: "h5",
+              table: ({ children }) => <div className="tc-request-table"><table>{children}</table></div>,
+              a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
+            }}>
+              {request.description}
+            </Markdown>
+          ) : <p>등록된 요청 설명이 없습니다.</p>}
+        </div>
+      </CollapsibleMessage>
     </section>
   );
 }
@@ -88,7 +162,7 @@ function EventMessage({ event, detail, eventsById }: {
           <div className="tc-system-meta"><strong>{eventLabels[event.eventType] ?? '작업 기록'}</strong><RecordTime value={event.createdAt} utc={conversation} /></div>
           {author && <span className="tc-system-author">{author.name}</span>}
           {event.questionEventId && <span className="tc-system-reference">질문 #{event.questionEventId}에 대한 답변</span>}
-          {event.message !== null && <p className="tc-message-text">{event.message}</p>}
+          {event.message !== null && <CollapsibleMessage><p className="tc-message-text">{eventMessage(event)}</p></CollapsibleMessage>}
         </div>
       </li>
     )
@@ -101,13 +175,15 @@ function EventMessage({ event, detail, eventsById }: {
         <div className="tc-message-meta"><strong>{author.name}</strong></div>
         <div className="tc-bubble">
           <span className="tc-message-kind">{eventLabels[event.eventType]}</span>
-          {event.questionEventId && (
-            <div className="tc-question-reference">
-              <span>{question ? `질문 #${event.questionEventId}에 대한 답변` : `이전 질문 #${event.questionEventId}에 대한 답변`}</span>
-              {question?.message && <p>{question.message}</p>}
-            </div>
-          )}
-          <p className="tc-message-text">{event.message ?? '저장된 메시지 본문이 없습니다.'}</p>
+          <CollapsibleMessage>
+            {event.questionEventId && (
+              <div className="tc-question-reference">
+                <span>{question ? `질문 #${event.questionEventId}에 대한 답변` : `이전 질문 #${event.questionEventId}에 대한 답변`}</span>
+                {question?.message && <p>{question.message}</p>}
+              </div>
+            )}
+            <p className="tc-message-text">{event.message ?? '저장된 메시지 본문이 없습니다.'}</p>
+          </CollapsibleMessage>
         </div>
         <RecordTime className="tc-message-time" value={event.createdAt} utc />
       </div>
@@ -128,7 +204,7 @@ function TaskResult({ history }: { history: TaskHistory }) {
         <div><h3>{failed ? "작업 실패" : rejected ? "작업 거절" : history.resultText !== null ? "작업 결과" : "변경 파일"}</h3></div>
         {failed && history.partiallyModified && <span className="tc-partial-badge">일부 수정됨</span>}
       </header>
-      {text !== null && <p className="tc-message-text tc-result-text">{text}</p>}
+      {text !== null && <CollapsibleMessage className="tc-result-text"><p className="tc-message-text">{text}</p></CollapsibleMessage>}
       {history.taskFiles.length > 0 && (
         <div className="tc-result-files">
           <h4>변경 파일 <span>{history.taskFiles.length}</span></h4>
@@ -423,7 +499,17 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
       {error && (detail || latestHistory) && <div className="tc-refresh-error" role="alert"><span>{errorMessage(error)}</span><button type="button" onClick={refresh} disabled={refreshing}>다시 시도</button></div>}
 
       <div className="tc-body">
-        <div className="tc-viewport" ref={viewport} onScroll={trackScroll} onWheel={interruptFollowing} onTouchStart={interruptFollowing} onPointerDown={interruptFollowing} onKeyDown={(event) => {
+        <div className="tc-viewport" ref={viewport} onScroll={trackScroll} onWheel={interruptFollowing} onTouchStart={interruptFollowing} onPointerDown={interruptFollowing} onFocusCapture={(event) => {
+          if (event.target instanceof Element && event.target.closest(".tc-collapsible.is-collapsed")) {
+            followingLatest.current = false;
+            atLatest.current = false;
+          }
+        }} onClickCapture={(event) => {
+          if (event.target instanceof Element && event.target.closest(".tc-collapse-toggle")) {
+            followingLatest.current = false;
+            atLatest.current = false;
+          }
+        }} onKeyDown={(event) => {
           if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) interruptFollowing();
         }} tabIndex={0} aria-label="작업 요청과 Agent 대화 기록">
           {(!detail || !latestHistory) && (
