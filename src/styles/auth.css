@@ -228,7 +228,19 @@
   color: var(--workspace-focus);
 }
 
-.auth-remember-email {
+.auth-login-preferences {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-login-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+
+.auth-login-option {
   display: inline-flex;
   align-items: center;
   justify-self: start;
@@ -240,7 +252,7 @@
   cursor: pointer;
 }
 
-.auth-form-card .auth-remember-email input {
+.auth-form-card .auth-login-option input {
   width: 17px;
   height: 17px;
   min-height: 0;
@@ -251,14 +263,21 @@
   cursor: pointer;
 }
 
-.auth-remember-email input:focus-visible {
+.auth-login-option input:focus-visible {
   outline: 2px solid var(--workspace-focus);
   outline-offset: 3px;
 }
 
-.auth-remember-email:has(input:disabled) {
+.auth-login-option:has(input:disabled) {
   opacity: .6;
   cursor: not-allowed;
+}
+
+.auth-login-hint {
+  margin: 0;
+  color: var(--workspace-muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .connection-help {

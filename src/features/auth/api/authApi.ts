@@ -12,6 +12,7 @@ export const authApi = {
   }),
   login: (input: LoginInput) => apiClient.post<User>('/auth/login', {
     email: input.email.trim().toLowerCase(), password: input.password,
+    rememberMe: input.rememberMe ?? false,
   }),
   logout: () => apiClient.post<null>('/auth/logout'),
 }
