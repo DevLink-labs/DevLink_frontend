@@ -16,4 +16,5 @@ export interface SignupInput {
 export interface LoginInput {
   email: string
   password: string
+  rememberMe?: boolean;
 }

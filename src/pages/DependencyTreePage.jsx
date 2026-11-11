@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PageTitle from "@/components/common/PageTitle";
+import { Icon } from "@/components/ui";
 import { useTeams } from "@/features/teams/hooks/useTeams";
 import DependencySourceForm from "@/features/dependency-tree/components/DependencySourceForm";
 import DependencyTreeFrame from "@/features/dependency-tree/components/DependencyTreeFrame";
@@ -56,7 +57,10 @@ function TeamTree({ user, links }) {
 export default function DependencyTreePage({ user = null }) {
   const links = <>
     <a href={user ? "/tree" : "/tree?mode=team"}>{user ? "샘플 보기" : "내 팀 보기"}</a>
-    <a href="/">워크스페이스</a>
+    <a className="dependency-return-link" href="/">
+      <Icon name="arrow" size={16} />
+      <span>메인 서비스로 돌아가기</span>
+    </a>
   </>;
   return <>
     <PageTitle title={title} />

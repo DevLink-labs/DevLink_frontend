@@ -55,12 +55,10 @@ export function createAgentSessionLinks() {
     64, 1, 8, false,
   );
   const packetGeometry = new THREE.OctahedronGeometry(0.045);
-  const ringGeometry = new THREE.TorusGeometry(0.09, 0.008, 6, 24);
+  const ringGeometry = new THREE.TorusGeometry(0.055, 0.005, 6, 24);
   const links = new Map();
   const up = new THREE.Vector3(0, 0, 1);
   const direction = new THREE.Vector3();
-  const sideways = new THREE.Vector3();
-  const midpoint = new THREE.Vector3();
   let previousConnections;
 
   function removeLink(link) {
@@ -107,7 +105,7 @@ export function createAgentSessionLinks() {
       uniforms,
       phase,
       sourceId: connection.requesterAgentId,
-      bendSide: 0,
+      angle: null,
       packets,
       rings,
       packetMaterial,
@@ -153,24 +151,18 @@ export function createAgentSessionLinks() {
         continue;
       }
 
-      midpoint.addVectors(curve.v0, curve.v3).multiplyScalar(0.5);
-      sideways.set(-direction.z, 0, direction.x).normalize();
-      if (link.bendSide === 0) {
-        const alignment = sideways.dot(midpoint);
-        link.bendSide = alignment < 0 || (Math.abs(alignment) < 0.01 && link.phase < 0.5) ? -1 : 1;
-      }
-      sideways.multiplyScalar(link.bendSide);
-      const horizontalLengthSq = direction.x * direction.x + direction.z * direction.z;
-      const closest = horizontalLengthSq > 0.001
-        ? THREE.MathUtils.clamp(-(curve.v0.x * direction.x + curve.v0.z * direction.z) / horizontalLengthSq, 0, 1)
-        : 0;
-      const clearance = Math.hypot(curve.v0.x + direction.x * closest, curve.v0.z + direction.z * closest);
-      const detour = Math.max(0.18, (1.55 - clearance) / 0.75);
+      let angle = Math.atan2(
+        curve.v0.x * curve.v3.z - curve.v0.z * curve.v3.x,
+        curve.v0.x * curve.v3.x + curve.v0.z * curve.v3.z,
+      );
+      // 정반대 위치를 지나도 같은 방향의 원호를 유지해 경로 뒤집힘 방지
+      if (link.angle !== null) angle += Math.round((link.angle - angle) / (Math.PI * 2)) * Math.PI * 2;
+      link.angle = angle;
+      const handle = (4 / 3) * Math.tan(angle / 4);
       const lift = Math.min(0.7, 0.22 + length * 0.07) + link.phase * 0.12;
-      curve.v1.copy(curve.v0).addScaledVector(direction, 1 / 3).addScaledVector(sideways, detour);
-      curve.v2.copy(curve.v0).addScaledVector(direction, 2 / 3).addScaledVector(sideways, detour);
-      curve.v1.y += lift;
-      curve.v2.y += lift;
+      // 중앙 모델을 가로지르지 않도록 원점을 도는 원호 접선으로 제어점 배치
+      curve.v1.set(curve.v0.x - curve.v0.z * handle, curve.v0.y + lift, curve.v0.z + curve.v0.x * handle);
+      curve.v2.set(curve.v3.x + curve.v3.z * handle, curve.v3.y + lift, curve.v3.z - curve.v3.x * handle);
       direction.subVectors(curve.v1, curve.v0).normalize();
       curve.v0.addScaledVector(direction, 0.2);
       direction.subVectors(curve.v2, curve.v3).normalize();

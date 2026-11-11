@@ -45,6 +45,7 @@ export default function AuthPanel({
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState(readRememberedEmail);
   const [rememberEmail, setRememberEmail] = useState(() => Boolean(readRememberedEmail()));
+  const [rememberMe, setRememberMe] = useState(false);
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -83,7 +84,7 @@ export default function AuthPanel({
         changeMode("login");
         onNotice("회원가입이 완료됐습니다. 같은 이메일로 로그인해주세요.");
       } else {
-        const user = await login.mutateAsync({ email: email.trim(), password });
+        const user = await login.mutateAsync({ email: email.trim(), password, rememberMe });
         saveRememberedEmail(rememberEmail ? email.trim().toLowerCase() : "");
         setPassword("");
         await onAuthenticated(user);
@@ -193,20 +194,38 @@ export default function AuthPanel({
               </div>
             </div>
             {mode === "login" && (
-              <label className="auth-remember-email" htmlFor={`${id}-remember-email`}>
-                <input
-                  id={`${id}-remember-email`}
-                  type="checkbox"
-                  checked={rememberEmail}
-                  onChange={(event) => {
-                    const checked = event.currentTarget.checked;
-                    setRememberEmail(checked);
-                    if (!checked) saveRememberedEmail("");
-                  }}
-                  disabled={busy}
-                />
-                <span>이메일 저장</span>
-              </label>
+              <div className="auth-login-preferences">
+                <div className="auth-login-options">
+                  <label className="auth-login-option" htmlFor={`${id}-remember-email`}>
+                    <input
+                      id={`${id}-remember-email`}
+                      type="checkbox"
+                      checked={rememberEmail}
+                      onChange={(event) => {
+                        const checked = event.currentTarget.checked;
+                        setRememberEmail(checked);
+                        if (!checked) saveRememberedEmail("");
+                      }}
+                      disabled={busy}
+                    />
+                    <span>이메일 저장</span>
+                  </label>
+                  <label className="auth-login-option" htmlFor={`${id}-remember-me`}>
+                    <input
+                      id={`${id}-remember-me`}
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(event) => setRememberMe(event.currentTarget.checked)}
+                      aria-describedby={`${id}-remember-me-description`}
+                      disabled={busy}
+                    />
+                    <span>자동 로그인</span>
+                  </label>
+                </div>
+                <p id={`${id}-remember-me-description`} className="auth-login-hint">
+                  자동 로그인 선택 시 14일 동안 로그인 상태를 유지합니다.
+                </p>
+              </div>
             )}
             {error && (
               <p className="inline-error" role="alert">
