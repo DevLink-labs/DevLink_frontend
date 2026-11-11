@@ -2,30 +2,39 @@ import { useEffect } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/lib/apiClient";
 import { getAllTeamTasks, getTaskUpdates, taskApi } from "../api/taskApi";
-import type { TaskListItem } from "../types";
-import { compareSequences } from "../utils/taskPresentation";
+import type { InfiniteData } from "@tanstack/react-query";
+import type { TaskDetail, TaskHistory, TaskListItem } from "../types";
+import { taskKeys } from "../utils/taskKeys.js";
+import { latestSequence, verifiedSequence, mergeHistoryData, mergeLiveHistory, mergeTaskSnapshots } from "../utils/taskRealtimeState.js";
+import type { TaskLiveHistory } from "../utils/taskRealtimeState.js";
 
-export const taskKeys = {
-  all: (userId: number) => ["workspace", userId, "tasks"] as const,
-  team: (userId: number, teamId: number | null) => [...taskKeys.all(userId), teamId] as const,
-  list: (userId: number, teamId: number | null) => [...taskKeys.team(userId, teamId), "list"] as const,
-  detail: (userId: number, teamId: number | null, taskId: number | null) =>
-    [...taskKeys.team(userId, teamId), "detail", taskId] as const,
-  history: (userId: number, teamId: number | null, taskId: number | null) =>
-    [...taskKeys.team(userId, teamId), "history", taskId] as const,
-  updates: (userId: number, teamId: number | null, taskId: number | null, anchor: string | null) =>
-    [...taskKeys.history(userId, teamId, taskId), "updates", anchor] as const,
-};
+export { taskKeys } from "../utils/taskKeys.js";
+
+function useStreamConnected(userId: number) {
+  return useQuery({
+    queryKey: taskKeys.stream(userId),
+    queryFn: async () => false,
+    enabled: false,
+    initialData: false,
+  }).data;
+}
 
 export function useTeamTasks(userId: number, teamId: number | null, autoRefresh = true) {
+  const client = useQueryClient();
+  const connected = useStreamConnected(userId);
   return useQuery({
     queryKey: taskKeys.list(userId, teamId),
-    queryFn: ({ signal }) => getAllTeamTasks(teamId!, signal),
+    queryFn: async ({ signal }) => {
+      const startedAt = Date.now();
+      const tasks = await getAllTeamTasks(teamId!, signal);
+      const snapshots = client.getQueryData<Record<string, { task: TaskDetail; receivedAt: number }>>(taskKeys.snapshots(userId));
+      return mergeTaskSnapshots(tasks, snapshots, startedAt, teamId);
+    },
     enabled: teamId !== null,
     staleTime: 15_000,
     refetchOnWindowFocus: autoRefresh,
     refetchOnReconnect: autoRefresh,
-    refetchInterval: autoRefresh ? 30_000 : false,
+    refetchInterval: autoRefresh && !connected ? 30_000 : false,
   });
 }
 
@@ -36,14 +45,20 @@ export function useTaskDetail(
   autoRefresh = true,
 ) {
   const client = useQueryClient();
+  const connected = useStreamConnected(userId);
   const query = useQuery({
     queryKey: taskKeys.detail(userId, teamId, taskId),
-    queryFn: ({ signal }) => taskApi.getTaskDetail(teamId!, taskId!, signal),
+    queryFn: async ({ signal }) => {
+      const startedAt = Date.now();
+      const detail = await taskApi.getTaskDetail(teamId!, taskId!, signal);
+      const snapshot = client.getQueryData<Record<string, { task: TaskDetail; receivedAt: number }>>(taskKeys.snapshots(userId))?.[String(taskId)];
+      return snapshot && snapshot.receivedAt >= startedAt ? snapshot.task : detail;
+    },
     enabled: teamId !== null && taskId !== null,
     staleTime: 10_000,
     refetchOnWindowFocus: autoRefresh,
     refetchOnReconnect: autoRefresh,
-    refetchInterval: autoRefresh ? 20_000 : false,
+    refetchInterval: autoRefresh && !connected ? 20_000 : false,
   });
 
   useEffect(() => {
@@ -66,8 +81,12 @@ export function useTaskHistory(
   taskId: number | null,
   autoRefresh = true,
 ) {
+  const client = useQueryClient();
+  const connected = useStreamConnected(userId);
+  const historyKey = taskKeys.history(userId, teamId, taskId);
+  const liveKey = taskKeys.live(userId, teamId, taskId);
   const history = useInfiniteQuery({
-    queryKey: taskKeys.history(userId, teamId, taskId),
+    queryKey: historyKey,
     queryFn: ({ signal, pageParam }) => taskApi.getTaskHistory(teamId!, taskId!, pageParam, signal),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
@@ -82,32 +101,32 @@ export function useTaskHistory(
     refetchOnReconnect: false,
     refetchInterval: false,
   });
-  const anchor = history.data
-    ? (history.data.pages[0]?.items ?? []).reduce(
-      (latest, event) => compareSequences(event.sequence, latest) > 0 ? event.sequence : latest,
-      "0",
-    )
-    : null;
+  const live = useQuery<TaskLiveHistory>({
+    queryKey: liveKey,
+    queryFn: async () => ({ events: [] }),
+    enabled: false,
+    initialData: { events: [] },
+  });
   const updates = useQuery({
-    queryKey: taskKeys.updates(userId, teamId, taskId, anchor),
-    queryFn: ({ signal }) => getTaskUpdates(teamId!, taskId!, anchor!, signal),
-    enabled: teamId !== null && taskId !== null && anchor !== null,
+    queryKey: taskKeys.updates(userId, teamId, taskId),
+    queryFn: async ({ signal }) => {
+      const cachedHistory = client.getQueryData<InfiniteData<TaskHistory, string | null>>(historyKey);
+      const cachedLive = client.getQueryData<TaskLiveHistory>(liveKey);
+      const anchor = verifiedSequence(cachedHistory, cachedLive);
+      const pages = await getTaskUpdates(teamId!, taskId!, anchor, signal);
+      const events = pages.flatMap((page) => page.items);
+      const sequence = latestSequence({ pages, pageParams: [] }, { events: [] });
+      client.setQueryData<TaskLiveHistory>(liveKey, (current) => mergeLiveHistory(current, events, pages.at(-1), sequence === "0" ? anchor : sequence));
+      return pages;
+    },
+    enabled: teamId !== null && taskId !== null && history.data !== undefined,
     staleTime: 10_000,
     refetchOnWindowFocus: autoRefresh,
     refetchOnReconnect: autoRefresh,
-    refetchInterval: autoRefresh ? 20_000 : false,
+    refetchOnMount: autoRefresh ? "always" : false,
+    refetchInterval: autoRefresh && !connected ? 20_000 : false,
   });
-  const updatePages = updates.data ?? [];
-  const data = history.data && updatePages.length > 0
-    ? {
-      ...history.data,
-      pages: [...updatePages, ...history.data.pages],
-      pageParams: [
-        ...updatePages.map((_, index) => index === 0 ? null : updatePages[index - 1].nextBeforeSequence),
-        ...history.data.pageParams,
-      ],
-    }
-    : history.data;
+  const data = mergeHistoryData(history.data, live.data);
   const error = [history.error, updates.error].find(
     (candidate) => candidate instanceof ApiError && [401, 403, 404].includes(candidate.status),
   ) ?? history.error ?? updates.error;
@@ -119,7 +138,7 @@ export function useTaskHistory(
     isError: error !== null,
     isFetching: history.isFetching || updates.isFetching,
     isRefetching: history.isRefetching || updates.isFetching,
-    dataUpdatedAt: Math.max(history.dataUpdatedAt, updates.dataUpdatedAt),
+    dataUpdatedAt: Math.max(history.dataUpdatedAt, updates.dataUpdatedAt, live.dataUpdatedAt),
     refetch: () => history.data ? updates.refetch() : history.refetch(),
   };
 }

@@ -188,6 +188,7 @@
 .workspace-dashboard .overview-task-table .dashboard-task-badge { flex-wrap: wrap; max-width: 100%; gap: clamp(2px, .45cqw, 4px); padding: 2px clamp(3px, .68cqw, 6px); font-size: clamp(10px, 1.37cqw, 12px); white-space: normal; }
 .workspace-dashboard .overview-task-link { display: flex; align-items: center; gap: clamp(4px, 1cqw, 9px); width: 100%; min-width: 0; border: 0; padding: 2px 0; background: none; text-align: left; color: var(--color-ink); white-space: normal; }
 .workspace-dashboard .overview-task-link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.workspace-dashboard .overview-task-unread { display: inline-block; flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; background: #4389b7; box-shadow: 0 0 0 3px #4389b714; }
 .workspace-dashboard .overview-task-link:focus-visible { outline: none; }
 .workspace-dashboard .overview-task-link:focus-visible::after { outline: 2px solid var(--workspace-focus); outline-offset: -2px; }
 .workspace-dashboard .overview-task-link strong { display: block; flex: 1; min-width: 0; max-width: 100%; font-size: clamp(11px, 1.71cqw, 15px); line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; }

@@ -10,7 +10,7 @@ import type { TeamMember } from "@/features/teams/types";
 const emptyMembers: TeamMember[] = [];
 const emptyAgents: Agent[] = [];
 
-export function useWorkspace(userId: number, initialTeamId?: number) {
+export function useWorkspace(userId: number, initialTeamId?: number, refreshPresence = true) {
   const client = useQueryClient()
   const { onError } = useSession()
   const [preferredTeamId, setPreferredTeamId] = useState<number | null>(initialTeamId ?? null)
@@ -20,7 +20,7 @@ export function useWorkspace(userId: number, initialTeamId?: number) {
     ?? teams[0]?.teamId ?? null
   const teamQuery = useTeam(userId, selectedTeamId)
   const membersQuery = useTeamMembers(userId, selectedTeamId)
-  const agentsQuery = useAgents(userId, selectedTeamId, true)
+  const agentsQuery = useAgents(userId, selectedTeamId, refreshPresence)
   const agentAccessError = isAgentAccessError(agentsQuery.error)
   const agentError = agentsQuery.data === undefined || agentAccessError ? agentsQuery.error : null
   const teamError = teamsQuery.error ?? teamQuery.error ?? membersQuery.error

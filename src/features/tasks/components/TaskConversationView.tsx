@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,6 +14,8 @@ interface TaskConversationViewProps {
   teamId: number
   taskId: number
   autoRefresh: boolean
+  active?: boolean;
+  onRead?: (teamId: number, taskId: number, sequence: string | null, lastActivityAt?: string) => void;
   onError: (error: unknown) => void
   onBack?: () => void
 }
@@ -142,7 +144,7 @@ function TaskResult({ history }: { history: TaskHistory }) {
   )
 }
 
-function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onBack }: TaskConversationViewProps) {
+function ConversationContent({ userId, teamId, taskId, autoRefresh, active = true, onRead, onError, onBack }: TaskConversationViewProps) {
   const queryClient = useQueryClient()
   const [blockedError, setBlockedError] = useState<ApiError | null>(null)
   const activeTaskId = blockedError ? null : taskId
@@ -158,19 +160,71 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
   const eventsById = useMemo(() => new Map(events.map((event) => [event.eventId, event])), [events])
   const viewport = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
-  const lastSequence = useRef<string | null>(null)
-  const prependPosition = useRef<{ height: number; top: number } | null>(null)
+  const pendingInitialScroll = useRef(true);
+  const knownEventIds = useRef(new Set<string>());
+  const oldestSequence = useRef<string | null>(null);
+  const prependPosition = useRef<{ height: number; top: number; eventId: string | null; offset: number } | null>(null)
+  const atLatest = useRef(true);
+  const followingLatest = useRef(false);
+  const previouslyVisible = useRef(false);
+  const readAcknowledgement = useRef<string | null>(null);
+  const pendingUiFrames = useRef(new Set<number>());
+  const enteringRecords = useRef(new Map<HTMLElement, () => void>());
+  const [documentVisible, setDocumentVisible] = useState(() => !document.hidden);
   const [newEvents, setNewEvents] = useState(0)
   const [awayFromLatest, setAwayFromLatest] = useState(false)
   const error = accessError ?? detailQuery.error ?? historyQuery.error
   const refreshing = detailQuery.isFetching || historyQuery.isFetching
+
+  const scheduleViewportState = useCallback((update: () => void) => {
+    const frame = requestAnimationFrame(() => {
+      pendingUiFrames.current.delete(frame);
+      update();
+    });
+    pendingUiFrames.current.add(frame);
+  }, []);
+
+  const acknowledgeRead = useCallback(() => {
+    const container = viewport.current;
+    if (!onRead || !active || !previouslyVisible.current || document.hidden || !container?.isConnected || !detail || !latestHistory || refreshing
+      || container.scrollHeight - container.scrollTop - container.clientHeight > 8) return;
+    const sequence = events.at(-1)?.sequence ?? null;
+    const activity = detail.lastActivityAt ?? detail.createdAt;
+    const acknowledgement = `${sequence ?? ""}:${activity}:${events.length}`;
+    if (readAcknowledgement.current === acknowledgement) return;
+    readAcknowledgement.current = acknowledgement;
+    onRead(teamId, taskId, sequence, activity);
+  }, [onRead, active, detail, latestHistory, refreshing, events, teamId, taskId]);
+
+  useEffect(() => {
+    const frames = pendingUiFrames.current;
+    const records = enteringRecords.current;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onVisibilityChange = () => setDocumentVisible(!document.hidden);
+    const onMotionChange = () => {
+      if (motion.matches) records.forEach((finish) => finish());
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    motion.addEventListener("change", onMotionChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      motion.removeEventListener("change", onMotionChange);
+      frames.forEach(cancelAnimationFrame);
+      frames.clear();
+      records.forEach((finish) => finish());
+    };
+  }, []);
 
   useEffect(() => {
     if (!blockedError) return
     queryClient.removeQueries({ queryKey: taskKeys.detail(userId, teamId, taskId), exact: true })
     queryClient.removeQueries({ queryKey: taskKeys.history(userId, teamId, taskId) })
     initialized.current = false
-    lastSequence.current = null
+    pendingInitialScroll.current = true;
+    knownEventIds.current.clear();
+    oldestSequence.current = null;
+    followingLatest.current = false;
+    readAcknowledgement.current = null;
     prependPosition.current = null
   }, [blockedError, queryClient, userId, teamId, taskId])
 
@@ -179,26 +233,109 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
   }, [error, onError])
 
   useLayoutEffect(() => {
+    const visible = active && documentVisible && !document.hidden;
+    const wasVisible = previouslyVisible.current;
+    previouslyVisible.current = visible;
     const container = viewport.current
     if (!container || !detail || !latestHistory) return
-    const newest = events.at(-1)?.sequence ?? null
+    const loadingEarlier = prependPosition.current !== null;
+    const previousOldest = oldestSequence.current;
     if (!initialized.current) {
-      container.scrollTop = container.scrollHeight
       initialized.current = true
-      lastSequence.current = newest
-      return
+      events.forEach((event) => knownEventIds.current.add(event.eventId));
+    }
+    const added = events.filter((event) => !knownEventIds.current.has(event.eventId)
+      && (!loadingEarlier || previousOldest === null || compareSequences(event.sequence, previousOldest) >= 0));
+    events.forEach((event) => knownEventIds.current.add(event.eventId));
+    oldestSequence.current = events[0]?.sequence ?? null;
+
+    if (!visible) {
+      followingLatest.current = false;
+      enteringRecords.current.forEach((finish) => finish());
+      if (added.length) {
+        atLatest.current = false;
+        scheduleViewportState(() => {
+          setAwayFromLatest(true);
+          setNewEvents((count) => count + added.length);
+        });
+      }
+      return;
+    }
+    if (pendingInitialScroll.current) {
+      container.scrollTop = container.scrollHeight;
+      pendingInitialScroll.current = false;
+      atLatest.current = true;
+      scheduleViewportState(() => {
+        setNewEvents(0);
+        setAwayFromLatest(false);
+      });
+      acknowledgeRead();
+      return;
     }
     if (prependPosition.current && !historyQuery.isFetchingNextPage) {
-      container.scrollTop = prependPosition.current.top + container.scrollHeight - prependPosition.current.height
+      const position = prependPosition.current;
+      const anchor = Array.from(container.querySelectorAll<HTMLElement>("[data-event-id]"))
+        .find((record) => record.dataset.eventId === position.eventId);
+      container.scrollTop = anchor
+        ? container.scrollTop + anchor.getBoundingClientRect().top - container.getBoundingClientRect().top - position.offset
+        : position.top + container.scrollHeight - position.height;
       prependPosition.current = null
     }
-    const previous = lastSequence.current
-    if (newest !== null && (previous === null || compareSequences(newest, previous) > 0)) {
-      const added = events.filter((event) => previous === null || compareSequences(event.sequence, previous) > 0).length
-      setNewEvents((count) => count + added)
-      lastSequence.current = newest
+    let addedCount = 0;
+    if (added.length) {
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const ids = new Set(added.map((event) => event.eventId));
+        for (const record of container.querySelectorAll<HTMLElement>("[data-event-id]")) {
+          if (!ids.has(record.dataset.eventId ?? "")) continue;
+          const onAnimationEnd = (animation: AnimationEvent) => {
+            if (animation.target === record) finish();
+          };
+          const finish = () => {
+            record.classList.remove("tc-record-enter");
+            record.removeEventListener("animationend", onAnimationEnd);
+            record.removeEventListener("animationcancel", onAnimationEnd);
+            enteringRecords.current.delete(record);
+          };
+          record.addEventListener("animationend", onAnimationEnd);
+          record.addEventListener("animationcancel", onAnimationEnd);
+          enteringRecords.current.set(record, finish);
+          record.classList.add("tc-record-enter");
+        }
+      }
+      addedCount = added.length;
     }
-  }, [detail, latestHistory, events, historyQuery.isFetchingNextPage])
+    if (wasVisible && atLatest.current && !loadingEarlier
+      && container.scrollHeight - container.scrollTop - container.clientHeight > 8) {
+      followingLatest.current = true;
+      container.scrollTo({ top: container.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+    const away = !followingLatest.current && container.scrollHeight - container.scrollTop - container.clientHeight > 80;
+    if (!followingLatest.current) {
+      atLatest.current = !away;
+    }
+    scheduleViewportState(() => {
+      setAwayFromLatest(away);
+      setNewEvents((count) => away ? count + addedCount : 0);
+    });
+    acknowledgeRead();
+  }, [active, documentVisible, detail, latestHistory, events, historyQuery.isFetchingNextPage, acknowledgeRead, scheduleViewportState]);
+
+  useEffect(() => {
+    const container = viewport.current;
+    if (!container || !active || !documentVisible) return;
+    const observer = new ResizeObserver(() => {
+      if (previouslyVisible.current && container.isConnected && !document.hidden && (atLatest.current || followingLatest.current) && !prependPosition.current
+        && container.scrollHeight - container.scrollTop - container.clientHeight > 8) {
+        followingLatest.current = true;
+        container.scrollTo({ top: container.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      }
+      acknowledgeRead();
+    });
+    observer.observe(container);
+    const timeline = container.querySelector(".tc-timeline");
+    if (timeline) observer.observe(timeline);
+    return () => observer.disconnect();
+  }, [active, documentVisible, detail, latestHistory, acknowledgeRead]);
 
   function refresh() {
     if (accessError) {
@@ -212,25 +349,50 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
 
   function loadEarlier() {
     if (!historyQuery.hasNextPage || historyQuery.isFetching) return
+    followingLatest.current = false;
+    atLatest.current = false;
     const container = viewport.current
-    if (container) prependPosition.current = { height: container.scrollHeight, top: container.scrollTop }
+    if (container) {
+      const top = container.getBoundingClientRect().top;
+      const anchor = Array.from(container.querySelectorAll<HTMLElement>("[data-event-id]"))
+        .find((record) => record.getBoundingClientRect().bottom >= top);
+      prependPosition.current = {
+        height: container.scrollHeight,
+        top: container.scrollTop,
+        eventId: anchor?.dataset.eventId ?? null,
+        offset: anchor ? anchor.getBoundingClientRect().top - top : 0,
+      };
+    }
     void historyQuery.fetchNextPage()
   }
 
   function goToLatest() {
     const container = viewport.current
     if (!container) return
-    container.scrollTop = container.scrollHeight
+    followingLatest.current = true;
+    atLatest.current = true;
+    container.scrollTo({ top: container.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     setNewEvents(0)
     setAwayFromLatest(false)
+    acknowledgeRead();
   }
 
   function trackScroll() {
     const container = viewport.current
     if (!container) return
     const away = container.scrollHeight - container.scrollTop - container.clientHeight > 80
+    if (followingLatest.current && away) return;
+    followingLatest.current = false;
+    atLatest.current = !away;
     setAwayFromLatest(away)
-    if (!away) setNewEvents(0)
+    if (!away) {
+      setNewEvents(0);
+      acknowledgeRead();
+    }
+  }
+
+  function interruptFollowing() {
+    followingLatest.current = false;
   }
 
   return (
@@ -261,7 +423,9 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, onError, onB
       {error && (detail || latestHistory) && <div className="tc-refresh-error" role="alert"><span>{errorMessage(error)}</span><button type="button" onClick={refresh} disabled={refreshing}>다시 시도</button></div>}
 
       <div className="tc-body">
-        <div className="tc-viewport" ref={viewport} onScroll={trackScroll} tabIndex={0} aria-label="작업 요청과 Agent 대화 기록">
+        <div className="tc-viewport" ref={viewport} onScroll={trackScroll} onWheel={interruptFollowing} onTouchStart={interruptFollowing} onPointerDown={interruptFollowing} onKeyDown={(event) => {
+          if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) interruptFollowing();
+        }} tabIndex={0} aria-label="작업 요청과 Agent 대화 기록">
           {(!detail || !latestHistory) && (
             <div className="tc-query-state" role={error ? 'alert' : 'status'}>
               <span className="tc-state-icon"><Icon name={error ? 'shield' : 'book'} size={25} /></span>

@@ -28,6 +28,8 @@ interface DashboardLayoutProps {
   tasksError?: string | null;
   selectedTaskId?: number | null;
   onSelectTask?: (taskId: number) => void;
+  unreadTaskIds?: ReadonlySet<number>;
+  unreadByTeam?: Record<string, number>;
 }
 
 const viewLabels: Record<WorkspaceView, string> = {
@@ -78,11 +80,12 @@ function ChatSessionTitle({ title, active, visible }: { title: string; active: b
   return <span className="dashboard-chat-title-clip" ref={clipRef}><strong ref={textRef}>{title}</strong></span>;
 }
 
-function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam }: {
+function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam, unreadByTeam }: {
   teams: Team[];
   selectedTeamId: number | null;
   loading: boolean;
   onSelectTeam: (teamId: number) => void;
+  unreadByTeam?: Record<string, number>;
 }) {
   const [open, setOpen] = useState(false);
   const listId = useId();
@@ -92,6 +95,7 @@ function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam }: {
   const disabled = loading || teams.length === 0;
   const expanded = open && !disabled;
   const selectedTeam = teams.find((team) => team.teamId === selectedTeamId);
+  const unreadCount = teams.reduce((count, team) => count + (unreadByTeam?.[String(team.teamId)] ?? 0), 0);
 
   useEffect(() => {
     if (!expanded) return;
@@ -140,10 +144,11 @@ function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam }: {
     <div className="dashboard-team-picker" ref={picker} onKeyDown={handleKeyDown}
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
       <button type="button" className="dashboard-team-trigger" ref={trigger} disabled={disabled}
-        aria-label={`현재 팀 변경, ${selectedTeam?.name ?? "선택한 팀 없음"}`} aria-haspopup="listbox"
+        aria-label={`현재 팀 변경, ${selectedTeam?.name ?? "선택한 팀 없음"}${unreadCount ? `, 읽지 않은 채팅 ${unreadCount}개` : ""}`} aria-haspopup="listbox"
         aria-expanded={expanded} aria-controls={expanded ? listId : undefined} onClick={() => setOpen((current) => !current)}>
         <span className="dashboard-team-symbol" aria-hidden="true"><Icon name="team" size={17} /></span>
         <span className="dashboard-team-copy"><span>현재 팀</span><strong>{loading ? "팀 불러오는 중" : selectedTeam?.name ?? (teams.length ? "팀 선택" : "참여 중인 팀 없음")}</strong></span>
+        {unreadCount > 0 && <span className="dashboard-unread-dot" aria-hidden="true" />}
         <Icon name="chevron" size={15} className="dashboard-team-chevron" />
       </button>
       {expanded && (
@@ -156,6 +161,7 @@ function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam }: {
                   onClick={() => { closePicker(); onSelectTeam(team.teamId); }}>
                   <span className="dashboard-team-initial" aria-hidden="true">{Array.from(team.name.trim())[0] ?? "?"}</span>
                   <span className="dashboard-team-option-name">{team.name}</span>
+                  {(unreadByTeam?.[String(team.teamId)] ?? 0) > 0 && <span className="dashboard-unread-count" aria-label={`읽지 않은 채팅 ${unreadByTeam?.[String(team.teamId)]}개`}>{unreadByTeam?.[String(team.teamId)]}</span>}
                   {team.teamId === selectedTeamId && <Icon name="check" size={16} />}
                 </button>
               </li>
@@ -172,6 +178,7 @@ export default function DashboardLayout({
   workspaceLoading, onSelectTeam, onRefresh, onReturnToScene,
   taskList = [], tasksLoading = false, tasksError = null,
   selectedTaskId = null, onSelectTask,
+  unreadTaskIds, unreadByTeam,
 }: DashboardLayoutProps) {
   const { user, connection, loggingOut, logout } = useSession();
   const menuDialog = useRef<HTMLDialogElement>(null);
@@ -218,8 +225,9 @@ export default function DashboardLayout({
         <div className="dashboard-chat-list">
           {taskList.map((task) => {
             const active = view === "conversation" && selectedTaskId === task.taskId;
-            return <button className={`dashboard-chat-item${active ? " is-selected" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} title={taskTitle(task)} disabled={!onSelectTask}>
-              <span className="dashboard-chat-title"><ChatSessionTitle title={taskTitle(task)} active={active} visible={!mobile || menuOpen} /><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
+            const unread = unreadTaskIds?.has(task.taskId) ?? false;
+            return <button className={`dashboard-chat-item${active ? " is-selected" : ""}${unread ? " has-unread" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} aria-label={`${taskTitle(task)}${unread ? ", 읽지 않은 새 내용 있음" : ""}`} title={taskTitle(task)} disabled={!onSelectTask}>
+              <span className="dashboard-chat-title">{unread && <span className="dashboard-unread-dot" aria-hidden="true" />}<ChatSessionTitle title={taskTitle(task)} active={active} visible={!mobile || menuOpen} /><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
             </button>;
           })}
           {taskList.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p></div>}
@@ -241,7 +249,7 @@ export default function DashboardLayout({
     <div className="main-shell">
       <header className="topbar">
         <div className="dashboard-topbar-context">
-          <button type="button" className="icon-button dashboard-mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label="워크스페이스 메뉴 열기" aria-haspopup="dialog" aria-expanded={menuOpen}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+          <button type="button" className="icon-button dashboard-mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label={`워크스페이스 메뉴 열기${unreadTaskIds?.size ? ", 읽지 않은 새 내용 있음" : ""}`} aria-haspopup="dialog" aria-expanded={menuOpen}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>{(unreadTaskIds?.size ?? 0) > 0 && <span className="dashboard-unread-dot dashboard-menu-unread" aria-hidden="true" />}</button>
           <div className="breadcrumb"><span>워크스페이스</span><Icon name="chevron" size={12} /><strong>{pageLabel}</strong></div>
         </div>
         <button type="button" className="space-navigation-button dashboard-return-scene" data-direction="up" onClick={onReturnToScene}>
@@ -249,7 +257,7 @@ export default function DashboardLayout({
         </button>
         <div className="topbar-actions">
           {connection !== "online" && <span className={`connection-indicator connection-${connection}`} title={API_BASE_URL || "로컬 개발 프록시"} role="status"><span className="status-dot" />{connection === "checking" ? "확인 중" : "연결 확인 필요"}</span>}
-          <DashboardTeamPicker teams={teams} selectedTeamId={selectedTeamId} loading={teamsLoading} onSelectTeam={onSelectTeam} />
+          <DashboardTeamPicker teams={teams} selectedTeamId={selectedTeamId} loading={teamsLoading} onSelectTeam={onSelectTeam} unreadByTeam={unreadByTeam} />
           <button type="button" className="icon-button refresh-button dashboard-refresh" onClick={onRefresh} aria-label="전체 새로고침" title="전체 새로고침" disabled={teamsLoading || workspaceLoading || tasksLoading} aria-busy={teamsLoading || workspaceLoading || tasksLoading}><Icon name="refresh" size={18} /></button>
         </div>
       </header>

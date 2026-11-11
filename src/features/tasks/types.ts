@@ -75,5 +75,6 @@ export interface TaskHistory {
   taskFiles: TaskFile[];
   items: TaskEvent[];
   nextBeforeSequence: string | null;
+  nextAfterSequence?: string | null;
   hasNext: boolean;
 }

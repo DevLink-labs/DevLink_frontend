@@ -41,6 +41,7 @@
 .itp-stage-sticky .itp-stats strong { color: #3a3b3e; font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
 .itp-stage-sticky .itp-stats span { color: #656c77; font-size: 12px; letter-spacing: -.2px; }
 .itp-stage-sticky .itp-stats .itp-stat-line { width: 1px; height: 12px; margin: 0; background: #dcdde0; }
+.itp-stage-sticky .itp-unread-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; margin-left: 8px; padding: 0 6px; border-radius: 10px; color: #fff; background: #4389b7; font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .itp-stage-sticky .itp-stats .itp-session-stat > strong { color: #397eaf; }
 .itp-stage-sticky .itp-stats .itp-session-stat > span { display: inline-flex; align-items: center; gap: 6px; color: #477995; }
 .itp-session-signal { position: relative; display: inline-block; width: 19px; height: 8px; overflow: hidden; }
