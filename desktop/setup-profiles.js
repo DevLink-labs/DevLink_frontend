@@ -97,8 +97,10 @@ async function resolveProjectPaths(paths, account, project) {
 async function listTeamProfiles(paths, account) {
   const scope = accountScope(paths, account);
   const profiles = [];
+  // 손상된 프로필 하나 때문에 같은 팀의 다른 프로젝트를 놓치지 않도록 해당 항목만 제외
+  const readable = (file) => readJson(file).catch(() => null);
   for (const legacy of legacyConfigs(paths, scope)) {
-    if (boundTo(await readJson(runtimeFile(legacy, "agent-profile.json")), scope)) {
+    if (boundTo(await readable(runtimeFile(legacy, "agent-profile.json")), scope)) {
       profiles.push(scoped(paths, legacy));
     }
   }
@@ -108,7 +110,7 @@ async function listTeamProfiles(paths, account) {
   });
   for (const entry of entries) {
     const config = path.join(scope.teams, entry.name, "config.json");
-    if (entry.isDirectory() && await readJson(config)) profiles.push(scoped(paths, config));
+    if (entry.isDirectory() && await readable(config)) profiles.push(scoped(paths, config));
   }
   return profiles;
 }

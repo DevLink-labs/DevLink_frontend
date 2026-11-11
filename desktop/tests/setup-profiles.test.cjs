@@ -184,6 +184,30 @@ test("이전 계정별 프로필은 같은 팀·프로젝트일 때만 재사용
   );
 });
 
+test("손상된 프로필은 팀 프로필 목록에서만 빼고 같은 팀의 정상 프로젝트는 계속 돌려준다", async (t) => {
+  const { paths, runtime, root, other } = await fixture(t);
+  const fresh = await resolveProjectPaths(paths, accountA, other);
+  await prepareAccountProfile(fresh);
+  await writeFile(fresh.config, JSON.stringify({ serverUrl: paths.serverUrl }));
+  const broken = path.join(path.dirname(path.dirname(fresh.config)), "broken");
+  await mkdir(broken);
+  await writeFile(path.join(broken, "config.json"), "{broken");
+
+  assert.deepEqual(
+    (await listTeamProfiles(paths, accountA))
+      .map((profile) => profile.config)
+      .sort(),
+    [paths.config, fresh.config].sort(),
+  );
+  await writeFile(path.join(runtime, "agent-profile.json"), "broken-json");
+  assert.deepEqual(
+    (await listTeamProfiles(paths, accountA)).map((profile) => profile.config),
+    [fresh.config],
+  );
+  // 프로젝트를 다시 연결할 때는 손상 안내를 그대로 표시
+  await assert.rejects(resolveProjectPaths(paths, accountA, root), /기존 설정/);
+});
+
 test("잘못된 계정·팀 ID와 프로젝트, 손상된 기존 프로필은 조용히 새 연결을 만들지 않는다", async (t) => {
   const { paths, runtime, root } = await fixture(t);
   for (const userId of [0, -1, "../../other", Number.MAX_SAFE_INTEGER + 1]) {

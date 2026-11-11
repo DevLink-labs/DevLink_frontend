@@ -188,6 +188,126 @@ test("이력이 초기화되면 알리지 않고, 잘못된 위치는 끝 위치
   assert.deepEqual(f.calls.at(-1).args, ["--latest"]);
 });
 
+test("이력이 다시 나오면 출처별로 이미 알린 항목 뒤의 새 소식만 알리고 다음 페이지에도 같은 기준을 쓴다", async (t) => {
+  const f = await fixture(t);
+  f.replies.push(page([], { nextCursor: "c1" }));
+  const notifier = await started(f);
+  const created = (id) => ({
+    eventId: id,
+    kind: "TASK_CREATED",
+    taskId: id,
+    requesterAgentId: "11",
+  });
+  const question = (id) => ({
+    eventId: id,
+    kind: "TASK_QUESTION_CREATED",
+    taskId: id,
+    sequence: "1",
+  });
+  const overdue = (id) => ({
+    eventId: `overdue:${id}`,
+    kind: "TASK_OVERDUE",
+    taskId: id,
+    minutes: 30,
+  });
+  f.replies.push(page([created("101"), question("201")], { nextCursor: "c2" }));
+  await notifier.poll();
+  assert.equal(f.shown.pop().length, 2);
+
+  // 시작 전 이력(100·200·300)은 건너뛰고 이미 알린 항목 뒤에 쌓인 102·202만 알림
+  f.replies.push(
+    page([created("100"), created("101"), created("102")], {
+      cursorReset: true,
+      hasMore: true,
+      nextCursor: "r1",
+    }),
+    page([question("200"), question("201"), question("202"), overdue("300")], {
+      nextCursor: "r2",
+    }),
+  );
+  await notifier.poll();
+  assert.deepEqual(
+    f.shown.pop().map((item) => item.taskId),
+    ["102", "202"],
+  );
+
+  // 다시 읽기가 끝나면 평소처럼 새 항목을 알림
+  f.replies.push(page([overdue("301")], { nextCursor: "r3" }));
+  await notifier.poll();
+  assert.deepEqual(
+    f.shown.pop().map((item) => item.taskId),
+    ["301"],
+  );
+  notifier.stop();
+});
+
+test("조회 중 감시가 멈추면 위치를 옮기지 않아 다시 감시할 때 같은 소식을 알린다", async (t) => {
+  const f = await fixture(t);
+  f.replies.push(page([], { nextCursor: "c1" }));
+  const notifier = await started(f);
+  const created = {
+    eventId: "e101",
+    kind: "TASK_CREATED",
+    taskId: "101",
+    requesterAgentId: "11",
+  };
+  let release;
+  f.replies.push(
+    new Promise((resolve) => {
+      release = () => resolve(page([created], { nextCursor: "c2" }));
+    }),
+  );
+  const pending = notifier.poll();
+  notifier.stop();
+  release();
+  await pending;
+  assert.equal(f.shown.length, 0);
+
+  f.replies.push(page([created], { nextCursor: "c2" }));
+  notifier.watch(account);
+  await pending;
+  await notifier.poll();
+  assert.deepEqual(f.calls.at(-1).args, ["--cursor", "c1", "--limit", "50"]);
+  assert.deepEqual(
+    f.shown.pop().map((item) => item.taskId),
+    ["101"],
+  );
+  notifier.stop();
+});
+
+test("상태 파일 저장이나 다음 페이지 조회가 실패해도 받은 소식은 한 번만 알린다", async (t) => {
+  const f = await fixture(t);
+  f.replies.push(page([], { nextCursor: "c1" }));
+  const notifier = await started(f);
+  const created = (id) => ({
+    eventId: id,
+    kind: "TASK_CREATED",
+    taskId: id,
+    requesterAgentId: "11",
+  });
+  // 상태 파일 자리에 폴더를 만들어 저장 실패 재현
+  await rm(f.statePath);
+  await mkdir(f.statePath);
+  f.replies.push(
+    page([created("101")], { hasMore: true, nextCursor: "c2" }),
+    { then: (_resolve, reject) => reject(new Error("spawn failed")) },
+  );
+  await notifier.poll();
+  assert.deepEqual(
+    f.shown.pop().map((item) => item.taskId),
+    ["101"],
+  );
+
+  f.replies.push(page([created("101"), created("102")], { nextCursor: "c3" }));
+  await notifier.poll();
+  assert.deepEqual(f.calls.at(-1).args, ["--cursor", "c2", "--limit", "50"]);
+  assert.deepEqual(
+    f.shown.pop().map((item) => item.taskId),
+    ["102"],
+  );
+  notifier.stop();
+});
+
 test("다른 사용자 응답·실패는 위치를 옮기지 않고 hasMore면 이어서 읽는다", async (t) => {
   const f = await fixture(t);
   f.replies.push(page([], { nextCursor: "c1" }));
