@@ -1,113 +1,245 @@
+<div align="center">
+
+<a href="https://about.devlink.ai.kr/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="src/assets/image/logo/devlink-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="src/assets/image/logo/devlink-logo.png">
+    <img src="src/assets/image/logo/devlink-logo.png" alt="Visit the DevLink introduction page" width="480">
+  </picture>
+</a>
+
 # DevLink Frontend
 
-React · TypeScript · Vite · Tailwind CSS · TanStack Query · Axios로 만든 계정·팀·Agent 관리 화면입니다. 현재 백엔드 REST API를 직접 사용해 1차 MVP의 준비 과정을 확인할 수 있습니다.
+**See your team's AI Agents and workflow at a glance.**
 
-## 코드 구조
+The DevLink web interface and desktop app bring together team and Agent connections, task conversations, and change impact analysis.
 
-- `app/`: 앱 진입점, 경로·미리보기 선택, 공통 Provider 구성
-- `layouts/`: 인증 화면과 워크스페이스의 공통 외곽 구성
-- `pages/`: 인증·워크스페이스·사용 가이드 화면 구성
-- `features/{auth,teams,agents}/`: 기능별 `api/`, `hooks/`, `components/`, `types.ts`
-- `features/workspace/`: 팀 선택과 워크스페이스 조회 조합, 통계 카드
-- `features/team-preview/`: 미리보기 컴포넌트·데이터·Three.js 도우미·스타일
-- `components/{ui,common}/`: 모달·아이콘·빈 상태와 공통 알림·페이지 제목
-- `lib/apiClient.ts`: Axios 설정, 응답 검증, 오류 변환, CSRF와 쓰기 요청 순서 관리
-- `lib/queryClient.ts`: 조회 캐시·재시도·포커스 갱신 기본 정책
-- `utils/`, `styles/`: 날짜·복사 도우미와 전역 스타일
-- 조회 키는 사용자·팀별로 구분하고, 변경 성공 시 관련 조회만 무효화합니다.
-- Tailwind Vite 플러그인과 테마·유틸리티를 적용하며 기존 상세 디자인 CSS를 함께 사용합니다.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-45-47848F?logo=electron&logoColor=white)
 
-## 구현 범위
+**English** · [한국어](README.ko.md)
 
-- 회원가입, 세션 로그인, 내 정보 확인, 로그아웃
-- 내 팀 목록, 팀 생성, 초대코드 참여, 팀 상세·팀원 조회
-- OWNER의 초대코드 재발급과 코드 복사
-- 팀 Agent 등록, 목록·상세·접속 상태 조회
-- 본인 Agent의 연결 토큰 발급·재발급
-- 요청 중 표시, 입력 검증, 빈 화면, 서버 오류·세션 만료 처리
+[Quick start](#quick-start) · [Usage examples](#usage-examples) · [Architecture](#architecture) · [Configuration](#configuration) · [Development](#development) · [Documentation](#documentation) · [License](#license)
 
-MCP 도구 호출, 브로커 실행, 실제 AI 작업 요청·수행은 이 화면에 포함하지 않습니다. 아직 백엔드에 없는 작업 목록·완료 결과 조회 API를 가짜 데이터로 표시하지 않습니다.
+</div>
 
-## 로컬 실행
+## Introduction
 
-Node.js와 프로젝트의 npm 의존성, JDK 21, 실행 중인 Docker Desktop이 필요합니다.
+DevLink is a collaboration tool that transfers task requests and development context between the AI coding tools used by team members.
 
-먼저 백엔드 폴더에서 PostgreSQL과 서버를 실행합니다.
+Even when a frontend developer uses Codex and a backend developer uses Claude Code, they can request work from each other's Agent in their own development environment and follow questions, answers, progress, and results within the same task.
 
-```powershell
-cd C:\Users\SSAFY\Desktop\DevLink_server
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
-docker compose up -d postgres
-.\gradlew.bat bootRun --args="--spring.profiles.active=local"
+This repository maintains the **web workspace and Windows desktop app**. The web interface manages teams and Agents and displays team-wide tasks and conversations. The desktop app connects local projects and manages MCP configuration for AI tools and task notifications.
+
+Authentication, task storage, and delivery APIs are maintained in the [server](https://github.com/SSAFY-URAYAHA/DevLink_server) repository. The local broker, CLI, and MCP server are maintained in the [client](https://github.com/SSAFY-URAYAHA/DevLink_client) repository. The user's AI tool performs code analysis, changes, and tests.
+
+## Features
+
+- **Accounts and teams** — Sign up, log in, create teams, join by invitation code, and view team members.
+- **Agent management** — Register, edit, and delete team Agents, issue connection tokens, and check online status.
+- **Team tasks and conversations** — View recent tasks across the team, task details, questions, answers, status changes, and completion results.
+- **Real-time updates** — Receive task changes and Agent presence updates through SSE and track read status per task.
+- **Change impact analysis** — Explore connections and change paths using repository dependency graphs and current working files.
+- **Desktop project connections** — Choose a local project and AI tool, then apply MCP settings for supported versions or follow manual setup instructions.
+- **Desktop task notifications** — Check the local broker for new tasks, questions, answers, and task results, and open the relevant conversation from a notification.
+
+## Usage examples
+
+### Follow team Agents and task progress
+
+1. Sign up and log in on the web, then create a team or join using an invitation code.
+2. Check registered team Agents and their connection status on the Agent screen.
+3. Exchange tasks through DevLink MCP in your respective AI tools.
+4. Select a task from the recent task list on the web to view its summary, status, and conversation history.
+
+For example, when a frontend Agent asks a backend Agent to investigate a slow post-list API, team members can follow the questions, answers, and completion results on the web. The list displays **all team tasks**, including tasks you did not participate in.
+
+Registering an Agent or issuing a token does not make it online by itself. The local broker and AI tool must be connected.
+
+### Connect a local project on desktop
+
+1. Download and run the Windows installer from [Releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases).
+2. After logging in, start project connection from the onboarding guide or **Agent → Agent 추가 (Add Agent)**.
+3. Select the project folder and AI tool, then follow the connection instructions.
+4. After applying the settings, reopen the AI tool and check the actual Agent connection status.
+
+MCP configuration readiness and the AI tool session connection are displayed separately. See the [desktop guide](desktop/README.md) for manual setup and reconnecting.
+
+### Explore repository change impact
+
+After logging in, open `/tree?mode=team` to view the team's actual repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
+
+`/tree` displays a **sample graph** without requiring login. Keep it separate from actual team data.
+
+## Quick start
+
+### 1. Prerequisites
+
+- **Git**
+- **Node.js 24 recommended**, with npm — the Vite version in the lockfile supports Node.js `^20.19.0 || >=22.12.0`.
+- A running **DevLink server** — the default connection address is `http://localhost:8080`.
+
+```sh
+node --version
+npm --version
 ```
 
-다른 PowerShell에서 프론트를 실행합니다.
+Running the frontend itself does not require Java, Rust, or Docker. To run the server locally as well, follow the [server quick start](https://github.com/SSAFY-URAYAHA/DevLink_server#quick-start) first. Connecting a local Agent requires separate client or desktop setup.
+
+### 2. Get the source and dependencies
+
+```sh
+git clone https://github.com/SSAFY-URAYAHA/DevLink_frontend.git
+cd DevLink_frontend
+npm ci
+```
+
+Copy the environment example to `.env.local`. If the file already exists, review it and update only the values you need.
+
+**Windows PowerShell**
 
 ```powershell
-cd C:\Users\SSAFY\Desktop\DevLink_FrontEnd
 if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
-npm install
-npm run dev
 ```
 
-기존에 의존성이 설치되어 있다면 `npm install`은 생략합니다. 터미널에 표시되는 Vite의 Local 주소로 접속합니다.
+**macOS / Linux**
 
-### 로컬 API 연결
+```sh
+[ -f .env.local ] || cp .env.example .env.local
+```
 
-기본값은 `VITE_API_BASE_URL`을 비워두고 Vite 개발 서버가 `/api` 요청을 `http://localhost:8080`으로 전달하는 방식입니다. 브라우저에서는 같은 출처로 요청하므로 로컬 프론트용 백엔드 CORS 변경 없이 세션 쿠키를 사용할 수 있습니다.
-
-개발 프록시는 백엔드로 보낼 때 Origin 헤더를 제거합니다. 로컬 동일 출처 요청을 백엔드가 외부 Origin으로 판단해 거부하는 상황을 피하기 위한 개발 설정이며, 백엔드의 세션·CSRF 검사는 그대로 적용됩니다. 이 프록시는 운영 배포에 제공되지 않습니다.
-
-백엔드 포트가 다르면 프론트의 `.env.local`을 변경한 뒤 개발 서버를 다시 실행합니다.
+The default local configuration is:
 
 ```dotenv
 VITE_API_BASE_URL=
 DEVLINK_API_PROXY_TARGET=http://localhost:8080
 ```
 
-## 배포 연결
+### 3. Start the development server
 
-Vercel 프로젝트의 프레임워크는 **Vite**, 빌드 명령은 `npm run build`, 출력 폴더는 `dist`로 설정합니다. 루트의 `vercel.json`에서 SPA 경로를 `/index.html`로 재작성해 `/tree`와 같은 주소로 직접 접속하거나 새로고침해도 앱 라우터가 화면을 표시하도록 합니다. 이 설정은 다음 배포부터 적용됩니다.
+```sh
+npm run dev -- --host localhost --port 5173 --strictPort
+```
 
-Vercel 등에서 프론트를 배포할 때 `VITE_API_BASE_URL`을 실제 HTTPS 백엔드 Origin으로 설정한 뒤 배포합니다. `/api` 또는 `/api/v1` 경로는 붙이지 않습니다.
+Open [http://localhost:5173](http://localhost:5173) in your browser. With the backend running, the login screen appears and you can sign up, create a team, or join one.
+
+If login or team requests fail, check the backend and the connection address in `.env.local` as well as the frontend terminal. This interface uses the actual server API.
+
+## Architecture
+
+| Component | Responsibility |
+| --- | --- |
+| Web UI | User login, team and Agent management, task and conversation views, dependency graphs |
+| DevLink server | User sessions and permissions, data storage, REST APIs, and SSE |
+| Electron app | Web UI hosting, local project connections, CLI calls, and task notifications |
+| Local client | Connecting AI tools to the central server through the CLI, broker, and MCP server |
+| AI tool | Task analysis, code changes, and tests in the user's project |
+
+The web UI calls REST APIs using a cookie-based user session and receives change notifications through SSE. TanStack Query handles data fetching and caching, and a shared Axios client handles HTTP requests.
+
+The browser-based web UI does not execute the local CLI directly. The desktop app provides local connection features through Electron IPC. The packaged app loads the web UI from `https://devlink.ai.kr`; the development app uses `http://localhost:5173`.
+
+## Configuration
+
+| Environment variable | Purpose | Local default |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | Backend origin called by the browser | Empty |
+| `DEVLINK_API_PROXY_TARGET` | Backend address used by the Vite development proxy | `http://localhost:8080` |
+
+### Local API connection
+
+When `VITE_API_BASE_URL` is empty, Vite forwards browser requests under `/api` to the backend. This proxy allows local development with session cookies without adding the frontend address to backend CORS settings.
+
+If the backend uses another port, change `DEVLINK_API_PROXY_TARGET` and restart the development server. The development proxy removes the Origin header when forwarding requests; backend session and CSRF checks remain in place.
+
+### Production deployment
+
+In deployment environments, set `VITE_API_BASE_URL` to the actual HTTPS backend origin.
 
 ```dotenv
 VITE_API_BASE_URL=https://api.example.com
 ```
 
-위 주소는 예시입니다. 실제 운영 백엔드 주소로 교체해야 합니다. `VITE_` 환경변수는 브라우저에 공개되므로 비밀번호나 Agent 토큰을 넣지 않습니다.
+This is an example address. Replace it with the actual origin and **do not append `/api` or `/api/v1`**. The shared API client adds the path.
 
-환경변수는 빌드 시 반영되므로 값을 바꾸면 다시 배포해야 합니다. 로컬 `.env.local`은 Vercel 프로젝트 환경변수를 대신하지 않습니다. 개발용 프록시는 `npm run dev`에서만 동작하며 `preview`와 Vercel 정적 배포에서는 사용하지 않습니다.
+- `VITE_` variables are included in the build output and are public. Do not put passwords or Agent tokens in them.
+- Rebuild and redeploy after changing these values.
+- `DEVLINK_API_PROXY_TARGET` is for the development server only. It does not apply to `npm run preview` or static deployments.
+- The backend must allow the frontend origin in CORS, permit credentialed requests, and configure production session cookies. If the sites differ, also check the browser's third-party cookie policy.
 
-백엔드에는 프론트 Origin의 CORS 허용, 쿠키 포함 요청 허용, HTTPS 및 운영 세션 쿠키 정책이 필요합니다. 현재 백엔드의 기본 허용 주소는 `https://devlinkfrontend.vercel.app`, `https://devlink.ai.kr`입니다. 서로 다른 사이트 사이에서는 브라우저의 서드파티 쿠키 정책에 따라 세션 사용이 제한될 수 있습니다.
+Use the following Vercel settings:
 
-## 인증과 토큰 처리
+| Setting | Value |
+| --- | --- |
+| Framework | Vite |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Environment variable | `VITE_API_BASE_URL` |
 
-- 모든 API 요청에서 Axios `withCredentials: true` 사용
-- 상태 변경 요청 직전 CSRF 토큰 조회 후 응답의 헤더 이름·토큰으로 요청
-- 로그인·로그아웃으로 세션이 바뀌어도 다음 요청에서 CSRF 재조회
-- 새로고침 시 내 정보 API로 세션 복원
-- 사용자 비밀번호·세션 식별자·Agent 토큰을 브라우저 저장소에 보관하지 않음
-- 발급한 Agent 토큰은 현재 화면의 메모리에서만 확인·복사 가능
-- 토큰 재발급 시 기존 토큰과 연결이 무효화될 수 있으므로 발급 전 안내 확인
-- 생성·발급 요청의 결과가 불명확하면 자동 재전송하지 않고 목록을 확인하도록 안내
+The root [vercel.json](vercel.json) provides SPA rewrites for direct access and refreshes on paths such as `/tree`. It does not provide a backend API proxy.
 
-## A/B 수동 확인 순서
+### Authentication and connection tokens
 
-1. 일반 브라우저 창에서 A 회원가입 후 로그인합니다.
-2. A가 팀을 생성하고 최초 초대코드를 복사합니다.
-3. 시크릿 창이나 다른 브라우저에서 B 회원가입 후 로그인합니다.
-4. B가 복사한 코드로 팀에 참여합니다.
-5. 양쪽에서 새로고침하여 같은 팀원 목록을 확인합니다.
-6. 각자 Agent를 등록하고 서로의 Agent 목록·역할·프로젝트를 확인합니다.
-7. 본인 Agent의 토큰을 발급하고 화면에서 복사합니다.
-8. A만 초대코드를 재발급할 수 있고, B는 본인 Agent의 토큰만 발급할 수 있는지 확인합니다.
-9. 로그아웃 후 새로고침했을 때 로그인 화면으로 돌아오는지 확인합니다.
+Web API requests include session cookies through `withCredentials` and fetch a CSRF token before state-changing requests. On reload, the app restores login state through the current-user API.
 
-같은 브라우저의 일반 탭 여러 개는 로그인 쿠키를 공유합니다. A/B 동시 확인에는 일반 창과 시크릿 창, 또는 서로 다른 브라우저를 사용합니다.
+Passwords, session identifiers, and Agent tokens are not kept in browser storage. Issued Agent tokens can be viewed and copied on the current screen. Reissuing a token may affect existing connections, so review the notice first. UI preferences and task read states may be stored in the browser.
 
-Agent 등록만으로 ONLINE이 되지는 않습니다. 실제 브로커의 접속 보고가 없으면 OFFLINE이 정상입니다. 웹 로그아웃은 사용자 세션을 종료하며 Agent 토큰을 폐기하지 않습니다.
+Web logout and Agent disconnection are separate. To check two accounts, use another browser or a private window to keep sessions separate.
 
-## 검증 상태
+## Development
 
-이번 구조 정리에서는 빌드·서버 실행·의존성 설치를 수행하지 않았습니다. ESLint, TypeScript 타입 검사(`--noEmit`), 상대 import 경로 확인으로 정적으로 검증했습니다.
+### Main commands
+
+Run these commands from the repository root.
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Run TypeScript checks and create a production bundle |
+| `npm run preview` | Preview the generated bundle |
+| `npm run lint` | Run ESLint |
+
+There is no separate root `npm test` script. See the [desktop development guide](desktop/README.md) for desktop execution, packaging, and verification commands.
+
+### Code structure
+
+```text
+src/
+├── app/                    # Entry points, routing, and shared providers
+├── pages/                  # Auth, workspace, and dependency screens
+├── features/
+│   ├── auth/               # Accounts and sessions
+│   ├── teams/              # Teams, members, and invitation codes
+│   ├── agents/             # Agent management and token issuance
+│   ├── tasks/              # Task lists, conversations, and real-time updates
+│   ├── dependency-tree/    # Repository dependencies and change impact
+│   ├── desktop-setup/      # Project and MCP connections, notifications
+│   ├── workspace/          # Workspace composition
+│   └── team-preview/       # 3D team screens and design previews
+├── components/             # Shared UI
+└── lib/                    # Shared API client and Query Client
+
+desktop/                    # Electron app and Windows installer configuration
+```
+
+Reuse the shared Axios instance and Query Client, and keep feature-specific APIs and hooks in the relevant feature folder. `/team-network`, `/team-observatory`, `/team-orbit`, `/team-preview`, and `/dashboard-design` are design preview routes.
+
+## Documentation
+
+- [DevLink introduction](https://about.devlink.ai.kr/)
+- [Desktop development, project connections, and MCP configuration](desktop/README.md)
+- [3D team space design review notes](docs/team-space-design-notes.md)
+- [Server setup and API guide](https://github.com/SSAFY-URAYAHA/DevLink_server#readme)
+- [Client, CLI, and MCP guide](https://github.com/SSAFY-URAYAHA/DevLink_client#readme)
+- [Windows installers and releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases)
+- [Contributing guide](CONTRIBUTING.md)
+- [Community code of conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md)
+
+## License
+
+This project is licensed under the [MIT License](LICENSE.txt). See the license file for the full terms and copyright notice.
