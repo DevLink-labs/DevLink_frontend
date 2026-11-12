@@ -14,6 +14,7 @@ import { useDesktopUpdates } from "@/features/desktop-setup/hooks/useDesktopUpda
 import ImmersiveTeamPreview from "@/features/team-preview/components/ImmersiveTeamPreview";
 import type { PreviewMember } from "@/features/team-preview/data/previewData";
 import { getAgentSessionConnections } from "@/features/team-preview/lib/agentSessionConnections.js";
+import { getAgentTaskActivities } from "@/features/team-preview/lib/agentTaskActivities.js";
 import { EmptyState, Icon } from "@/components/ui";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import type { WorkspaceView } from "@/layouts/DashboardLayout";
@@ -138,6 +139,17 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
     [tasks, selectedTeamId, sceneMembers],
   );
 
+  const agentActivities = useMemo(
+    () => getAgentTaskActivities({
+      tasks,
+      teamId: selectedTeamId,
+      agentIds: agents.map((agent) => String(agent.agentId)),
+      loading: tasksLoading,
+      unavailable: taskAccessDenied || (tasksQuery.isError && !tasksQuery.data),
+    }),
+    [tasks, selectedTeamId, agents, tasksLoading, taskAccessDenied, tasksQuery.isError, tasksQuery.data],
+  );
+
   const canInvite = selectedTeam?.myRole === "OWNER" && !teamsLoading && !workspaceLoading;
 
   function openTeamInvite() {
@@ -151,6 +163,7 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
       selectedTeam,
       members: sceneMembers,
       connections: sceneConnections,
+      agentActivities,
       agentCount: agents.length,
       sceneStatus,
       onSelectTeam: selectTeam,

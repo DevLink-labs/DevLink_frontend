@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent, ReactNode, RefObject } from "react";
+import { createPortal } from "react-dom";
 import PageTitle from "@/components/common/PageTitle";
 import BrandLogo from "@/components/common/BrandLogo";
 import { Icon } from "@/components/ui";
@@ -173,6 +174,143 @@ function DashboardTeamPicker({ teams, selectedTeamId, loading, onSelectTeam, unr
   );
 }
 
+function DashboardSidebarTooltip({ sidebar }: { sidebar: RefObject<HTMLElement | null> }) {
+  const tooltipId = useId();
+  const tooltip = useRef<HTMLDivElement>(null);
+  const positionTooltip = useRef<(() => void) | null>(null);
+  const [label, setLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    const container = sidebar.current;
+    if (!container) return;
+    const mobile = window.matchMedia("(max-width: 760px)");
+    let hovered: HTMLElement | null = null;
+    let target: HTMLElement | null = null;
+    let mode: "pointer" | "focus" = "pointer";
+    let pointerX = 0;
+    let pointerY = 0;
+    let frame = 0;
+
+    function findControl(node: EventTarget | null) {
+      const control = node instanceof Element ? node.closest<HTMLElement>("[data-sidebar-tooltip]") : null;
+      return control && container?.contains(control) ? control : null;
+    }
+
+    function position() {
+      const card = tooltip.current;
+      if (!card || !target) return;
+      const rect = target.getBoundingClientRect();
+      const width = card.offsetWidth;
+      const height = card.offsetHeight;
+      let x = mode === "pointer" ? pointerX + 14 : rect.right + 12;
+      let y = mode === "pointer" ? pointerY + 16 : rect.top + (rect.height - height) / 2;
+      if (mode === "pointer" && x + width > window.innerWidth - 8) x = pointerX - width - 14;
+      if (mode === "pointer" && y + height > window.innerHeight - 8) y = pointerY - height - 12;
+      x = Math.max(8, Math.min(x, window.innerWidth - width - 8));
+      y = Math.max(8, Math.min(y, window.innerHeight - height - 8));
+      card.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+      card.style.visibility = "visible";
+    }
+
+    function schedulePosition() {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; position(); });
+    }
+
+    function clearTarget() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      if (target?.getAttribute("aria-describedby") === tooltipId) target.removeAttribute("aria-describedby");
+      target = null;
+      if (tooltip.current) tooltip.current.style.visibility = "hidden";
+    }
+
+    function dismiss() {
+      clearTarget();
+      setLabel(null);
+    }
+
+    function show(control: HTMLElement, nextMode: "pointer" | "focus") {
+      if (mobile.matches || control.matches(":disabled")) return;
+      clearTarget();
+      target = control;
+      mode = nextMode;
+      control.setAttribute("aria-describedby", tooltipId);
+      setLabel(control.dataset.sidebarTooltip ?? null);
+      schedulePosition();
+    }
+
+    function pointerOver(event: PointerEvent) {
+      if (event.pointerType === "touch") return;
+      const control = findControl(event.target);
+      if (control === hovered) return;
+      hovered = control;
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (control) show(control, "pointer");
+      else dismiss();
+    }
+
+    function pointerMove(event: PointerEvent) {
+      if (!target || mode !== "pointer") return;
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      schedulePosition();
+    }
+
+    function pointerOut(event: PointerEvent) {
+      if (findControl(event.relatedTarget) === hovered) return;
+      hovered = null;
+      dismiss();
+    }
+
+    function pointerLeave() {
+      hovered = null;
+      dismiss();
+    }
+
+    function focusIn(event: FocusEvent) {
+      const control = findControl(event.target);
+      if (control?.matches(":focus-visible")) show(control, "focus");
+    }
+
+    function keyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") dismiss();
+    }
+
+    positionTooltip.current = position;
+    container.addEventListener("pointerover", pointerOver);
+    container.addEventListener("pointermove", pointerMove);
+    container.addEventListener("pointerout", pointerOut);
+    container.addEventListener("pointerleave", pointerLeave);
+    container.addEventListener("focusin", focusIn);
+    container.addEventListener("focusout", dismiss);
+    document.addEventListener("pointerdown", dismiss, true);
+    document.addEventListener("scroll", dismiss, true);
+    document.addEventListener("keydown", keyDown);
+    window.addEventListener("resize", dismiss);
+    window.addEventListener("blur", dismiss);
+    return () => {
+      clearTarget();
+      positionTooltip.current = null;
+      container.removeEventListener("pointerover", pointerOver);
+      container.removeEventListener("pointermove", pointerMove);
+      container.removeEventListener("pointerout", pointerOut);
+      container.removeEventListener("pointerleave", pointerLeave);
+      container.removeEventListener("focusin", focusIn);
+      container.removeEventListener("focusout", dismiss);
+      document.removeEventListener("pointerdown", dismiss, true);
+      document.removeEventListener("scroll", dismiss, true);
+      document.removeEventListener("keydown", keyDown);
+      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("blur", dismiss);
+    };
+  }, [sidebar, tooltipId]);
+
+  return label ? createPortal(<div className="dashboard-sidebar-tooltip" role="tooltip" id={tooltipId}
+    ref={(node) => { tooltip.current = node; if (node) positionTooltip.current?.(); }}>{label}</div>, document.body) : null;
+}
+
 export default function DashboardLayout({
   children, view, onViewChange, teams, selectedTeamId, teamsLoading,
   workspaceLoading, onSelectTeam, onRefresh, onReturnToScene,
@@ -181,8 +319,11 @@ export default function DashboardLayout({
   unreadTaskIds, unreadByTeam,
 }: DashboardLayoutProps) {
   const { user, connection, loggingOut, logout } = useSession();
+  const sidebar = useRef<HTMLElement>(null);
   const menuDialog = useRef<HTMLDialogElement>(null);
+  const sidebarId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const dialog = menuDialog.current;
@@ -208,44 +349,58 @@ export default function DashboardLayout({
   }
 
   function sidebarContent(mobile = false) {
+    const collapsed = !mobile && sidebarCollapsed;
+    const hint = (label: string) => ({ title: collapsed ? undefined : label, "data-sidebar-tooltip": collapsed ? label : undefined });
+    const emptyChatMessage = tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요.";
     return <>
       <div className="dashboard-sidebar-brand">
-        <a className="brand" href="/" aria-label="DevLink 홈"><BrandLogo /></a>
+        <a className="brand" href="/" aria-label="DevLink 홈" {...hint("DevLink 홈")}><BrandLogo /></a>
         {mobile && <button type="button" className="icon-button" aria-label="메뉴 닫기" onClick={() => setMenuOpen(false)}><Icon name="close" /></button>}
       </div>
       <span className="dashboard-nav-label">워크스페이스</span>
       <nav className="main-nav" aria-label="주 메뉴">
-        <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-current={view === "workspace" ? "page" : undefined}><Icon name="grid" size={19} /><span>대시보드</span></button>
-        <button type="button" className={`nav-item${view === "agents" ? " active" : ""}`} onClick={() => changeView("agents")} aria-current={view === "agents" ? "page" : undefined}><Icon name="agent" size={19} /><span>Agent 관리</span></button>
-        <button type="button" className={`nav-item${view === "teams" ? " active" : ""}`} onClick={() => changeView("teams")} aria-current={view === "teams" ? "page" : undefined}><Icon name="team" size={19} /><span>팀 관리</span></button>
-        <a className="nav-item" href="/tree"><Icon name="activity" size={19} /><span>소스코드 맵</span></a>
+        <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-current={view === "workspace" ? "page" : undefined} aria-label="대시보드" {...hint("대시보드")}><Icon name="grid" size={19} /><span>대시보드</span></button>
+        <button type="button" className={`nav-item${view === "agents" ? " active" : ""}`} onClick={() => changeView("agents")} aria-current={view === "agents" ? "page" : undefined} aria-label="Agent 관리" {...hint("Agent 관리")}><Icon name="agent" size={19} /><span>Agent 관리</span></button>
+        <button type="button" className={`nav-item${view === "teams" ? " active" : ""}`} onClick={() => changeView("teams")} aria-current={view === "teams" ? "page" : undefined} aria-label="팀 관리" {...hint("팀 관리")}><Icon name="team" size={19} /><span>팀 관리</span></button>
+        <a className="nav-item" href="/tree" aria-label="소스코드 맵" {...hint("소스코드 맵")}><Icon name="activity" size={19} /><span>소스코드 맵</span></a>
       </nav>
-      <section className="dashboard-chats" aria-label="최근 채팅">
+      {!collapsed && <section className="dashboard-chats" aria-label="최근 채팅">
         <div className="dashboard-chats-heading"><h2>최근 채팅</h2><span>{taskList.length}</span>{tasksLoading && <span className="dashboard-chat-updating" role="status">갱신 중</span>}</div>
-        {tasksError && <div className="dashboard-chat-error" role="status"><p>채팅을 불러오지 못했어요.</p><button type="button" onClick={onRefresh} disabled={tasksLoading}>다시 불러오기</button></div>}
+        {tasksError && <div className="dashboard-chat-error" role="status"><p>채팅을 불러오지 못했어요.</p><button type="button" onClick={onRefresh} disabled={tasksLoading} aria-label="채팅 다시 불러오기" title="채팅 다시 불러오기">다시 불러오기</button></div>}
         <div className="dashboard-chat-list">
           {taskList.map((task) => {
             const active = view === "conversation" && selectedTaskId === task.taskId;
             const unread = unreadTaskIds?.has(task.taskId) ?? false;
-            return <button className={`dashboard-chat-item${active ? " is-selected" : ""}${unread ? " has-unread" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} aria-label={`${taskTitle(task)}${unread ? ", 읽지 않은 새 내용 있음" : ""}`} title={taskTitle(task)} disabled={!onSelectTask}>
+            const label = `#${task.taskId} ${taskTitle(task)}, ${taskStatusLabels[task.status]}${unread ? ", 읽지 않은 새 내용 있음" : ""}`;
+            return <button className={`dashboard-chat-item${active ? " is-selected" : ""}${unread ? " has-unread" : ""}`} type="button" key={task.taskId} onClick={() => selectTask(task.taskId)} aria-current={active ? "page" : undefined} aria-label={label} title={label} disabled={!onSelectTask}>
               <span className="dashboard-chat-title">{unread && <span className="dashboard-unread-dot" aria-hidden="true" />}<ChatSessionTitle title={taskTitle(task)} active={active} visible={!mobile || menuOpen} /><span className={`dashboard-task-badge dashboard-task-${task.status.toLowerCase()}`}>{taskStatusLabels[task.status]}</span></span>
             </button>;
           })}
-          {taskList.length === 0 && !tasksError && <div className="dashboard-chat-empty"><Icon name="book" size={23} /><p>{tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요."}</p></div>}
+          {taskList.length === 0 && !tasksError && <div className="dashboard-chat-empty" title={emptyChatMessage}><Icon name="book" size={23} /><p>{emptyChatMessage}</p></div>}
         </div>
-      </section>
-      {import.meta.env.DEV && <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined}><Icon name="eye" size={18} /><span>디자인 미리보기</span><Icon name="chevron" size={14} /></button></div>}
+      </section>}
+      <div className="dashboard-sidebar-footer">
+      {import.meta.env.DEV && <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined} aria-label="디자인 미리보기" {...hint("디자인 미리보기")}><Icon name="eye" size={18} /><span>디자인 미리보기</span><Icon name="chevron" size={14} /></button></div>}
       <div className="sidebar-bottom"><div className="sidebar-profile">
-        <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-label="내 프로필과 설정 열기"><span className="avatar">{profileName.slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{profileName}</strong><span title={profileEmail}>{profileEmail}</span></span></button>
-        <button type="button" className={`icon-button${view === "settings" || view === "guide" ? " is-selected" : ""}`} onClick={() => changeView("settings")} aria-label="설정" title="설정"><SettingsIcon /></button>
-        <button type="button" className="icon-button" onClick={logout} disabled={loggingOut} aria-label={loggingOut ? "로그아웃 처리 중" : "로그아웃"} title="로그아웃"><Icon name="logout" size={17} /></button>
+        <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-label={`${profileName}, 내 프로필과 설정 열기`} {...hint(`${profileName} · 내 프로필과 설정`)}><span className="avatar">{profileName.slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{profileName}</strong><span title={collapsed ? undefined : profileEmail}>{profileEmail}</span></span></button>
+        {!collapsed && <>
+          <button type="button" className={`icon-button${view === "settings" || view === "guide" ? " is-selected" : ""}`} onClick={() => changeView("settings")} aria-label="설정" title="설정"><SettingsIcon /></button>
+          <button type="button" className="icon-button" onClick={logout} disabled={loggingOut} aria-label={loggingOut ? "로그아웃 처리 중" : "로그아웃"} title="로그아웃"><Icon name="logout" size={17} /></button>
+        </>}
       </div></div>
+      </div>
     </>;
   }
 
-  return <div className={`workspace-dashboard app-shell min-h-screen${view === "conversation" ? " is-conversation" : ""}`}>
+  return <div className={`workspace-dashboard app-shell min-h-screen${view === "conversation" ? " is-conversation" : ""}${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
     <PageTitle title={view === "conversation" && selectedTask ? taskTitle(selectedTask) : pageLabel} />
-    <aside className="sidebar" aria-label="워크스페이스 메뉴">{sidebarContent()}</aside>
+    <aside className="sidebar" aria-label="워크스페이스 메뉴" ref={sidebar}>
+      <div className="dashboard-sidebar-content" id={sidebarId}>{sidebarContent()}</div>
+      <button type="button" className="dashboard-sidebar-toggle" onClick={() => setSidebarCollapsed((current) => !current)} aria-label={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"} title={sidebarCollapsed ? undefined : "사이드바 접기"} data-sidebar-tooltip={sidebarCollapsed ? "사이드바 펼치기" : undefined} aria-expanded={!sidebarCollapsed} aria-controls={sidebarId}>
+        <span className="dashboard-sidebar-toggle-hint" aria-hidden="true"><Icon name="chevron" size={15} /></span>
+      </button>
+    </aside>
+    {sidebarCollapsed && !menuOpen && <DashboardSidebarTooltip sidebar={sidebar} />}
     <dialog ref={menuDialog} className="dashboard-menu-dialog" aria-label="워크스페이스 메뉴" onKeyDown={(event) => { if (event.key === "Escape") event.stopPropagation(); }} onCancel={(event) => { event.preventDefault(); setMenuOpen(false); }} onClick={(event) => { if (event.target === event.currentTarget) setMenuOpen(false); }}><div className="dashboard-mobile-sidebar">{sidebarContent(true)}</div></dialog>
     <div className="main-shell">
       <header className="topbar">

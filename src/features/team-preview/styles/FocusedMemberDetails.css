@@ -37,10 +37,6 @@
 .imi-avatar > svg { width: 29px; height: 29px; }
 .imi-identity { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; gap: 7px; }
 .imi-header-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; }
-.imi-agent-jump { display: inline-flex; align-items: center; gap: 4px; padding: 3px 0; border: 0; background: transparent; color: #d5e9bc; font-size: 15px; line-height: 1.35; white-space: nowrap; }
-.imi-agent-jump > svg { transform: rotate(90deg); }
-.imi-agent-jump:hover { color: #efffda; }
-.imi-agent-jump:focus-visible { outline: 2px solid #d5e9bc; outline-offset: 3px; border-radius: 3px; }
 .itp-member-inspector .imi-identity h2 { margin: 0; color: #f4f8ee; font-size: 30px; font-weight: 600; line-height: 1.2; letter-spacing: -.8px; overflow-wrap: anywhere; }
 .imi-role { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; color: #d8ebc2; border: 1px solid #c4df9f30; border-radius: 6px; background: #b9d99712; font-size: 15px; font-weight: 450; line-height: 1.35; }
 .imi-close { display: inline-grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; margin-left: auto; padding: 0; color: #d5e2d1; border: 1px solid #d8e8d52b; border-radius: 12px; background: #e3efd909; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
@@ -52,14 +48,14 @@
 .imi-scroll::-webkit-scrollbar-thumb { border: 2px solid #13231f; border-radius: 6px; background: #819674; }
 .imi-scroll:focus-visible { outline: 2px solid #cceca1; outline-offset: -5px; border-radius: 9px; }
 .imi-section-heading > h3 { margin: 0; color: #f0f5e9; font-size: 19px; font-weight: 550; line-height: 1.4; letter-spacing: -.35px; }
-.imi-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0 0 27px; padding: 16px 4px; border: 1px solid #d6e8c827; border-radius: 13px; background: #d2ebbf07; }
+.imi-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0 0 27px; padding: 16px 4px; border: 1px solid #d6e8c827; border-radius: 13px; background: #d2ebbf07; }
 .imi-summary > div { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; gap: 6px; padding: 0 4px; }
 .imi-summary > div + div { border-left: 1px solid #cce0bc26; }
 .imi-summary strong { color: #e4f5cf; font-size: 28px; line-height: 1.15; font-weight: 550; letter-spacing: -.7px; font-variant-numeric: tabular-nums; }
 .imi-summary small { margin-left: 4px; color: #c5d6bb; font-size: 15px; font-weight: 450; letter-spacing: 0; }
 .imi-summary span { color: #c5d6bb; font-size: 15px; line-height: 1.45; text-align: center; word-break: keep-all; }
 .imi-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
-.imi-section-heading > span { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; color: #d8edc0; border: 1px solid #c7e6a83b; border-radius: 8px; background: #c7e6a80c; font-size: 15px; line-height: 1; font-weight: 500; }
+.imi-section-heading > span { color: #c5d6bb; font-size: 15px; line-height: 1.4; font-weight: 450; font-variant-numeric: tabular-nums; }
 .imi-agent-list { display: flex; flex-direction: column; gap: 10px; }
 .imi-agent-card { min-width: 0; padding: 12px 14px; border: 1px solid #d4e7c631; border-radius: 12px; background: linear-gradient(135deg, #d8ebc40c, #0d1b16a1); box-shadow: inset 0 1px 0 #f2ffe90a; }
 .imi-agent-heading { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; }
@@ -68,7 +64,8 @@
 .imi-status > i { display: block; width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: #9cac95; }
 .imi-status.is-online { color: #d5edb4; }
 .imi-status.is-online > i { background: #c3ea91; box-shadow: 0 0 7px #b9e48626; }
-.imi-tool-badge { flex-shrink: 0; white-space: nowrap; padding: 2px 8px; border: 1px solid #d8eac12b; border-radius: 6px; color: #d6ebbd; background: #d6eabd0c; font-size: 16px; font-weight: 550; line-height: 1.45; }
+.imi-tool-icon { display: inline-grid; place-items: center; flex-shrink: 0; width: 30px; height: 30px; border: 1px solid #d8eac12b; border-radius: 8px; background: #ffffffed; }
+.imi-tool-icon > img { display: block; width: 20px; height: 20px; object-fit: contain; }
 .imi-agent-description { margin: 8px 0 0; color: #e0ebd7; font-size: 17px; line-height: 1.5; letter-spacing: -.15px; word-break: keep-all; overflow-wrap: anywhere; }
 .imi-empty { margin: 0; padding: 20px 17px; color: #c8d7bf; border: 1px dashed #d3e7bd3d; border-radius: 12px; background: #d0e8ba06; font-size: 17px; line-height: 1.7; word-break: keep-all; }
 .imi-footer { flex: 0 0 auto; padding: 16px 20px 18px; border-top: 1px solid #d8e9cf24; background: #0c191ad9; }
@@ -106,7 +103,7 @@
 }
 @container (max-width: 440px) {
   .imi-agent-heading { grid-template-columns: minmax(0, 1fr) auto; }
-  .imi-agent-heading > .imi-tool-badge { grid-column: 1; grid-row: 1; justify-self: start; }
+  .imi-agent-heading > .imi-tool-icon { grid-column: 1; grid-row: 1; justify-self: start; }
   .imi-agent-heading > .imi-status { grid-column: 2; grid-row: 1; }
   .imi-agent-heading > h4 { grid-column: 1 / -1; grid-row: 2; }
 }

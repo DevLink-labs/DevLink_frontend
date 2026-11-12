@@ -8,7 +8,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
-    files: ['**/*.{ts,tsx}', 'src/components/common/**/*.{js,jsx}', 'src/features/dependency-tree/**/*.{js,jsx}', 'src/pages/DependencyTreePage.jsx', 'src/features/dashboard-design/**/*.{js,jsx}', 'src/pages/DashboardDesignPage.jsx', 'src/features/tasks/**/*.{js,jsx}'],
+    files: ['**/*.{ts,tsx}', 'src/components/common/**/*.{js,jsx}', 'src/features/dependency-tree/**/*.{js,jsx}', 'src/pages/DependencyTreePage.jsx', 'src/features/dashboard-design/**/*.{js,jsx}', 'src/pages/DashboardDesignPage.jsx', 'src/features/tasks/**/*.{js,jsx}', 'src/features/team-preview/components/AgentStatusPopover.jsx', 'src/features/team-preview/lib/agentTaskActivities.js'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,

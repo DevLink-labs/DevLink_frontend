@@ -1,3 +1,9 @@
+export interface PreviewAgentActivity {
+  state: "working" | "requesting" | "idle" | "loading" | "unavailable";
+  summary: string;
+  activeSessionCount: number;
+}
+
 export interface PreviewAgent {
   id: string
   name: string
