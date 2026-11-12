@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { Team } from "@/features/teams/types";
-import type { PreviewMember } from "../data/previewData";
+import type { PreviewAgentActivity, PreviewMember } from "../data/previewData";
 import type { AgentSessionConnection } from "../lib/agentSessionConnections.js";
 import { Icon } from "@/components/ui";
 import PageTitle from "@/components/common/PageTitle";
@@ -264,6 +264,7 @@ interface LiveWorkspace {
   selectedTeam: Team | null;
   members: PreviewMember[];
   connections: AgentSessionConnection[];
+  agentActivities?: ReadonlyMap<string, PreviewAgentActivity>;
   agentCount: number;
   sceneStatus: "loading" | "error" | "empty" | "ready";
   onSelectTeam: (teamId: number) => void;
@@ -694,9 +695,11 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
             <div className="itp-scene">
               {mountScene && (
                 <ImmersiveTeamScene
+                  teamId={activeTeamId}
                   teamName={teamName}
                   members={loadingTeam ? loadingMembers : members}
                   connections={loadingTeam ? [] : workspace?.connections ?? []}
+                  agentActivities={workspace?.agentActivities}
                   loading={loadingTeam}
                   selectedMemberId={member?.id ?? ""}
                   focusedMemberId={focusedMemberId}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { CSSProperties, RefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -9,12 +9,15 @@ import type { AgentCompanion, AgentCompanionAsset } from "../lib/agentCompanionA
 import { createAgentSessionLinks } from "../lib/agentSessionLinks.js";
 import type { AgentSessionAnchor } from "../lib/agentSessionLinks.js";
 import type { AgentSessionConnection } from "../lib/agentSessionConnections.js";
-import type { PreviewMember } from "../data/previewData";
+import type { PreviewAgentActivity, PreviewMember } from "../data/previewData";
+import AgentStatusPopover from "./AgentStatusPopover.jsx";
 
 interface ImmersiveTeamSceneProps {
+  teamId?: string;
   teamName: string;
   members: PreviewMember[];
   connections: AgentSessionConnection[];
+  agentActivities?: ReadonlyMap<string, PreviewAgentActivity>;
   loading: boolean;
   selectedMemberId: string;
   focusedMemberId: string | null;
@@ -35,6 +38,12 @@ const MEMBER_REVEAL_RISE = 0.24;
 const TEAM_CHARACTER_HEIGHT = 2.7;
 const TEAM_CHARACTER_CENTER_Y = 0.5;
 const AGENT_FOCUS_DURATION_MS = 3000;
+
+interface SelectedSceneAgent {
+  memberId: string;
+  agentId: string;
+  teamKey: string;
+}
 
 async function loadTeamCharacter(): Promise<THREE.Group> {
   const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/character2.glb`);
@@ -95,9 +104,11 @@ function disposeObjectResources(root: THREE.Object3D) {
 }
 
 export default function ImmersiveTeamScene({
+  teamId,
   teamName,
   members,
   connections,
+  agentActivities,
   loading,
   selectedMemberId,
   focusedMemberId,
@@ -115,7 +126,43 @@ export default function ImmersiveTeamScene({
   const memberLabels = useRef(new Map<string, HTMLButtonElement>());
   const wake = useRef<() => void>(() => {});
   const requestRender = useRef<() => void>(() => {});
+  const [popoverSelection, setPopoverSelection] = useState<SelectedSceneAgent | null>(null);
+  const selectedAgentRef = useRef<SelectedSceneAgent | null>(null);
+  const popoverPanel = useRef<HTMLElement>(null);
+  const agentPicker = useRef<HTMLSelectElement>(null);
+  const popoverTrigger = useRef<HTMLElement | null>(null);
+  const focusPopover = useRef(false);
+  const chooseAgent = useRef<(memberId: string, agentId: string, trigger?: HTMLElement) => void>(
+    () => {},
+  );
+  const popoverId = useId();
+  const teamKey = teamId ?? teamName;
+  const focusedMember = members.find((member) => member.id === focusedMemberId);
+  const selectedAgent =
+    active && !loading && popoverSelection?.teamKey === teamKey &&
+    popoverSelection.memberId === focusedMemberId
+      ? focusedMember?.agents.find((agent) => agent.id === popoverSelection.agentId)
+      : undefined;
+  const dismissAgentPopover = useCallback((restoreFocus = false) => {
+    selectedAgentRef.current = null;
+    focusPopover.current = false;
+    if (popoverPanel.current) popoverPanel.current.style.visibility = "hidden";
+    setPopoverSelection(null);
+    if (restoreFocus && popoverTrigger.current?.isConnected)
+      popoverTrigger.current.focus({ preventScroll: true });
+    popoverTrigger.current = null;
+  }, []);
+  const syncAgentPopover = useEffectEvent(() => {
+    const selection = selectedAgentRef.current;
+    if (selection && (
+      !active || loading || focusedMemberId !== selection.memberId ||
+      teamKey !== selection.teamKey ||
+      !members.some((member) => member.id === selection.memberId &&
+        member.agents.some((agent) => agent.id === selection.agentId))
+    )) dismissAgentPopover();
+  });
   const control = useRef({
+    teamKey,
     teamName,
     members,
     connections,
@@ -132,6 +179,7 @@ export default function ImmersiveTeamScene({
 
   useEffect(() => {
     control.current = {
+      teamKey,
       teamName,
       members,
       connections,
@@ -145,8 +193,10 @@ export default function ImmersiveTeamScene({
       topView,
       onAvailabilityChange,
     };
+    syncAgentPopover();
     wake.current();
   }, [
+    teamKey,
     teamName,
     members,
     connections,
@@ -160,6 +210,30 @@ export default function ImmersiveTeamScene({
     topView,
     onAvailabilityChange,
   ]);
+
+  useEffect(() => {
+    requestRender.current();
+  }, [popoverSelection, agentActivities]);
+
+  useEffect(() => {
+    if (!popoverSelection) return;
+    function outside(event: PointerEvent) {
+      if (event.target instanceof Node && !popoverPanel.current?.contains(event.target))
+        dismissAgentPopover();
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      dismissAgentPopover(true);
+    }
+    document.addEventListener("pointerdown", outside, true);
+    document.addEventListener("keydown", escape, true);
+    return () => {
+      document.removeEventListener("pointerdown", outside, true);
+      document.removeEventListener("keydown", escape, true);
+    };
+  }, [popoverSelection, dismissAgentPopover]);
 
   useEffect(() => {
     onRenderRequestChange(() => requestRender.current());
@@ -275,6 +349,28 @@ export default function ImmersiveTeamScene({
       window.clearTimeout(agentFocusTimer);
       agentFocusTimer = undefined;
     }
+    function selectAgent(memberId: string, agentId: string, trigger?: HTMLElement) {
+      if (
+        !control.current.active || control.current.loading ||
+        memberId !== control.current.focusedMemberId || teamReveal < 0.65 || isTransitioning()
+      ) return;
+      const member = control.current.members.find((item) => item.id === memberId);
+      if (!member?.agents.some((agent) => agent.id === agentId)) return;
+      clearAgentFocus();
+      agentFocus = { memberId, agentId, until: performance.now() + AGENT_FOCUS_DURATION_MS };
+      agentFocusTimer = window.setTimeout(() => {
+        agentFocusTimer = undefined;
+        start();
+      }, AGENT_FOCUS_DURATION_MS);
+      const selection = { memberId, agentId, teamKey: control.current.teamKey };
+      selectedAgentRef.current = selection;
+      popoverTrigger.current = trigger ?? agentPicker.current;
+      focusPopover.current = true;
+      if (popoverPanel.current) popoverPanel.current.style.visibility = "hidden";
+      setPopoverSelection(selection);
+      start();
+    }
+    chooseAgent.current = selectAgent;
     function createMemberNodes(teamMembers: PreviewMember[]) {
       const asset = companionAsset;
       if (!asset) return [];
@@ -662,6 +758,51 @@ export default function ImmersiveTeamScene({
       return progress > 0 || sceneProgress > 0;
     }
 
+    function updateAgentPopover() {
+      const panel = popoverPanel.current;
+      const selection = selectedAgentRef.current;
+      if (!panel || !selection) return;
+      const anchor = sessionAnchors.get(selection.agentId);
+      if (
+        !anchor || selection.memberId !== control.current.focusedMemberId ||
+        teamReveal < 0.65 || isTransitioning()
+      ) {
+        panel.style.visibility = "hidden";
+        return;
+      }
+      anchor.object.getWorldPosition(labelPoint).project(camera);
+      if (labelPoint.z < -1 || labelPoint.z > 1) {
+        panel.style.visibility = "hidden";
+        return;
+      }
+      const screenX = (labelPoint.x * 0.5 + 0.5) * width;
+      const screenY = (-labelPoint.y * 0.5 + 0.5) * height;
+      const left = Math.max(12, focusFrame.left + 4);
+      const right = Math.min(width - 12, focusFrame.right - 4);
+      const top = Math.max(84, focusFrame.top + 4);
+      const bottom = Math.min(height - 16, focusFrame.bottom - 4);
+      panel.style.maxWidth = `${Math.max(1, right - left)}px`;
+      panel.style.maxHeight = `${Math.max(1, bottom - top)}px`;
+      const panelWidth = panel.offsetWidth;
+      const panelHeight = panel.offsetHeight;
+      const x = THREE.MathUtils.clamp(
+        screenX + 24,
+        left,
+        Math.max(left, right - panelWidth),
+      );
+      const y = THREE.MathUtils.clamp(
+        screenY - panelHeight - 24,
+        top,
+        Math.max(top, bottom - panelHeight),
+      );
+      panel.style.transform = `translate3d(${x}px,${y}px,0)`;
+      panel.style.visibility = "visible";
+      if (focusPopover.current) {
+        focusPopover.current = false;
+        panel.focus({ preventScroll: true });
+      }
+    }
+
     function frame(now: number) {
       if (disposed || assetFailed || contextLost || !control.current.active) {
         renderer.setAnimationLoop(null);
@@ -679,6 +820,7 @@ export default function ImmersiveTeamScene({
       if (transition > 0 || sceneProgress > 0) {
         pointerDown = null;
         pointer.set(0, 0);
+        if (selectedAgentRef.current) dismissAgentPopover();
       }
       const focusId = control.current.focusedMemberId;
       const lookingDown = control.current.topView;
@@ -853,6 +995,7 @@ export default function ImmersiveTeamScene({
       renderer.render(scene, camera);
       if (!loading && teamCharacter && teamReveal >= 0.25) updateLabels();
       else if (labelsElement) labelsElement.style.visibility = "hidden";
+      updateAgentPopover();
       if (!availabilityReported && companionAsset && teamCharacter) {
         control.current.onAvailabilityChange(true);
         availabilityReported = true;
@@ -964,17 +1107,7 @@ export default function ImmersiveTeamScene({
       if (pointerDown && !pointerDown.moved) {
         const selection = hit(event);
         if (selection?.agentId && selection.memberId === control.current.focusedMemberId) {
-          clearAgentFocus();
-          agentFocus = {
-            memberId: selection.memberId,
-            agentId: selection.agentId,
-            until: performance.now() + AGENT_FOCUS_DURATION_MS,
-          };
-          agentFocusTimer = window.setTimeout(() => {
-            agentFocusTimer = undefined;
-            start();
-          }, AGENT_FOCUS_DURATION_MS);
-          start();
+          selectAgent(selection.memberId, selection.agentId);
         } else if (selection) control.current.onSelectMember(selection.memberId);
       }
       pointerDown = null;
@@ -991,7 +1124,7 @@ export default function ImmersiveTeamScene({
     function wheel(event: WheelEvent) {
       if (!control.current.active || event.ctrlKey) return;
       if (event.target instanceof Element) {
-        if (event.target.closest(".itp-selection, .itp-team-picker-panel, .itp-member-list"))
+        if (event.target.closest(".itp-selection, .itp-team-picker-panel, .itp-member-list, .itp-agent-status-popover, .itp-agent-picker"))
           return;
         let ancestor: HTMLElement | null =
           event.target instanceof HTMLElement ? event.target : event.target.parentElement;
@@ -1021,6 +1154,7 @@ export default function ImmersiveTeamScene({
     }
     function visibility() {
       if (document.hidden) {
+        if (selectedAgentRef.current) dismissAgentPopover();
         renderer.setAnimationLoop(null);
         running = false;
       } else start();
@@ -1028,6 +1162,7 @@ export default function ImmersiveTeamScene({
     function lost(event: Event) {
       event.preventDefault();
       contextLost = true;
+      if (selectedAgentRef.current) dismissAgentPopover();
       renderer.setAnimationLoop(null);
       running = false;
       if (labelsLayer.current) labelsLayer.current.style.visibility = "hidden";
@@ -1094,6 +1229,8 @@ export default function ImmersiveTeamScene({
     return () => {
       disposed = true;
       clearAgentFocus();
+      selectedAgentRef.current = null;
+      chooseAgent.current = () => {};
       stage?.style.removeProperty("--itp-team-reveal");
       stage?.style.removeProperty("--itp-team-reveal-visibility");
       if (labelsElement) labelsElement.style.visibility = "hidden";
@@ -1124,7 +1261,7 @@ export default function ImmersiveTeamScene({
       renderer.dispose();
       canvas.remove();
     };
-  }, []);
+  }, [dismissAgentPopover]);
 
   return (
     <div
@@ -1176,7 +1313,40 @@ export default function ImmersiveTeamScene({
             <span>{member.name}</span>
           </button>
         ))}
+        {active && !loading && focusedMember && focusedMember.agents.length > 0 && (
+          <label
+            className="itp-agent-picker"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span>Agent 상태</span>
+            <select
+              ref={agentPicker}
+              value={selectedAgent?.id ?? ""}
+              aria-label={`${focusedMember.name} 팀원의 Agent 상태 확인`}
+              aria-controls={selectedAgent ? popoverId : undefined}
+              onChange={(event) => {
+                const agentId = event.currentTarget.value;
+                if (agentId) chooseAgent.current(focusedMember.id, agentId, event.currentTarget);
+              }}
+            >
+              <option value="" disabled>Agent 선택</option>
+              {focusedMember.agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>{agent.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
+      {selectedAgent && (
+        <AgentStatusPopover
+          id={popoverId}
+          panelRef={popoverPanel}
+          agent={selectedAgent}
+          activity={agentActivities?.get(selectedAgent.id)}
+          onClose={() => dismissAgentPopover(true)}
+        />
+      )}
     </div>
   );
 }
