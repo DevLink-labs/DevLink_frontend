@@ -47,6 +47,7 @@ if (process.isMainFrame && window.location.origin === origin) {
         inspect: (id) => ipcRenderer.invoke("devlink:inspectSetup", id),
         resume: (id, password) =>
           ipcRenderer.invoke("devlink:resumeSetup", id, password),
+        issueToken: (id) => ipcRenderer.invoke("devlink:issueToken", id),
         check: (id) => ipcRenderer.invoke("devlink:checkSetup", id),
         openConfigFolder: (id) =>
           ipcRenderer.invoke("devlink:openConfigFolder", id),

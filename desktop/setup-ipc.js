@@ -13,6 +13,7 @@ const {
 const {
   listTeamProfiles,
   prepareAccountProfile,
+  readProfileAgent,
   readSavedBinding,
   resolveProjectPaths,
 } = require("./setup-profiles");
@@ -200,6 +201,7 @@ function registerSetupHandlers(
       await loadPaths(),
       current,
       current.project,
+      current.tool,
     );
     if (
       !samePath(paths.config, current.paths.config) ||
@@ -456,12 +458,23 @@ function registerSetupHandlers(
       if (!name || name.length > 100 || !(await stat(project)).isDirectory()) {
         throw new Error("이름이 1~100자인 프로젝트 폴더를 선택해주세요.");
       }
-      const paths = await resolveProjectPaths(
-        await loadPaths(),
-        account,
-        project,
-      );
-      const tools = await detectTools(paths);
+      const base = await loadPaths();
+      const tools = await detectTools(base);
+      // 한 도구의 프로필 오류는 그 도구를 선택할 때만 표시
+      const profiles = {};
+      for (const tool of tools) {
+        profiles[tool] = await resolveProjectPaths(
+          base,
+          account,
+          project,
+          tool,
+        ).then(
+          (paths) => ({ paths }),
+          (error) => ({ error }),
+        );
+      }
+      const failed = tools.map((tool) => profiles[tool].error).filter(Boolean);
+      if (tools.length > 0 && failed.length === tools.length) throw failed[0];
       if (version !== documentVersion) return null;
 
       selection = {
@@ -469,7 +482,7 @@ function registerSetupHandlers(
         project,
         name,
         tools,
-        paths,
+        profiles,
         userId: String(account.userId),
         teamId: String(account.teamId),
         email: account.email,
@@ -486,6 +499,7 @@ function registerSetupHandlers(
     metadata,
     options,
     resume = false,
+    issueToken = false,
   ) {
     const current = requireSelection(id);
     const version = documentVersion;
@@ -523,8 +537,11 @@ function registerSetupHandlers(
       );
     }
 
+    if (!current.paths && current.profiles[tool].error)
+      throw current.profiles[tool].error;
     current.agentMetadata = agent;
     current.tool = tool;
+    current.paths ??= current.profiles[tool].paths;
     current.targetPath =
       tool === "claude-code"
         ? path.join(current.project, ".mcp.json")
@@ -533,6 +550,7 @@ function registerSetupHandlers(
       await loadPaths(),
       current,
       current.project,
+      tool,
     );
     if (
       !samePath(paths.config, current.paths.config) ||
@@ -570,6 +588,11 @@ function registerSetupHandlers(
 
     current.manualConfig = undefined;
     current.needsPassword = false;
+    current.tokenRequired = false;
+    // 이미 등록한 Agent는 폴더명 대신 저장된 이름으로 재연결
+    const saved = resume
+      ? null
+      : await readProfileAgent(paths, current, current.project, tool);
     const input = {
       schemaVersion: 1,
       serverUrl: paths.serverUrl,
@@ -580,11 +603,11 @@ function registerSetupHandlers(
       team: { id: current.teamId },
       project: resume
         ? { path: current.project }
-        : { path: current.project, name: current.name },
+        : { path: current.project, name: saved?.projectName ?? current.name },
       tool: { type: tool },
       agent: resume
-        ? { action: "use", id: current.agentId, issueToken: false }
-        : { action: "create", name: current.name, ...agent },
+        ? { action: "use", id: current.agentId, issueToken }
+        : { action: "create", name: saved?.name ?? current.name, ...agent },
       mcp:
         current.mcpMode === "manual"
           ? { mode: "manual" }
@@ -632,6 +655,28 @@ function registerSetupHandlers(
       };
     }
 
+    // 기존 Agent의 토큰 발급은 사용자 동의 후 별도 요청으로 진행
+    if (error?.code === "SETUP_TOKEN_REQUIRED" && !issueToken) {
+      const agentId =
+        (await readProfileAgent(paths, current, current.project, tool))
+          ?.agentId ?? error.known?.agentId;
+      if (typeof agentId === "string" && /^[1-9]\d*$/.test(agentId)) {
+        current.agentId = agentId;
+        current.tokenRequired = true;
+        current.fingerprint = await fingerprint(paths);
+        return { state: "token", agentId };
+      }
+    }
+    // 발급 결과를 확인하지 못하면 CLI가 자동 재발급하지 않으므로 상태 확인 안내
+    if (error?.code === "SETUP_TOKEN_REQUIRED" && issueToken) {
+      return {
+        state: "error",
+        code: error.code,
+        message:
+          "연결 토큰 발급 결과를 확인하지 못했습니다. 다른 PC의 연결이 끊겼을 수 있으니 Agent 목록에서 상태를 확인한 뒤 이 폴더를 다시 연결해주세요.",
+      };
+    }
+
     const manual = error?.manualConfig;
     if (
       error?.code === "SETUP_MANUAL_ACTION_REQUIRED" &&
@@ -654,7 +699,7 @@ function registerSetupHandlers(
         state: "error",
         code: error.code,
         message:
-          "이 폴더는 이 PC에서 다른 AI 도구나 설정으로 이미 연결돼 있습니다. 처음 연결한 AI 도구로 다시 시도해주세요.",
+          "이 폴더는 이 PC에서 다른 연결 설정으로 이미 연결돼 있습니다. Agent 목록과 연결 상태를 확인해주세요.",
       };
     }
 
@@ -676,7 +721,42 @@ function registerSetupHandlers(
       message: error?.message ?? "프로젝트를 연결하지 못했습니다.",
     };
   }
-  handle("setup", (frame, ...args) => exclusive(() => connect(frame, ...args)));
+  handle("setup", (frame, id, tool, password, metadata, options) =>
+    exclusive(() => connect(frame, id, tool, password, metadata, options)),
+  );
+  handle("issueToken", (frame, id) =>
+    exclusive(async () => {
+      const current = requireSelection(id);
+      if (!current.tokenRequired)
+        throw new Error("토큰 발급이 필요한 연결을 다시 확인해주세요.");
+      const paths = await resolveProjectPaths(
+        await loadPaths(),
+        current,
+        current.project,
+        current.tool,
+      );
+      if (
+        !samePath(paths.config, current.paths.config) ||
+        paths.serverUrl !== current.paths.serverUrl ||
+        current.fingerprint !== (await fingerprint(paths))
+      ) {
+        throw new Error(
+          "연결 프로필이 변경됐습니다. 프로젝트 설정을 다시 선택해주세요.",
+        );
+      }
+      assertCurrent(current);
+      return connect(
+        frame,
+        id,
+        current.tool,
+        undefined,
+        undefined,
+        { mcpMode: current.mcpMode },
+        true,
+        true,
+      );
+    }),
+  );
   handle("resumeSetup", (frame, id, password) =>
     exclusive(async () => {
       const current = requireSelection(id);
@@ -685,6 +765,7 @@ function registerSetupHandlers(
           await loadPaths(),
           current,
           current.project,
+          current.tool,
         );
         if (
           !samePath(paths.config, current.paths.config) ||
@@ -717,6 +798,7 @@ function registerSetupHandlers(
         await loadPaths(),
         current,
         current.project,
+        current.tool,
       );
       if (
         !current.manualConfig ||

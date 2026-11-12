@@ -88,7 +88,7 @@ async function connect(account, project, password, scenario, manual = false) {
   } else {
     await waitFor("window.verificationConnected", "연결 완료");
   }
-  const selected = await resolveProjectPaths(paths, account, await realpath(project));
+  const selected = await resolveProjectPaths(paths, account, await realpath(project), "codex");
   configs.add(selected.config);
   const status = await runStatus(selected);
   assert.equal(status.result.data.connection.setupReady, true);

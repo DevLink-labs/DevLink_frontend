@@ -234,10 +234,29 @@ export default function ProjectConnectView({
         manualSetup ? { mcpMode: mode } : undefined,
       );
       if (!active.current || version !== operationVersion.current) return;
-      if (result.state === "done") complete();
-      else if (result.state === "manual" && manualSetup)
-        setView({ state: "guide" });
-      else setView(localizeSetupError(result));
+      showResult(result);
+    } catch (error) {
+      if (active.current && version === operationVersion.current)
+        setView({ state: "error", message: messageFrom(error) });
+    }
+  }
+
+  function showResult(result: SetupResult) {
+    if (result.state === "done") complete();
+    else if (result.state === "manual" && manualSetup)
+      setView({ state: "guide" });
+    else setView(localizeSetupError(result));
+  }
+
+  async function issueToken() {
+    if (!project || busy || !setup.issueToken) return;
+    const version = operationVersion.current;
+    setProgress({});
+    setView({ state: "running" });
+    try {
+      const result = await setup.issueToken(project.id);
+      if (active.current && version === operationVersion.current)
+        showResult(result);
     } catch (error) {
       if (active.current && version === operationVersion.current)
         setView({ state: "error", message: messageFrom(error) });
@@ -637,6 +656,36 @@ export default function ProjectConnectView({
             </button>
           </div>
         </form>
+      )}
+      {view.state === "token" && (
+        <div className="grid gap-4">
+          <p>
+            이 폴더에 연결된 Agent {view.agentId}의 연결 토큰이 이 PC에
+            없습니다. 새 토큰을 발급하면 연결을 이어서 진행해요.
+          </p>
+          <p className="field-hint">
+            다른 PC에서 이 Agent로 연결해 두었다면 기존 토큰이 무효가 되어 그
+            연결은 끊어집니다.
+          </p>
+          <div className="modal-footer">
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={busy}
+              onClick={close}
+            >
+              취소
+            </button>
+            <button
+              className="button button-primary"
+              type="button"
+              disabled={busy || !setup.issueToken}
+              onClick={() => void issueToken()}
+            >
+              토큰 발급 후 연결
+            </button>
+          </div>
+        </div>
       )}
       {view.state === "manual" && project && selectedTool && (
         <>

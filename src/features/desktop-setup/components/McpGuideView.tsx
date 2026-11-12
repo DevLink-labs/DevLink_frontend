@@ -89,6 +89,7 @@ export default function McpGuideView({
   const [inspection, setInspection] = useState<SetupInspection | null>(null);
   const [busy, setBusy] = useState(false);
   const [passwordRequired, setPasswordRequired] = useState(authRequired);
+  const [tokenAgentId, setTokenAgentId] = useState("");
   const [notice, setNotice] = useState("");
   const generation = useRef(0);
   const connection = inspection?.connection;
@@ -160,11 +161,17 @@ export default function McpGuideView({
       onReady();
   }
 
-  async function resume(password?: string) {
+  async function resume(password?: string, issueToken = false) {
     const version = generation.current;
-    const result = localizeSetupError(await setup.resume!(id, password));
+    const result = localizeSetupError(
+      issueToken
+        ? await setup.issueToken!(id)
+        : await setup.resume!(id, password),
+    );
     if (version !== generation.current) return;
     setPasswordRequired(result.state === "password");
+    setTokenAgentId(result.state === "token" ? result.agentId : "");
+    if (result.state === "token") return;
     if (result.state === "error" || result.state === "password") {
       if (result.message) setNotice(result.message);
       return;
@@ -189,7 +196,7 @@ export default function McpGuideView({
 
   return (
     <div className="grid gap-4">
-      {guide && !passwordRequired && (
+      {guide && !passwordRequired && !tokenAgentId && (
         <>
           <p className="field-hint break-all">
             {guide.projectPath} · Agent {guide.agentId}
@@ -357,7 +364,27 @@ export default function McpGuideView({
           )}
         </>
       )}
-      {!guide && !notice && (
+      {tokenAgentId && (
+        <div className="grid gap-2">
+          <p>
+            Agent {tokenAgentId}의 연결 토큰이 이 PC에 없습니다. 새 토큰을
+            발급하면 연결을 이어서 준비해요.
+          </p>
+          <p className="field-hint">
+            다른 PC에서 이 Agent로 연결해 두었다면 기존 토큰이 무효가 되어 그
+            연결은 끊어집니다.
+          </p>
+          <button
+            className="button button-primary"
+            type="button"
+            disabled={busy || !setup.issueToken}
+            onClick={() => void action(() => resume(undefined, true))}
+          >
+            토큰 발급 후 재개
+          </button>
+        </div>
+      )}
+      {!guide && !notice && !tokenAgentId && (
         <p role="status">
           {passwordRequired
             ? "이 PC의 DevLink 로그인이 만료됐습니다. 현재 계정 비밀번호를 입력해 연결을 재개해주세요."
