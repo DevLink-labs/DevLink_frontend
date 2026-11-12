@@ -482,6 +482,7 @@ test("IPC 상태 조회·설정·수동 확인은 같은 프로젝트 프로필�
   const f = await ipcFixture(t);
   const empty = await f.invoke("status", accountB);
   assert.equal(empty.result.data.connection.setupReady, false);
+  assert.equal(empty.hasSavedConnections, false);
   assert.equal(f.calls.length, 0);
 
   const selection = await f.invoke("pickFolder", accountB);
@@ -502,6 +503,7 @@ test("IPC 상태 조회·설정·수동 확인은 같은 프로젝트 프로필�
   const ready = await f.invoke("status", accountB);
   assert.equal(f.calls.at(-1).config, configs[0]);
   assert.equal(ready.result.data.connection.setupReady, true);
+  assert.equal(ready.hasSavedConnections, true);
 });
 
 test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필로 연결하고 팀 상태는 해당 팀 프로필만 본다", async (t) => {
@@ -529,10 +531,9 @@ test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필
   assert.ok(f.calls.every((call) => [first, second].includes(call.config)));
 
   f.notReady.add(second);
-  assert.equal(
-    (await f.invoke("status", accountB)).result.data.connection.setupReady,
-    false,
-  );
+  const offline = await f.invoke("status", accountB);
+  assert.equal(offline.result.data.connection.setupReady, false);
+  assert.equal(offline.hasSavedConnections, false);
   f.calls.length = 0;
   assert.equal(
     (await f.invoke("status", { ...accountB, teamId: 7 })).result.data
@@ -851,6 +852,10 @@ test("CLI 로그인이 만료된 저장 프로젝트는 목록에 남기고 비�
   assert.equal((await f.invoke("listConnections", accountB)).length, 0);
 
   f.setSessionState("expired");
+  f.notReady.add(config);
+  const status = await f.invoke("status", accountB);
+  assert.equal(status.result.data.connection.setupReady, false);
+  assert.equal(status.hasSavedConnections, true);
   const saved = await f.invoke("listConnections", accountB);
   assert.equal(saved.length, 1);
   assert.equal(saved[0].availability, "auth_required");

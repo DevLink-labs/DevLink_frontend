@@ -411,8 +411,14 @@ function registerSetupHandlers(
   handle("status", async (_frame, account) => {
     useAccount(account);
     let firstError;
+    let hasSavedConnections = false;
     // 현재 팀에 연결된 프로젝트 중 하나라도 준비되면 연결됨
     for (const paths of await listTeamProfiles(await loadPaths(), account)) {
+      if (!hasSavedConnections) {
+        hasSavedConnections = Boolean(
+          await readSavedBinding(paths, account).catch(() => null),
+        );
+      }
       let status;
       try {
         status = await runStatus(paths);
@@ -427,11 +433,11 @@ function registerSetupHandlers(
         data.userId === String(account.userId) &&
         data.teamId === String(account.teamId)
       ) {
-        return status;
+        return { ...status, hasSavedConnections: true };
       }
     }
     if (firstError) throw firstError;
-    return notReady;
+    return { ...notReady, hasSavedConnections };
   });
   handle("pickFolder", (frame, account) =>
     exclusive(async () => {

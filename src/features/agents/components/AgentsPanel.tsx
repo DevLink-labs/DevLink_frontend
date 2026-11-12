@@ -298,7 +298,7 @@ export default function AgentsPanel({
           <p className="management-description">{team.name}의 Agent와 프로젝트 연결 현황</p>
         </div>
         <div className="section-actions management-actions">
-          {desktop?.setup && desktop.getStatus && (
+          {desktop?.setup && desktop.getStatus ? (
             <ProjectConnectView
               key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
               setup={desktop.setup}
@@ -308,15 +308,16 @@ export default function AgentsPanel({
               onRefreshAgents={onRefresh}
               onReadyChange={setPcReady}
             />
+          ) : (
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={openRegister}
+              disabled={loading}
+            >
+              <Icon name="plus" size={18} /> Agent 등록
+            </button>
           )}
-          <button
-            className="button button-primary"
-            type="button"
-            onClick={openRegister}
-            disabled={loading}
-          >
-            <Icon name="plus" size={18} /> Agent 등록
-          </button>
         </div>
       </div>
 

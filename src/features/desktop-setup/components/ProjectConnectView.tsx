@@ -114,6 +114,7 @@ export default function ProjectConnectView({
   const [checking, setChecking] = useState(false);
   const [notice, setNotice] = useState("");
   const [connections, setConnections] = useState<SavedConnection[]>([]);
+  const [hasSavedConnections, setHasSavedConnections] = useState(false);
   const [guideBusy, setGuideBusy] = useState(false);
   const [mcpMode, setMcpMode] = useState<"automatic" | "manual">("automatic");
   const manualSetup =
@@ -133,6 +134,7 @@ export default function ProjectConnectView({
     checking ||
     guideBusy;
   const { userId, teamId, email } = account;
+  const shouldCheckStatus = presentation === "page" || view === null;
   const ready =
     readiness?.userId === userId && readiness.teamId === teamId
       ? readiness.ready
@@ -162,10 +164,14 @@ export default function ProjectConnectView({
   }, [setup, manualSetup, userId, teamId, email]);
 
   useEffect(() => {
+    if (!shouldCheckStatus) return;
     let current = true;
     void getStatus({ userId, teamId, email })
-      .then(({ exitCode, result }) => {
-        if (!current || exitCode !== 0) return;
+      .then(({ exitCode, result, hasSavedConnections }) => {
+        if (!current) return;
+        // 구형 데스크톱 앱에서도 연결 관리로 들어갈 수 있게 유지한다.
+        setHasSavedConnections(hasSavedConnections ?? true);
+        if (exitCode !== 0) return;
         const data = result.data;
         const connected =
           data?.connection.setupReady === true &&
@@ -181,11 +187,13 @@ export default function ProjectConnectView({
               previous.ready),
         }));
       })
-      .catch(() => {});
+      .catch(() => {
+        if (current) setHasSavedConnections(true);
+      });
     return () => {
       current = false;
     };
-  }, [email, getStatus, teamId, userId]);
+  }, [email, getStatus, shouldCheckStatus, teamId, userId]);
 
   function complete() {
     setReadiness({ userId, teamId, ready: true });
@@ -420,7 +428,7 @@ export default function ProjectConnectView({
             ))}
           {!checking && connections.length === 0 && !notice && (
             <p>
-              준비된 프로젝트가 없습니다. ‘이 PC 연결’에서 폴더를 선택해주세요.
+              저장된 연결이 없습니다. Agent 목록의 ‘Agent 추가’에서 시작해주세요.
             </p>
           )}
           {notice && (
@@ -428,37 +436,18 @@ export default function ProjectConnectView({
               {notice}
             </p>
           )}
-          <button
-            className="button button-primary"
-            type="button"
-            disabled={busy}
-            onClick={() => void pickFolder()}
-          >
-            이 PC 연결
-          </button>
         </div>
       )}
       {view.state === "guide" && project && (
-        <>
-          <McpGuideView
-            key={project.id}
-            setup={setup}
-            id={project.id}
-            authRequired={project.authRequired}
-            onBusyChange={setGuideBusy}
-            onReady={markProjectReady}
-          />
-          <div className="modal-footer">
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={busy}
-              onClick={close}
-            >
-              나중에 하기
-            </button>
-          </div>
-        </>
+        <McpGuideView
+          key={project.id}
+          setup={setup}
+          id={project.id}
+          authRequired={project.authRequired}
+          onBusyChange={setGuideBusy}
+          onReady={markProjectReady}
+          onClose={close}
+        />
       )}
       {(view.state === "choose" || view.state === "picking") && (
         <>
@@ -836,31 +825,32 @@ export default function ProjectConnectView({
           PC: {ready ? "연결" : "미연결"}
         </span>
       )}
-      <button
-        className="button button-secondary"
-        type="button"
-        onClick={() => setView({ state: "choose" })}
-      >
-       PC 연결
-      </button>
-      {manualSetup && (
+      {manualSetup && hasSavedConnections && (
         <button
           className="button button-secondary"
           type="button"
           disabled={busy}
           onClick={() => void openConnections()}
         >
-          AI 도구 설정
+          연결 관리
         </button>
       )}
+      <button
+        className="button button-primary"
+        type="button"
+        disabled={busy}
+        onClick={() => setView({ state: "choose" })}
+      >
+        <Icon name="plus" size={18} /> Agent 추가
+      </button>
       {view && (
         <Modal
           title={
             view.state === "guide"
               ? "AI 도구 직접 설정"
               : view.state === "connections"
-                ? "AI 도구 설정"
-                : "PC 연결"
+                ? "연결 관리"
+                : "Agent 추가"
           }
           description={`${teamName} 팀의 이 PC 프로젝트 설정입니다.`}
           onClose={close}

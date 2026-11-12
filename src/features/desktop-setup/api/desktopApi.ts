@@ -1,5 +1,6 @@
 export interface DesktopStatus {
   exitCode: number;
+  hasSavedConnections?: boolean;
   result: {
     data?: {
       userId?: string;
