@@ -17,10 +17,12 @@ const { test } = require("node:test");
 const {
   listTeamProfiles,
   prepareAccountProfile,
+  readProfileAgent,
   readSavedBinding,
   resolveProjectPaths,
 } = require("../setup-profiles");
 const { checkSession, runStatus } = require("../setup-runner");
+const { listProfiles } = require("../maintenance/broker-lifecycle");
 
 const accountA = { userId: 3, teamId: 2, email: "a@example.test" };
 const accountB = { userId: 5, teamId: 4, email: "b@example.test" };
@@ -184,6 +186,30 @@ test("이전 계정별 프로필은 같은 팀·프로젝트일 때만 재사용
   );
 });
 
+test("손상된 프로필은 팀 프로필 목록에서만 빼고 같은 팀의 정상 프로젝트는 계속 돌려준다", async (t) => {
+  const { paths, runtime, root, other } = await fixture(t);
+  const fresh = await resolveProjectPaths(paths, accountA, other);
+  await prepareAccountProfile(fresh);
+  await writeFile(fresh.config, JSON.stringify({ serverUrl: paths.serverUrl }));
+  const broken = path.join(path.dirname(path.dirname(fresh.config)), "broken");
+  await mkdir(broken);
+  await writeFile(path.join(broken, "config.json"), "{broken");
+
+  assert.deepEqual(
+    (await listTeamProfiles(paths, accountA))
+      .map((profile) => profile.config)
+      .sort(),
+    [paths.config, fresh.config].sort(),
+  );
+  await writeFile(path.join(runtime, "agent-profile.json"), "broken-json");
+  assert.deepEqual(
+    (await listTeamProfiles(paths, accountA)).map((profile) => profile.config),
+    [fresh.config],
+  );
+  // 프로젝트를 다시 연결할 때는 손상 안내를 그대로 표시
+  await assert.rejects(resolveProjectPaths(paths, accountA, root), /기존 설정/);
+});
+
 test("잘못된 계정·팀 ID와 프로젝트, 손상된 기존 프로필은 조용히 새 연결을 만들지 않는다", async (t) => {
   const { paths, runtime, root } = await fixture(t);
   for (const userId of [0, -1, "../../other", Number.MAX_SAFE_INTEGER + 1]) {
@@ -199,6 +225,185 @@ test("잘못된 계정·팀 ID와 프로젝트, 손상된 기존 프로필은 �
   );
   await writeFile(path.join(runtime, "agent-profile.json"), "broken-json");
   await assert.rejects(resolveProjectPaths(paths, accountB, root), /기존 설정/);
+});
+
+test("같은 폴더도 AI 도구마다 별도 프로필을 쓰고 도구 구분 전 프로필은 같은 도구로만 재사용한다", async (t) => {
+  const { paths, root, other } = await fixture(t);
+  const codex = await resolveProjectPaths(paths, accountB, other, "codex");
+  const claude = await resolveProjectPaths(
+    paths,
+    accountB,
+    other,
+    "claude-code",
+  );
+  assert.notEqual(codex.config, claude.config);
+  assert.equal(
+    (await resolveProjectPaths(paths, accountB, other, "codex")).config,
+    codex.config,
+  );
+  await assert.rejects(
+    resolveProjectPaths(paths, accountB, other, "cursor"),
+    /AI 도구/,
+  );
+
+  // 도구 구분 전 경로에 Agent 없는 프로필은 어느 도구로든 이어서 사용
+  const before = await resolveProjectPaths(paths, accountB, other);
+  await prepareAccountProfile(before);
+  await writeFile(
+    before.config,
+    JSON.stringify({ serverUrl: paths.serverUrl }),
+  );
+  for (const tool of ["codex", "claude-code"]) {
+    assert.equal(
+      (await resolveProjectPaths(paths, accountB, other, tool)).config,
+      before.config,
+    );
+  }
+
+  // Codex Agent가 연결된 뒤에는 Claude Code만 새 프로필로 분리
+  const runtime = path.join(path.dirname(before.config), ".devlink-runtime");
+  await mkdir(runtime);
+  await writeFile(
+    path.join(runtime, "agent-profile.json"),
+    JSON.stringify({
+      origin,
+      userId: 5,
+      teamId: 4,
+      projectRoot: other,
+      state: { kind: "ready", agent: { agentId: 8, toolType: "CODEX" } },
+    }),
+  );
+  assert.equal(
+    (await resolveProjectPaths(paths, accountB, other, "codex")).config,
+    before.config,
+  );
+  assert.equal(
+    (await resolveProjectPaths(paths, accountB, other, "claude-code")).config,
+    claude.config,
+  );
+
+  // 기준 프로필의 Agent도 연결한 도구로만 재사용
+  const base = path.join(root, ".devlink-runtime", "agent-profile.json");
+  await writeFile(
+    base,
+    JSON.stringify({
+      origin,
+      userId: 3,
+      teamId: 2,
+      projectRoot: root,
+      state: { kind: "create_pending", tool: "CLAUDE_CODE" },
+    }),
+  );
+  assert.equal(
+    (await resolveProjectPaths(paths, accountA, root, "claude-code")).config,
+    paths.config,
+  );
+  assert.notEqual(
+    (await resolveProjectPaths(paths, accountA, root, "codex")).config,
+    paths.config,
+  );
+
+  // 도구별 프로필도 팀 목록과 업데이트 시 브로커 종료 대상에 포함
+  await prepareAccountProfile(claude);
+  await writeFile(
+    claude.config,
+    JSON.stringify({ serverUrl: paths.serverUrl }),
+  );
+  assert.deepEqual(
+    (await listTeamProfiles(paths, accountB))
+      .map((profile) => profile.config)
+      .sort(),
+    [before.config, claude.config].sort(),
+  );
+  const profiles = (await listProfiles(root)).map((name) =>
+    path.join(root, name),
+  );
+  assert.ok(profiles.includes(before.config));
+  assert.ok(profiles.includes(claude.config));
+});
+
+async function bindProfile(config, binding) {
+  await prepareAccountProfile({ config, accountProfile: true });
+  await writeFile(
+    config,
+    JSON.stringify({ serverUrl: "ws://127.0.0.1:8080/" }),
+  );
+  const runtime = path.join(path.dirname(config), ".devlink-runtime");
+  await mkdir(runtime, { recursive: true });
+  if (binding)
+    await writeFile(
+      path.join(runtime, "agent-profile.json"),
+      JSON.stringify({ origin, userId: 5, teamId: 4, ...binding }),
+    );
+}
+
+test("Agent가 연결된 같은 도구 프로필을 Agent 없는 도구별 프로필보다 우선한다", async (t) => {
+  const { paths, other } = await fixture(t);
+  const legacy = (await resolveProjectPaths(paths, accountB, other)).config;
+  const empty = (await resolveProjectPaths(paths, accountB, other, "codex"))
+    .config;
+  assert.notEqual(legacy, empty);
+  await bindProfile(empty);
+  await bindProfile(legacy, {
+    projectRoot: other,
+    state: { kind: "ready", agent: { agentId: 9, toolType: "CODEX" } },
+  });
+  assert.equal(
+    (await resolveProjectPaths(paths, accountB, other, "codex")).config,
+    legacy,
+  );
+  // 다른 도구는 Agent 없는 자기 프로필이 아닌 새 경로를 사용
+  assert.notEqual(
+    (await resolveProjectPaths(paths, accountB, other, "claude-code")).config,
+    legacy,
+  );
+});
+
+test("이 폴더 프로필이 있으면 손상된 기준 프로필 때문에 연결을 막지 않는다", async (t) => {
+  const { paths, runtime, other } = await fixture(t);
+  const own = (await resolveProjectPaths(paths, accountB, other, "codex"))
+    .config;
+  await bindProfile(own);
+  await writeFile(path.join(runtime, "agent-profile.json"), "broken-json");
+  assert.equal(
+    (await resolveProjectPaths(paths, accountB, other, "codex")).config,
+    own,
+  );
+  // 이 폴더 프로필이 없는 도구는 기존처럼 손상 안내
+  await assert.rejects(
+    resolveProjectPaths(paths, accountB, other, "claude-code"),
+    /기존 설정/,
+  );
+});
+
+test("저장된 Agent 이름은 같은 프로젝트·도구의 프로필에서만 읽는다", async (t) => {
+  const { paths, root, other } = await fixture(t);
+  const profile = await resolveProjectPaths(paths, accountB, other, "codex");
+  await bindProfile(profile.config, {
+    projectRoot: other,
+    state: {
+      kind: "needs_token",
+      agent: {
+        agentId: 41,
+        toolType: "CODEX",
+        name: "api-agent",
+        projectName: "API",
+      },
+    },
+  });
+  assert.deepEqual(
+    { ...(await readProfileAgent(profile, accountB, other, "codex")) },
+    { agentId: "41", name: "api-agent", projectName: "API" },
+  );
+  assert.equal(
+    await readProfileAgent(profile, accountB, other, "claude-code"),
+    null,
+  );
+  assert.equal(await readProfileAgent(profile, accountB, root, "codex"), null);
+  assert.equal(
+    await readProfileAgent(profile, { ...accountB, teamId: 7 }, other, "codex"),
+    null,
+  );
 });
 
 async function ipcFixture(t) {
@@ -369,6 +574,7 @@ async function ipcFixture(t) {
         return {
           listTeamProfiles,
           prepareAccountProfile,
+          readProfileAgent,
           readSavedBinding,
           resolveProjectPaths,
         };
@@ -458,6 +664,7 @@ test("IPC 상태 조회·설정·수동 확인은 같은 프로젝트 프로필�
   const f = await ipcFixture(t);
   const empty = await f.invoke("status", accountB);
   assert.equal(empty.result.data.connection.setupReady, false);
+  assert.equal(empty.hasSavedConnections, false);
   assert.equal(f.calls.length, 0);
 
   const selection = await f.invoke("pickFolder", accountB);
@@ -478,6 +685,7 @@ test("IPC 상태 조회·설정·수동 확인은 같은 프로젝트 프로필�
   const ready = await f.invoke("status", accountB);
   assert.equal(f.calls.at(-1).config, configs[0]);
   assert.equal(ready.result.data.connection.setupReady, true);
+  assert.equal(ready.hasSavedConnections, true);
 });
 
 test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필로 연결하고 팀 상태는 해당 팀 프로필만 본다", async (t) => {
@@ -505,10 +713,9 @@ test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필
   assert.ok(f.calls.every((call) => [first, second].includes(call.config)));
 
   f.notReady.add(second);
-  assert.equal(
-    (await f.invoke("status", accountB)).result.data.connection.setupReady,
-    false,
-  );
+  const offline = await f.invoke("status", accountB);
+  assert.equal(offline.result.data.connection.setupReady, false);
+  assert.equal(offline.hasSavedConnections, false);
   f.calls.length = 0;
   assert.equal(
     (await f.invoke("status", { ...accountB, teamId: 7 })).result.data
@@ -518,6 +725,192 @@ test("같은 계정의 두 번째 프로젝트와 다른 팀은 별도 프로필
   assert.deepEqual(
     f.calls.map((call) => call.config),
     [otherTeam],
+  );
+});
+
+test("같은 폴더를 Codex와 Claude Code로 각각 연결하면 별도 프로필·Agent로 목록에 함께 표시한다", async (t) => {
+  const f = await ipcFixture(t);
+  f.pick(f.other);
+  const connect = async (tool) => {
+    const selection = await f.invoke("pickFolder", accountB);
+    assert.deepEqual(Array.from(selection.tools), ["codex", "claude-code"]);
+    assert.equal((await f.invoke("setup", selection.id, tool)).state, "manual");
+    return f.calls.filter((call) => call.kind === "setup").at(-1);
+  };
+  const codex = await connect("codex");
+  const claude = await connect("claude-code");
+  assert.notEqual(codex.config, claude.config);
+  assert.equal(codex.input.agent.action, "create");
+  assert.equal(claude.input.agent.action, "create");
+  assert.equal(codex.input.project.path, claude.input.project.path);
+  assert.equal(
+    codex.input.mcp.targetPath,
+    path.join(await realpath(f.other), ".codex", "config.toml"),
+  );
+  assert.equal(
+    claude.input.mcp.targetPath,
+    path.join(await realpath(f.other), ".mcp.json"),
+  );
+  assert.equal((await connect("codex")).config, codex.config);
+
+  const saved = await f.invoke("listConnections", accountB);
+  assert.deepEqual(Array.from(saved, (connection) => connection.tool).sort(), [
+    "claude-code",
+    "codex",
+  ]);
+  assert.equal(
+    new Set(saved.map((connection) => connection.projectPath)).size,
+    1,
+  );
+  // 저장된 각 연결의 안내 조회도 자기 도구 프로필을 사용
+  for (const connection of saved) {
+    f.calls.length = 0;
+    const guide = await f.invoke("getGuide", connection.id);
+    assert.equal(
+      guide.toolType,
+      connection.tool === "codex" ? "codex" : "claude_code",
+    );
+    assert.deepEqual(
+      f.calls.map((call) => call.config),
+      [connection.tool === "codex" ? codex.config : claude.config],
+    );
+  }
+});
+
+test("한 도구의 손상된 프로필은 그 도구 연결만 막고 다른 도구는 연결한다", async (t) => {
+  const f = await ipcFixture(t);
+  const project = await realpath(f.other);
+  f.pick(project);
+  const claude = await resolveProjectPaths(
+    f.paths,
+    accountB,
+    project,
+    "claude-code",
+  );
+  await prepareAccountProfile(claude);
+  await writeFile(claude.config, "{broken");
+  const selection = await f.invoke("pickFolder", accountB);
+  await assert.rejects(
+    f.invoke("setup", selection.id, "claude-code"),
+    /기존 설정/,
+  );
+  assert.equal(f.calls.length, 0);
+  const codex = await f.invoke("pickFolder", accountB);
+  assert.equal((await f.invoke("setup", codex.id, "codex")).state, "manual");
+
+  // 모든 도구의 프로필이 손상되면 폴더 선택에서 안내
+  const codexProfile = await resolveProjectPaths(
+    f.paths,
+    accountB,
+    project,
+    "codex",
+  );
+  await writeFile(codexProfile.config, "{broken");
+  await assert.rejects(f.invoke("pickFolder", accountB), /기존 설정/);
+});
+
+test("폴더로 다시 연결하면 폴더명이 아닌 저장된 Agent·프로젝트 이름을 사용한다", async (t) => {
+  const f = await ipcFixture(t);
+  const project = await realpath(f.other);
+  f.pick(project);
+  const profile = await resolveProjectPaths(
+    f.paths,
+    accountB,
+    project,
+    "codex",
+  );
+  await bindProfile(profile.config, {
+    projectRoot: project,
+    state: {
+      kind: "ready",
+      agent: {
+        agentId: 41,
+        toolType: "CODEX",
+        name: "api-agent",
+        projectName: "API",
+      },
+    },
+  });
+  const selection = await f.invoke("pickFolder", accountB);
+  await f.invoke("setup", selection.id, "codex");
+  const { input, config } = f.calls.find((call) => call.kind === "setup");
+  assert.equal(config, profile.config);
+  assert.equal(input.agent.name, "api-agent");
+  assert.equal(input.project.name, "API");
+
+  // 다른 도구의 새 연결은 폴더명 사용
+  const next = await f.invoke("pickFolder", accountB);
+  await f.invoke("setup", next.id, "claude-code");
+  const created = f.calls.filter((call) => call.kind === "setup").at(-1).input;
+  assert.equal(created.agent.name, path.basename(project));
+});
+
+test("토큰이 필요한 기존 Agent는 동의 후에만 같은 Agent 토큰을 발급해 연결한다", async (t) => {
+  const f = await ipcFixture(t);
+  f.pick(f.other);
+  f.setSetupError({
+    code: "SETUP_TOKEN_REQUIRED",
+    message: "token required",
+    known: { agentId: "77" },
+  });
+  const selection = await f.invoke("pickFolder", accountB);
+  // 화면 요청으로는 재개·토큰 발급 인자를 전달할 수 없음
+  const result = await f.invoke(
+    "setup",
+    selection.id,
+    "codex",
+    undefined,
+    undefined,
+    undefined,
+    true,
+    true,
+  );
+  assert.deepEqual({ ...result }, { state: "token", agentId: "77" });
+  const first = f.calls.find((call) => call.kind === "setup").input;
+  assert.equal(first.agent.action, "create");
+
+  f.setSetupError({
+    code: "SETUP_MANUAL_ACTION_REQUIRED",
+    manualConfig: { snippet: "test config" },
+  });
+  assert.equal((await f.invoke("issueToken", selection.id)).state, "manual");
+  const issued = f.calls.filter((call) => call.kind === "setup").at(-1).input;
+  assert.deepEqual(
+    { ...issued.agent },
+    { action: "use", id: "77", issueToken: true },
+  );
+  assert.equal(issued.project.name, undefined);
+  assert.equal(issued.mcp.mode, "replace");
+  // 동의 요청 없이 반복 발급하지 않음
+  await assert.rejects(
+    f.invoke("issueToken", selection.id),
+    /토큰 발급이 필요한/,
+  );
+});
+
+test("동의 후 토큰 발급 결과를 확인하지 못하면 다시 발급하지 않고 한글로 안내한다", async (t) => {
+  const f = await ipcFixture(t);
+  f.pick(f.other);
+  f.setSetupError({
+    code: "SETUP_TOKEN_REQUIRED",
+    message: "The known Agent requires explicit token preparation.",
+    known: { agentId: "77" },
+  });
+  const selection = await f.invoke("pickFolder", accountB);
+  assert.equal((await f.invoke("setup", selection.id, "codex")).state, "token");
+  const result = await f.invoke("issueToken", selection.id);
+  assert.equal(result.state, "error");
+  assert.equal(result.code, "SETUP_TOKEN_REQUIRED");
+  assert.match(result.message, /발급 결과를 확인하지 못했습니다/);
+  assert.equal(
+    f.calls.filter((call) => call.kind === "setup").at(-1).input.agent
+      .issueToken,
+    true,
+  );
+  // 같은 연결에서 동의 없이 바로 재발급하지 않음
+  await assert.rejects(
+    f.invoke("issueToken", selection.id),
+    /토큰 발급이 필요한/,
   );
 });
 
@@ -553,7 +946,7 @@ test("프로필 충돌은 원래 오류 코드와 함께 도구 확인 안내를
   const result = await f.invoke("setup", selection.id, "codex");
   assert.equal(result.state, "error");
   assert.equal(result.code, "SETUP_PROFILE_CONFLICT");
-  assert.match(result.message, /AI 도구/);
+  assert.match(result.message, /다른 연결 설정/);
 });
 
 test("기존 Agent와 담당 정보가 다르면 한글 안내를 돌려주고 비운 담당 정보로 다시 연결한다", async (t) => {
@@ -827,6 +1220,10 @@ test("CLI 로그인이 만료된 저장 프로젝트는 목록에 남기고 비�
   assert.equal((await f.invoke("listConnections", accountB)).length, 0);
 
   f.setSessionState("expired");
+  f.notReady.add(config);
+  const status = await f.invoke("status", accountB);
+  assert.equal(status.result.data.connection.setupReady, false);
+  assert.equal(status.hasSavedConnections, true);
   const saved = await f.invoke("listConnections", accountB);
   assert.equal(saved.length, 1);
   assert.equal(saved[0].availability, "auth_required");

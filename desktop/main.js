@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell } = require("electron");
+const { app, BrowserWindow, dialog, MenuItem, shell } = require("electron");
 const path = require("node:path");
 const { registerSetupHandlers } = require("./setup-ipc");
 const { registerUpdateHandlers } = require("./update-ipc");
@@ -28,6 +28,16 @@ function createWindow() {
       additionalArguments: [`--devlink-version=${app.getVersion()}`, `--devlink-origin=${webOrigin}`],
     },
   });
+
+  if (process.platform === "win32") {
+    const zoomIn = new MenuItem({ role: "zoomIn" });
+    window.webContents.on("before-input-event", (event, input) => {
+      if (input.type !== "keyDown" || input.code !== "NumpadAdd" || !input.control ||
+          input.shift || input.alt || input.meta) return;
+      event.preventDefault();
+      zoomIn.click({ triggeredByAccelerator: true }, window, window.webContents);
+    });
+  }
 
   window.webContents.setWindowOpenHandler(({ url }) => {
     openExternal(url);

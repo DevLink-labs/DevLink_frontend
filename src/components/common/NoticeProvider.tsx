@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { NoticeContext } from '../../hooks/useNotice'
 import type { NoticeAction, NoticeKind } from '../../hooks/useNotice'
+import { getDesktopApi } from '../../features/desktop-setup/api/desktopApi'
 import { Icon } from '../ui'
 
 type Notice = { id: number; message: string; kind: NoticeKind; action?: NoticeAction }
@@ -21,7 +22,7 @@ export default function NoticeProvider({ children }: { children: ReactNode }) {
 
   return <NoticeContext.Provider value={notify}>
     {children}
-    {notice && <div className={`toast toast-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>
+    {notice && <div className={`toast toast-${notice.kind}${getDesktopApi() ? ' toast-desktop' : ''}`} role={notice.kind === 'error' ? 'alert' : 'status'}>
       <span className="toast-icon"><Icon name={notice.kind === 'success' ? 'check' : 'shield'} size={17} /></span>
       <span>{notice.message}</span>
       {notice.action && <button type="button" className="button button-secondary button-small" onClick={() => { notice.action?.onClick(); setNotice(null) }}>{notice.action.label}</button>}

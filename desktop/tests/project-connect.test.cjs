@@ -42,9 +42,13 @@ test(
             return `
           import React from "react";
           import { createRoot } from "react-dom/client";
+          import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+          import AgentsPanel from "/src/features/agents/components/AgentsPanel.tsx";
           import ProjectConnectView from "/src/features/desktop-setup/components/ProjectConnectView.tsx";
           import "/src/styles/index.css";
+          const query = new URLSearchParams(location.search);
           window.harness = { calls: [], results: [], tools: ["codex"], guideCalls: 0, resets: 0,
+            hasSavedConnections: !query.has("empty"),
             guide: { userId: "1", teamId: "2", agentId: "3", projectPath: "C:/test-project", toolType: "codex",
               targetPath: "C:/test-project/.codex/config.toml", observedAt: new Date().toISOString(), availability: "ready",
               fileState: "file_missing", editKind: "create_file", reason: "create_file", nextActions: [],
@@ -53,7 +57,12 @@ test(
           };
           const setup = {
             pickFolder: async () => ({ id: "selection", name: "테스트 프로젝트", tools: window.harness.tools }),
-            run: async (...args) => { window.harness.calls.push(args); return window.harness.results.shift() ?? { state: "done" }; },
+            run: async (...args) => {
+              window.harness.calls.push(args);
+              const result = window.harness.results.shift() ?? { state: "done" };
+              if (result.state === "done" || result.state === "manual") window.harness.hasSavedConnections = true;
+              return result;
+            },
             onProgress: () => () => {}, check: async () => true, openConfigFolder: async () => {},
             resetContext: async () => { window.harness.resets++; },
             getGuide: async () => { window.harness.guideCalls++; return window.harness.guide; },
@@ -61,13 +70,24 @@ test(
             listConnections: async () => [{ id: "saved", name: "저장된 프로젝트", projectPath: "C:/test-project", tool: "codex", agentId: "3", fileState: "matches", availability: "ready" }],
             resume: async () => { window.harness.calls.push(["resume"]); return { state: "manual" }; },
           };
-          if (location.search.includes("manual")) window.devlinkDesktop = { capabilities: { manualMcpSetup: 1 } };
+          const getStatus = async () => ({
+            exitCode: 0, hasSavedConnections: window.harness.hasSavedConnections,
+            result: { data: { connection: { setupReady: false } } },
+          });
+          if (query.has("manual")) window.devlinkDesktop = { setup, getStatus, capabilities: { manualMcpSetup: 1 } };
           const props = {
-            setup, getStatus: async () => ({ exitCode: 0, result: { data: { connection: { setupReady: false } } } }),
+            setup, getStatus,
             account: { userId: 1, teamId: 2, email: "test@example.test" }, teamName: "테스트 팀",
-            onRefreshAgents: () => {}, presentation: location.search.includes("modal") ? "modal" : "page",
+            onRefreshAgents: () => {}, presentation: query.has("modal") ? "modal" : "page",
           };
-          createRoot(document.getElementById("root")).render(React.createElement(ProjectConnectView, props));
+          createRoot(document.getElementById("root")).render(query.has("agents")
+            ? React.createElement(QueryClientProvider, { client: new QueryClient() },
+                React.createElement(AgentsPanel, {
+                  team: { teamId: 2, name: "테스트 팀" }, agents: [], members: [],
+                  currentUserId: 1, currentUserEmail: "test@example.test", loading: false,
+                  onRefresh: () => {}, onError: () => {}, onNotice: () => {},
+                }))
+            : React.createElement(ProjectConnectView, props));
         `;
           },
           configureServer(vite) {
@@ -106,7 +126,7 @@ test(
       await page.goto(url + (modal ? "?modal" : ""));
       if (modal)
         await page
-          .getByRole("button", { name: "이 PC 연결", exact: true })
+          .getByRole("button", { name: "Agent 추가", exact: true })
           .click();
       await page
         .getByRole("button", { name: "폴더 선택", exact: true })
@@ -197,7 +217,7 @@ test(
       async () => {
         await page.goto(url + "?modal");
         await page
-          .getByRole("button", { name: "이 PC 연결", exact: true })
+          .getByRole("button", { name: "Agent 추가", exact: true })
           .click();
         await page.evaluate(() => {
           window.harness.tools = ["codex", "claude-code"];
@@ -364,6 +384,9 @@ test(
           .fill("test-password");
         await page.getByRole("button", { name: "계속", exact: true }).click();
         await page.getByText("새 파일 전체 설정", { exact: true }).waitFor();
+        for (const name of ["연결 재개", "확인 요청 복사", "AI 도구 연결 확인"]) {
+          assert.equal(await page.getByRole("button", { name, exact: true }).count(), 0);
+        }
     if (process.env.DEVLINK_TEST_MANUAL_SCREENSHOT) await page.screenshot({ path: process.env.DEVLINK_TEST_MANUAL_SCREENSHOT, fullPage: true });
         const results = await calls();
         assert.equal(results.length, 2);
@@ -396,6 +419,11 @@ test(
         await page
           .getByText("설정 완료 · AI 도구 확인 전", { exact: true })
           .waitFor();
+        await page.getByRole("button", { name: "확인 요청 복사", exact: true }).waitFor();
+        assert.equal(
+          await page.getByRole("button", { name: "설정 확인", exact: true }).count(),
+          0,
+        );
         assert.equal(
           await page.getByText("AI 도구 연결 확인됨", { exact: true }).count(),
           0,
@@ -405,9 +433,14 @@ test(
           window.harness.connection.collaborationReady = true;
         });
         await page
-          .getByRole("button", { name: "사용 상태 확인", exact: true })
+          .getByRole("button", { name: "AI 도구 연결 확인", exact: true })
           .click();
         await page.getByText("AI 도구 연결 확인됨", { exact: true }).waitFor();
+        await page.getByRole("button", { name: "닫기", exact: true }).waitFor();
+        assert.equal(
+          await page.getByRole("button", { name: "AI 도구 연결 확인", exact: true }).count(),
+          0,
+        );
         assert.equal(
           await page.evaluate(
             () => document.documentElement.scrollWidth <= innerWidth,
@@ -422,7 +455,7 @@ test(
       async () => {
         await page.goto(url + "?manual&modal");
         await page
-          .getByRole("button", { name: "AI 도구 설정", exact: true })
+          .getByRole("button", { name: "연결 관리", exact: true })
           .click();
         await page.getByRole("button", { name: /저장된 프로젝트/ }).click();
         await page.getByText("새 파일 전체 설정", { exact: true }).waitFor();
@@ -450,12 +483,52 @@ test(
           .getByRole("button", { name: "나중에 하기", exact: true })
           .click();
         await page
-          .getByRole("button", { name: "AI 도구 설정", exact: true })
+          .getByRole("button", { name: "연결 관리", exact: true })
           .click();
         await page.getByRole("button", { name: /저장된 프로젝트/ }).click();
         await page.getByText("설정 확인 필요", { exact: true }).waitFor();
         assert.equal((await calls()).length, 0);
+        await page.evaluate(() => {
+          window.harness.guide.availability = "needs_preparation";
+          window.harness.guide.fileState = "unavailable";
+        });
+        await page.getByRole("button", { name: "설정 확인", exact: true }).click();
+        const resume = page.getByRole("button", { name: "연결 재개", exact: true });
+        await resume.waitFor();
+        assert.equal(
+          await page.getByRole("button", { name: "설정 확인", exact: true }).count(),
+          0,
+        );
+        assert.equal((await calls()).length, 0);
+        await resume.click();
+        assert.deepEqual(await calls(), [["resume"]]);
       },
     );
+
+    await t.test("데스크톱 Agent 목록은 저장된 연결이 생기면 연결 관리를 표시한다", async () => {
+      await page.goto(url + "?agents&manual&empty");
+      const actions = page.locator(".management-actions");
+      await page.getByText(/PC : 미연결/).waitFor();
+      assert.equal(await actions.getByRole("button").count(), 1);
+      await actions.getByRole("button", { name: "Agent 추가", exact: true }).click();
+      await page.getByRole("dialog", { name: "Agent 추가", exact: true }).waitFor();
+      await page.getByRole("button", { name: "폴더 선택", exact: true }).click();
+      await page.getByRole("button", { name: "연결하기", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: "Agent 추가", exact: true });
+      await dialog.getByRole("button", { name: "닫기", exact: true }).last().click();
+      const manage = actions.getByRole("button", { name: "연결 관리", exact: true });
+      await manage.waitFor();
+      assert.equal(await actions.getByRole("button").count(), 2);
+      await manage.click();
+      await page.getByRole("button", { name: /저장된 프로젝트/ }).waitFor();
+    });
+
+    await t.test("웹 Agent 목록은 기존 등록 폼을 연다", async () => {
+      await page.goto(url + "?agents");
+      const actions = page.locator(".management-actions");
+      await actions.getByRole("button", { name: "Agent 등록", exact: true }).click();
+      await page.getByRole("dialog", { name: "내 Agent 등록", exact: true }).waitFor();
+      assert.equal(await actions.getByRole("button").count(), 1);
+    });
   },
 );

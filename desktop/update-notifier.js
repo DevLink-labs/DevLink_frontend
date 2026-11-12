@@ -11,6 +11,17 @@ const path = require("node:path");
 const MAX_PAGES = 5;
 const MAX_REMEMBERED = 500;
 const SENT_KINDS = ["TASK_STATUS_CHANGED", "TASK_COMPLETED"];
+// 같은 출처 안에서만 저장 순서가 유지됨
+const SOURCES = {
+  TASK_CREATED: "received",
+  TASK_STATUS_CHANGED: "sent",
+  TASK_COMPLETED: "sent",
+  TASK_QUESTION_CREATED: "messages",
+  TASK_ANSWER_CREATED: "messages",
+  TASK_OVERDUE: "overdue",
+};
+// 커서에 읽은 개수가 담기는 출처 순서
+const CURSOR_SOURCES = ["received", "sent", "messages", "overdue"];
 
 // 알림으로 보여줄 항목만 제목·본문 생성
 function describe(update, project) {
@@ -72,6 +83,17 @@ function validPage(result, account) {
   );
 }
 
+// 커서가 출처별로 읽은 개수, 형식이 다르면 알 수 없어 빈 값
+function consumed(cursor) {
+  const [version, ...rest] = cursor.split(".");
+  const counts = rest.slice(0, -1);
+  if (!/^v[1-3]$/.test(version) || counts.length !== Number(version[1]) + 1)
+    return {};
+  return Object.fromEntries(
+    counts.map((count, index) => [CURSOR_SOURCES[index], Number(count)]),
+  );
+}
+
 // 오래된 기록부터 지워 보관 개수 제한
 function remember(list, value) {
   list.push(value);
@@ -114,7 +136,15 @@ function createUpdateNotifier({
   }
 
   // 연결한 프로젝트 폴더가 사라져 조회가 거부되면 프로필마다 한 번만 안내
-  async function missingProject(paths, current, teamId, entry, result) {
+  // - 같은 폴더를 여러 AI 도구로 연결했으면 한 번의 조회에서 한 번만 안내
+  async function missingProject(
+    paths,
+    current,
+    teamId,
+    entry,
+    result,
+    reported,
+  ) {
     if (
       result?.error?.code !== "UPDATES_BINDING_MISMATCH" ||
       entry.missingProject ||
@@ -134,6 +164,9 @@ function createUpdateNotifier({
     )
       return [];
     entry.missingProject = true;
+    const key = `${teamId}\0${path.resolve(folder).toLowerCase()}`;
+    if (reported.has(key)) return [];
+    reported.add(key);
     return [
       {
         title: "알림 중단",
@@ -144,45 +177,75 @@ function createUpdateNotifier({
     ];
   }
 
-  async function pollProfile(paths, current, teamId) {
+  async function pollProfile(paths, current, teamId, draft, reported) {
     const key = createHash("sha256")
       .update(path.resolve(paths.config))
       .digest("hex");
-    const entry = (state.profiles[key] ??= { seen: [], versions: [] });
+    const entry = (draft.profiles[key] ??= { seen: [], versions: [] });
     // 처음 조회는 기존 이력을 건너뛰고 시작 위치만 저장
     if (!entry.cursor) {
       const { exitCode, result } = await runUpdates(paths, ["--latest"]);
       if (exitCode === 0 && validPage(result, current)) {
         entry.cursor = result.nextCursor;
+        delete entry.replay;
         delete entry.missingProject;
         return [];
       }
-      return missingProject(paths, current, teamId, entry, result);
+      return missingProject(paths, current, teamId, entry, result, reported);
     }
     const items = [];
     for (let page = 0; page < MAX_PAGES; page++) {
+      // 중간 페이지 실행 오류에도 앞 페이지에서 받은 알림은 유지
       const { exitCode, result } = await runUpdates(paths, [
         "--cursor",
         entry.cursor,
         "--limit",
         "50",
-      ]);
+      ]).catch(() => ({}));
       if (result?.error?.code === "UPDATES_INPUT_INVALID") {
         delete entry.cursor;
+        delete entry.replay;
         break;
       }
       if (exitCode !== 0 || !validPage(result, current)) {
         items.push(
-          ...(await missingProject(paths, current, teamId, entry, result)),
+          ...(await missingProject(
+            paths,
+            current,
+            teamId,
+            entry,
+            result,
+            reported,
+          )),
         );
         break;
       }
       delete entry.missingProject;
       const project =
         path.basename(result.scope.projectPath) || result.scope.projectPath;
+      // 이력이 처음부터 다시 나오면 출처별로 이미 알린 항목을 만난 뒤부터 새 소식
+      if (result.cursorReset) {
+        // 다시 읽는 도중 또 초기화되면 처음 초기화 때의 기준 유지
+        const base = entry.replay?.base ?? consumed(entry.cursor);
+        entry.replay = { base, read: {}, live: [] };
+      }
       for (const update of result.updates) {
         const id = `${update.kind}:${update.eventId}`;
-        if (entry.seen.includes(id)) continue;
+        const source = SOURCES[update.kind] ?? update.kind;
+        // 출처마다 뒤에만 쌓이므로 직전 위치까지 읽은 개수를 넘으면 새 소식
+        if (entry.replay && !entry.replay.live.includes(source)) {
+          const read = (entry.replay.read[source] ?? 0) + 1;
+          entry.replay.read[source] = read;
+          if (read > (entry.replay.base[source] ?? Infinity))
+            entry.replay.live.push(source);
+        }
+        if (entry.seen.includes(id)) {
+          if (entry.replay && !entry.replay.live.includes(source))
+            entry.replay.live.push(source);
+          continue;
+        }
+        // 이미 알린 항목보다 앞선 기록은 시작 전 이력일 수 있어 알리지 않음
+        if (entry.replay && !entry.replay.live.includes(source)) continue;
         remember(entry.seen, id);
         // 보낸 작업은 이미 알린 버전 이하의 상태를 무시
         if (SENT_KINDS.includes(update.kind)) {
@@ -194,8 +257,7 @@ function createUpdateNotifier({
           if (known) known[1] = taskVersion;
           else remember(entry.versions, [update.taskId, taskVersion]);
         }
-        // 이력이 초기화된 페이지는 다시 나온 항목일 수 있어 알리지 않음
-        const text = !result.cursorReset && describe(update, project);
+        const text = describe(update, project);
         if (!text) continue;
         const item = {
           ...text,
@@ -214,7 +276,10 @@ function createUpdateNotifier({
         else items.push(item);
       }
       entry.cursor = result.nextCursor;
-      if (!result.hasMore) break;
+      if (!result.hasMore) {
+        delete entry.replay;
+        break;
+      }
     }
     return items;
   }
@@ -232,9 +297,11 @@ function createUpdateNotifier({
     const current = account;
     const started = version;
     try {
-      await loadState();
+      // 취소된 조회가 저장된 위치·기록을 옮기지 않도록 사본에서 진행
+      const draft = structuredClone(await loadState());
       const paths = await loadPaths();
       const configs = new Set();
+      const reported = new Set();
       const items = [];
       for (const teamId of current.teamIds) {
         const profiles = await listProfiles(paths, {
@@ -245,13 +312,22 @@ function createUpdateNotifier({
           if (configs.has(profile.config)) continue;
           configs.add(profile.config);
           items.push(
-            ...(await pollProfile(profile, current, teamId).catch(() => [])),
+            ...(await pollProfile(
+              profile,
+              current,
+              teamId,
+              draft,
+              reported,
+            ).catch(() => [])),
           );
         }
       }
       if (started !== version) return;
-      await saveState();
+      // 감시가 유효한 시점에 위치 확정과 알림 전달을 함께 처리
+      state = draft;
       if (items.length) show(items);
+      // 파일 저장에 실패해도 받은 알림은 표시하고 다음 조회에서 다시 저장
+      await saveState().catch(() => {});
     } catch {
       /* 다음 주기에 다시 조회 */
     }

@@ -1,5 +1,6 @@
 export interface DesktopStatus {
   exitCode: number;
+  hasSavedConnections?: boolean;
   result: {
     data?: {
       userId?: string;
@@ -96,6 +97,7 @@ interface SetupProgress {
 
 export type SetupResult =
   | { state: "password"; message?: string }
+  | { state: "token"; agentId: string }
   | { state: "manual"; targetPath: string; snippet: string }
   | { state: "done" }
   | { state: "error"; message: string; code?: string };
@@ -114,6 +116,7 @@ export interface DesktopSetupApi {
   getGuide?: (id: string) => Promise<McpGuide>;
   inspect?: (id: string) => Promise<SetupInspection>;
   resume?: (id: string, password?: string) => Promise<SetupResult>;
+  issueToken?: (id: string) => Promise<SetupResult>;
   check: (id: string) => Promise<boolean>;
   openConfigFolder: (id: string) => Promise<void>;
   onProgress: (listener: (event: SetupProgress) => void) => () => void;
