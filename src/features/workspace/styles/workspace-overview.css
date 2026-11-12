@@ -1,3 +1,4 @@
+.workspace-dashboard .workspace-overview { min-width: 0; container-type: inline-size; container-name: overview-layout; }
 .workspace-dashboard .overview-heading { margin: 4px 0 24px; }
 .workspace-dashboard .overview-heading h1 { margin: 0; color: var(--color-ink); font-size: 30px; font-weight: 750; letter-spacing: -.8px; line-height: 1.25; }
 .workspace-dashboard .overview-primary-grid {
@@ -263,10 +264,10 @@
 .workspace-dashboard .overview-inline-error strong { color: var(--color-ink); font-size: 15px; }
 .workspace-dashboard .overview-inline-error p { margin: 4px 0 0; font-size: 14px; }
 @media (max-width: 1180px) { .workspace-dashboard .overview-team-grid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 1100px) {
+@container overview-layout (max-width: 1100px) {
   .workspace-dashboard .overview-primary-grid { grid-template-columns: minmax(0, 1fr); }
-  .workspace-dashboard .overview-summary-grid { width: min(var(--overview-summary-size), 100%); }
-  .workspace-dashboard .overview-summary-card { height: auto; }
+  .workspace-dashboard .overview-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; align-items: stretch; }
+  .workspace-dashboard .overview-summary-card { height: auto; min-height: 240px; aspect-ratio: auto; padding: clamp(16px, 2.4cqw, 24px); }
 }
 @media (max-width: 420px) {
   .workspace-dashboard .overview-summary-card { padding: 18px; }
@@ -291,6 +292,22 @@
   .workspace-dashboard .overview-section-heading { padding: 17px 18px; }
   .workspace-dashboard .overview-card-body { padding: 0 18px 18px; }
   .workspace-dashboard .overview-card-title > div { flex-wrap: wrap; }
+}
+@container overview-layout (max-width: 560px) {
+  .workspace-dashboard .overview-primary-grid { --overview-primary-gap: 12px; }
+  .workspace-dashboard .overview-summary-card { padding: clamp(12px, 2.8cqw, 16px); }
+  .workspace-dashboard .overview-summary-header h2 { font-size: 15px; }
+  .workspace-dashboard .overview-agent-metrics { display: grid; gap: 10px; margin: 16px 0; }
+  .workspace-dashboard .overview-agent-metrics > div + div { padding-top: 10px; padding-left: 0; border-top: 1px solid var(--workspace-divider); border-left: 0; }
+  .workspace-dashboard .overview-agent-metrics dt { font-size: 11px; }
+  .workspace-dashboard .overview-agent-metrics dd,
+  .workspace-dashboard .overview-pending-value { flex-wrap: wrap; max-width: 100%; gap: 4px; font-size: clamp(28px, 7cqw, 36px); }
+  .workspace-dashboard .overview-agent-metrics dd > span,
+  .workspace-dashboard .overview-pending-value > span { font-size: 12px; }
+  .workspace-dashboard .overview-summary-action { gap: 6px; font-size: 11px; white-space: normal; }
+  .workspace-dashboard .overview-pending-caption { margin-top: 12px; font-size: 11px; }
+  .workspace-dashboard .overview-pending-bottom { flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 16px; }
+  .workspace-dashboard .overview-pending-bottom .overview-summary-action { width: 100%; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .workspace-dashboard .overview-task-activity > svg { animation: none; opacity: .7; }
