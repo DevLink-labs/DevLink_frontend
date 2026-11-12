@@ -2,9 +2,8 @@
 
 <a href="https://about.devlink.ai.kr/">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="src/assets/image/logo/devlink-logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="src/assets/image/logo/devlink-logo.png">
-    <img src="src/assets/image/logo/devlink-logo.png" alt="Visit the DevLink introduction page" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/devlink-logo-dark.png">
+    <img src="docs/images/devlink-logo.png" alt="Visit the DevLink introduction page" width="480">
   </picture>
 </a>
 
@@ -23,19 +22,15 @@ The DevLink web interface and desktop app bring together team and Agent connecti
 
 **English** · [한국어](README.ko.md)
 
-[Quick start](#quick-start) · [Usage examples](#usage-examples) · [Architecture](#architecture) · [Configuration](#configuration) · [Development](#development) · [Documentation](#documentation) · [License](#license)
+[Quick Start](#quick-start) · [Usage](#usage) · [Architecture](#architecture) · [Documentation](#documentation) · [Report a Bug](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues)
 
 </div>
 
-## Introduction
+## About
 
-DevLink is a collaboration tool that transfers task requests and development context between the AI coding tools used by team members.
+DevLink connects your team's AI coding tools to share work requests and development context. From Codex and Claude Code, teammates can request work from each other's Agents and review progress and results.
 
-Even when a frontend developer uses Codex and a backend developer uses Claude Code, they can request work from each other's Agent in their own development environment and follow questions, answers, progress, and results within the same task.
-
-This repository maintains the **web workspace and Windows desktop app**. The web interface manages teams and Agents and displays team-wide tasks and conversations. The desktop app connects local projects and manages MCP configuration for AI tools and task notifications.
-
-Authentication, task storage, and delivery APIs are maintained in the [server](https://github.com/SSAFY-URAYAHA/DevLink_server) repository. The local broker, CLI, and MCP server are maintained in the [client](https://github.com/SSAFY-URAYAHA/DevLink_client) repository. The user's AI tool performs code analysis, changes, and tests.
+This repository provides the **web workspace and Windows desktop app** for managing teams and Agents, following task conversations, and connecting local projects. The user's AI tool performs code analysis, changes, and tests. Visit the [introduction page](https://about.devlink.ai.kr/) for the full service overview and demo.
 
 ## Features
 
@@ -47,35 +42,7 @@ Authentication, task storage, and delivery APIs are maintained in the [server](h
 - **Desktop project connections** — Choose a local project and AI tool, then apply MCP settings for supported versions or follow manual setup instructions.
 - **Desktop task notifications** — Check the local broker for new tasks, questions, answers, and task results, and open the relevant conversation from a notification.
 
-## Usage examples
-
-### Follow team Agents and task progress
-
-1. Sign up and log in on the web, then create a team or join using an invitation code.
-2. Check registered team Agents and their connection status on the Agent screen.
-3. Exchange tasks through DevLink MCP in your respective AI tools.
-4. Select a task from the recent task list on the web to view its summary, status, and conversation history.
-
-For example, when a frontend Agent asks a backend Agent to investigate a slow post-list API, team members can follow the questions, answers, and completion results on the web. The list displays **all team tasks**, including tasks you did not participate in.
-
-Registering an Agent or issuing a token does not make it online by itself. The local broker and AI tool must be connected.
-
-### Connect a local project on desktop
-
-1. Download and run the Windows installer from [Releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases).
-2. After logging in, start project connection from the onboarding guide or **Agent → Agent 추가 (Add Agent)**.
-3. Select the project folder and AI tool, then follow the connection instructions.
-4. After applying the settings, reopen the AI tool and check the actual Agent connection status.
-
-MCP configuration readiness and the AI tool session connection are displayed separately. See the [desktop guide](desktop/README.md) for manual setup and reconnecting.
-
-### Explore repository change impact
-
-After logging in, open `/tree?mode=team` to view the team's actual repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
-
-`/tree` displays a **sample graph** without requiring login. Keep it separate from actual team data.
-
-## Quick start
+## Quick Start
 
 ### 1. Prerequisites
 
@@ -125,9 +92,41 @@ DEVLINK_API_PROXY_TARGET=http://localhost:8080
 npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
+### 4. Check the interface
+
 Open [http://localhost:5173](http://localhost:5173) in your browser. With the backend running, the login screen appears and you can sign up, create a team, or join one.
 
 If login or team requests fail, check the backend and the connection address in `.env.local` as well as the frontend terminal. This interface uses the actual server API.
+
+For API configuration, production deployment, and development commands, see the [frontend guide](docs/frontend-guide.md).
+
+## Usage
+
+### Follow team Agents and task progress
+
+1. Sign up and log in on the web, then create a team or join using an invitation code.
+2. Check registered team Agents and their connection status on the Agent screen.
+3. Exchange tasks through DevLink MCP in your respective AI tools.
+4. Select a task from the recent task list on the web to view its summary, status, and conversation history.
+
+For example, when a frontend Agent asks a backend Agent to investigate a slow post-list API, team members can follow the questions, answers, and completion results on the web. The list displays **all team tasks**, including tasks you did not participate in.
+
+Registering an Agent or issuing a token does not make it online by itself. The local broker and AI tool must be connected.
+
+### Connect a local project on desktop
+
+1. Download and run the Windows installer from [Releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases).
+2. After logging in, start project connection from the onboarding guide or **Agent → Agent 추가 (Add Agent)**.
+3. Select the project folder and AI tool, then follow the connection instructions.
+4. After applying the settings, reopen the AI tool and check the actual Agent connection status.
+
+MCP configuration readiness and the AI tool session connection are displayed separately. See the [desktop guide](desktop/README.md) for manual setup and reconnecting.
+
+### Explore repository change impact
+
+After logging in, open `/tree?mode=team` to view the team's actual repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
+
+`/tree` displays a **sample graph** without requiring login. Keep it separate from actual team data.
 
 ## Architecture
 
@@ -143,102 +142,32 @@ The web UI calls REST APIs using a cookie-based user session and receives change
 
 The browser-based web UI does not execute the local CLI directly. The desktop app provides local connection features through Electron IPC. The packaged app loads the web UI from `https://devlink.ai.kr`; the development app uses `http://localhost:5173`.
 
-## Configuration
+### Related repositories
 
-| Environment variable | Purpose | Local default |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | Backend origin called by the browser | Empty |
-| `DEVLINK_API_PROXY_TARGET` | Backend address used by the Vite development proxy | `http://localhost:8080` |
-
-### Local API connection
-
-When `VITE_API_BASE_URL` is empty, Vite forwards browser requests under `/api` to the backend. This proxy allows local development with session cookies without adding the frontend address to backend CORS settings.
-
-If the backend uses another port, change `DEVLINK_API_PROXY_TARGET` and restart the development server. The development proxy removes the Origin header when forwarding requests; backend session and CSRF checks remain in place.
-
-### Production deployment
-
-In deployment environments, set `VITE_API_BASE_URL` to the actual HTTPS backend origin.
-
-```dotenv
-VITE_API_BASE_URL=https://api.example.com
-```
-
-This is an example address. Replace it with the actual origin and **do not append `/api` or `/api/v1`**. The shared API client adds the path.
-
-- `VITE_` variables are included in the build output and are public. Do not put passwords or Agent tokens in them.
-- Rebuild and redeploy after changing these values.
-- `DEVLINK_API_PROXY_TARGET` is for the development server only. It does not apply to `npm run preview` or static deployments.
-- The backend must allow the frontend origin in CORS, permit credentialed requests, and configure production session cookies. If the sites differ, also check the browser's third-party cookie policy.
-
-Use the following Vercel settings:
-
-| Setting | Value |
+| Repository | Responsibility |
 | --- | --- |
-| Framework | Vite |
-| Build command | `npm run build` |
-| Output directory | `dist` |
-| Environment variable | `VITE_API_BASE_URL` |
-
-The root [vercel.json](vercel.json) provides SPA rewrites for direct access and refreshes on paths such as `/tree`. It does not provide a backend API proxy.
-
-### Authentication and connection tokens
-
-Web API requests include session cookies through `withCredentials` and fetch a CSRF token before state-changing requests. On reload, the app restores login state through the current-user API.
-
-Passwords, session identifiers, and Agent tokens are not kept in browser storage. Issued Agent tokens can be viewed and copied on the current screen. Reissuing a token may affect existing connections, so review the notice first. UI preferences and task read states may be stored in the browser.
-
-Web logout and Agent disconnection are separate. To check two accounts, use another browser or a private window to keep sessions separate.
-
-## Development
-
-### Main commands
-
-Run these commands from the repository root.
-
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Run TypeScript checks and create a production bundle |
-| `npm run preview` | Preview the generated bundle |
-| `npm run lint` | Run ESLint |
-
-There is no separate root `npm test` script. See the [desktop development guide](desktop/README.md) for desktop execution, packaging, and verification commands.
-
-### Code structure
-
-```text
-src/
-├── app/                    # Entry points, routing, and shared providers
-├── pages/                  # Auth, workspace, and dependency screens
-├── features/
-│   ├── auth/               # Accounts and sessions
-│   ├── teams/              # Teams, members, and invitation codes
-│   ├── agents/             # Agent management and token issuance
-│   ├── tasks/              # Task lists, conversations, and real-time updates
-│   ├── dependency-tree/    # Repository dependencies and change impact
-│   ├── desktop-setup/      # Project and MCP connections, notifications
-│   ├── workspace/          # Workspace composition
-│   └── team-preview/       # 3D team screens and design previews
-├── components/             # Shared UI
-└── lib/                    # Shared API client and Query Client
-
-desktop/                    # Electron app and Windows installer configuration
-```
-
-Reuse the shared Axios instance and Query Client, and keep feature-specific APIs and hooks in the relevant feature folder. `/team-network`, `/team-observatory`, `/team-orbit`, `/team-preview`, and `/dashboard-design` are design preview routes.
+| **DevLink_frontend — this repository** | Web workspace and Windows desktop app |
+| [DevLink_server](https://github.com/SSAFY-URAYAHA/DevLink_server) | Authentication, user/team/Agent/task management, APIs, and data storage |
+| [DevLink_client](https://github.com/SSAFY-URAYAHA/DevLink_client) | CLI, local broker, and MCP server |
 
 ## Documentation
 
-- [DevLink introduction](https://about.devlink.ai.kr/)
-- [Desktop development, project connections, and MCP configuration](desktop/README.md)
-- [3D team space design review notes](docs/team-space-design-notes.md)
-- [Server setup and API guide](https://github.com/SSAFY-URAYAHA/DevLink_server#readme)
-- [Client, CLI, and MCP guide](https://github.com/SSAFY-URAYAHA/DevLink_client#readme)
-- [Windows installers and releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases)
-- [Contributing guide](CONTRIBUTING.md)
-- [Community code of conduct](CODE_OF_CONDUCT.md)
-- [Security policy](SECURITY.md)
+| Guide | Covers |
+| --- | --- |
+| [Frontend configuration and deployment](docs/frontend-guide.md) | API connections, environment variables, authentication, deployment, and code structure |
+| [Desktop development and connection setup](desktop/README.md) | Electron development, project connections, MCP configuration, notifications, and Windows packaging |
+| [3D team space design review notes](docs/team-space-design-notes.md) | Design goals and review decisions |
+| [Server setup and API guide](https://github.com/SSAFY-URAYAHA/DevLink_server#readme) | Running the backend and using its APIs |
+| [Client, CLI, and MCP guide](https://github.com/SSAFY-URAYAHA/DevLink_client#readme) | Local broker and AI tool integration |
+| [Windows installers and releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases) | Desktop installers and release notes |
+
+See the [frontend development guide](docs/frontend-guide.md#development) for build and lint commands, the [desktop guide](desktop/README.md) for desktop verification, and the [contributing guide](CONTRIBUTING.md) for participation and PR conventions. The desktop guide and design notes are currently written in Korean.
+
+## Contributing
+
+Bug reports, documentation improvements, and feature proposals are welcome. Open an [Issue](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues) with your environment, reproduction steps, expected behavior, and actual behavior. Remove passwords and tokens from logs and screenshots.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and PR conventions, and [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## License
 
