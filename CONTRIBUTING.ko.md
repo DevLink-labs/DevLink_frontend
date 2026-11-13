@@ -1,5 +1,9 @@
 # 기여 가이드
 
+[English](CONTRIBUTING.md) · **한국어**
+
+[프로젝트 소개](README.ko.md) · [보안 정책](SECURITY.ko.md)
+
 DevLink의 버그 수정, 문서·번역, 테스트 개선과 기능 제안을 환영합니다. 이 가이드는 모든 DevLink 저장소에 공통으로 적용됩니다.
 
 ## 시작하기

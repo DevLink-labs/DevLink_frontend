@@ -2,9 +2,8 @@
 
 <a href="https://about.devlink.ai.kr/">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="src/assets/image/logo/devlink-logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="src/assets/image/logo/devlink-logo.png">
-    <img src="src/assets/image/logo/devlink-logo.png" alt="DevLink 소개 페이지로 이동" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/devlink-logo-dark.png">
+    <img src="docs/images/devlink-logo.png" alt="DevLink 소개 페이지로 이동" width="480">
   </picture>
 </a>
 
@@ -23,19 +22,23 @@
 
 [English](README.md) · **한국어**
 
-[빠른 시작](#빠른-시작) · [사용 예시](#사용-예시) · [동작 구조](#동작-구조) · [설정](#설정) · [개발하기](#개발하기) · [문서](#문서) · [라이선스](#라이선스)
+[빠른 시작](#빠른-시작) · [사용 예시](#사용-예시) · [동작 구조](#동작-구조) · [문서](#문서) · [버그 제보](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues)
 
 </div>
 
 ## 소개
 
-DevLink는 팀원들이 사용하는 AI 코딩 도구 사이에서 작업 요청과 개발 맥락을 전달하는 협업 도구입니다.
+DevLink는 팀원들의 AI 코딩 도구 사이에서 작업 요청과 개발 맥락을 전달하는 협업 도구입니다. Codex와 Claude Code에서 상대 Agent에게 작업을 요청하고 진행 상황과 결과를 확인할 수 있습니다.
 
-프론트엔드 개발자가 Codex를, 백엔드 개발자가 Claude Code를 사용하더라도 각자의 개발 환경에서 상대 Agent에게 작업을 요청하고 질문·답변·진행 상황·결과를 같은 작업 안에서 확인할 수 있습니다.
+이 저장소는 팀·Agent 관리, 작업 대화 조회와 로컬 프로젝트 연결을 위한 **웹 워크스페이스와 Windows 데스크톱 앱**을 제공합니다. 코드 분석·수정·테스트는 사용자의 AI 도구가 수행합니다. 전체 서비스 소개와 데모는 [소개 페이지](https://about.devlink.ai.kr/)에서 확인할 수 있습니다.
 
-이 저장소는 **웹 워크스페이스와 Windows 데스크톱 앱**을 관리합니다. 웹에서는 팀과 Agent를 관리하고 팀 전체의 작업·대화를 조회합니다. 데스크톱 앱에서는 로컬 프로젝트를 연결하고 AI 도구의 MCP 설정과 작업 알림을 함께 관리합니다.
+아래 서비스 화면은 샘플 데이터를 사용한 예시입니다.
 
-인증·작업 저장·전달 API는 [서버](https://github.com/SSAFY-URAYAHA/DevLink_server), 로컬 브로커·CLI·MCP 서버는 [클라이언트](https://github.com/SSAFY-URAYAHA/DevLink_client) 저장소에서 관리합니다. 코드 분석·수정·테스트는 사용자의 AI 도구가 수행합니다.
+<p align="center">
+  <a href="docs/images/screenshots/01-dashboard-full.jpg">
+    <img src="docs/images/screenshots/01-dashboard-full.jpg" alt="DevLink 대시보드 전체 화면: 팀 Agent, 최근 작업, 연결 상태와 팀원 정보" width="720">
+  </a>
+</p>
 
 ## 주요 기능
 
@@ -46,34 +49,6 @@ DevLink는 팀원들이 사용하는 AI 코딩 도구 사이에서 작업 요청
 - **변경 영향 확인** — 저장소의 의존성 그래프와 현재 작업 파일을 바탕으로 연결 관계와 변경 경로를 보여줍니다.
 - **데스크톱 프로젝트 연결** — 로컬 프로젝트와 AI 도구를 선택하고, 지원 버전에 맞춰 MCP 설정을 적용하거나 직접 설정할 내용을 안내합니다.
 - **데스크톱 작업 알림** — 로컬 브로커에서 새 작업·질문·답변과 작업 결과를 확인하고, 알림에서 해당 대화로 이동합니다.
-
-## 사용 예시
-
-### 팀의 Agent와 작업 진행 상황 확인
-
-1. 웹에서 회원가입·로그인 후 팀을 생성하거나 초대코드로 참여합니다.
-2. Agent 화면에서 팀에 등록된 Agent와 접속 상태를 확인합니다.
-3. 각자의 AI 도구에서 DevLink MCP로 작업을 주고받습니다.
-4. 웹의 최근 작업 목록에서 작업을 선택해 요약·상태와 대화 이력을 확인합니다.
-
-예를 들어 프론트엔드 Agent가 백엔드 Agent에게 “게시글 목록 API의 응답 지연을 분석해 주세요”라고 요청하면, 팀원은 웹에서 해당 작업의 질문·답변과 완료 결과를 함께 확인할 수 있습니다. 목록에는 본인이 참여하지 않은 작업을 포함한 **팀 전체 작업**이 표시됩니다.
-
-Agent를 등록하거나 토큰을 발급하는 것만으로 온라인 상태가 되지는 않습니다. 로컬 브로커와 AI 도구의 연결이 필요합니다.
-
-### 데스크톱에서 로컬 프로젝트 연결
-
-1. [릴리스](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases)에서 Windows 설치 파일을 내려받아 실행합니다.
-2. 로그인 후 시작 안내 또는 **Agent → Agent 추가**에서 프로젝트 연결을 진행합니다.
-3. 프로젝트 폴더와 사용할 AI 도구를 선택하고 연결 안내를 따릅니다.
-4. 설정을 적용한 뒤 AI 도구를 다시 열어 실제 Agent 연결 상태를 확인합니다.
-
-MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니다. 직접 설정과 연결 재개 방법은 [데스크톱 안내](desktop/README.md)를 참고하세요.
-
-### 저장소의 변경 영향 확인
-
-로그인 후 `/tree?mode=team`에 접속하면 팀 저장소의 실제 의존성 그래프와 작업 상태를 조회합니다. 팀 OWNER는 저장소 키·기준 브랜치·발행 Agent 등을 등록할 수 있으며, 브로커가 분석 데이터를 업로드해야 그래프가 표시됩니다.
-
-`/tree`는 로그인 없이 확인하는 **샘플 그래프 화면**입니다. 실제 팀 데이터와 구분해 사용하세요.
 
 ## 빠른 시작
 
@@ -125,9 +100,71 @@ DEVLINK_API_PROXY_TARGET=http://localhost:8080
 npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-브라우저에서 [http://localhost:5173](http://localhost:5173)에 접속합니다. 서버가 실행 중이면 로그인 화면이 표시되며, 회원가입 후 팀 생성·참여까지 진행할 수 있습니다.
+### 4. 화면 확인
 
-로그인·팀 조회가 실패하면 프론트 터미널뿐 아니라 백엔드 실행 상태와 `.env.local`의 연결 주소도 확인하세요. 이 화면은 실제 서버 API를 사용합니다.
+브라우저에서 [DevLink 서비스](https://devlink.ai.kr)에 접속합니다. 회원가입·로그인 후 팀을 생성하거나 초대코드로 참여할 수 있습니다.
+
+API 연결 설정, 운영 배포와 개발 명령은 [프론트엔드 안내](docs/frontend-guide.ko.md)를 참고하세요.
+
+## 사용 예시
+
+### 팀의 Agent와 작업 진행 상황 확인
+
+1. 웹에서 회원가입·로그인 후 팀을 생성하거나 초대코드로 참여합니다.
+2. Agent 화면에서 팀에 등록된 Agent와 접속 상태를 확인합니다.
+3. 각자의 AI 도구에서 DevLink MCP로 작업을 주고받습니다.
+4. 웹의 최근 작업 목록에서 작업을 선택해 요약·상태와 대화 이력을 확인합니다.
+
+예를 들어 프론트엔드 Agent가 백엔드 Agent에게 “게시글 목록 API의 응답 지연을 분석해 주세요”라고 요청하면, 팀원은 웹에서 해당 작업의 질문·답변과 완료 결과를 함께 확인할 수 있습니다. 목록에는 본인이 참여하지 않은 작업을 포함한 **팀 전체 작업**이 표시됩니다.
+
+Agent를 등록하거나 토큰을 발급하는 것만으로 온라인 상태가 되지는 않습니다. 로컬 브로커와 AI 도구의 연결이 필요합니다.
+
+**최초 작업 요청**
+
+<p align="center">
+  <a href="docs/images/screenshots/02-task-request.jpg">
+    <img src="docs/images/screenshots/02-task-request.jpg" alt="작업 요청 화면: 요청 목적과 확인할 API, 완료 기준" width="720">
+  </a>
+</p>
+
+**Agent 질문·답변**
+
+<p align="center">
+  <a href="docs/images/screenshots/03-agent-conversation.jpg">
+    <img src="docs/images/screenshots/03-agent-conversation.jpg" alt="Agent 대화 화면: 요청 범위 확인과 분석 결과 공유" width="720">
+  </a>
+</p>
+
+### 3D 팀 스페이스에서 협업 현황 확인
+
+대시보드의 **3D 스페이스로 가기**를 선택하면 팀원과 Agent의 연결 현황, 진행 중인 세션을 공간에서 확인할 수 있습니다.
+
+<p align="center">
+  <a href="docs/images/screenshots/04-team-space.jpg">
+    <img src="docs/images/screenshots/04-team-space.jpg" alt="3D 팀 스페이스: 팀원과 Agent의 연결 현황" width="720">
+  </a>
+</p>
+
+### 데스크톱에서 로컬 프로젝트 연결
+
+1. [릴리스](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases)에서 Windows 설치 파일을 내려받아 실행합니다.
+2. 로그인 후 시작 안내 또는 **Agent → Agent 추가**에서 프로젝트 연결을 진행합니다.
+3. 프로젝트 폴더와 사용할 AI 도구를 선택하고 연결 안내를 따릅니다.
+4. 설정을 적용한 뒤 AI 도구를 다시 열어 실제 Agent 연결 상태를 확인합니다.
+
+MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니다. 직접 설정과 연결 재개 방법은 [데스크톱 안내](desktop/README.ko.md)를 참고하세요.
+
+### 저장소의 변경 영향 확인
+
+로그인 후 `/tree?mode=team`에 접속하면 팀 저장소의 실제 의존성 그래프와 작업 상태를 조회합니다. 팀 OWNER는 저장소 키·기준 브랜치·발행 Agent 등을 등록할 수 있으며, 브로커가 분석 데이터를 업로드해야 그래프가 표시됩니다.
+
+<p align="center">
+  <a href="docs/images/screenshots/05-source-map.jpg">
+    <img src="docs/images/screenshots/05-source-map.jpg" alt="소스코드 맵: 화면에서 API&#183;서비스&#183;DB까지 이어지는 의존성과 변경 영향" width="720">
+  </a>
+</p>
+
+`/tree`는 로그인 없이 확인하는 **샘플 그래프 화면**입니다. 실제 팀 데이터와 구분해 사용하세요.
 
 ## 동작 구조
 
@@ -143,102 +180,32 @@ npm run dev -- --host localhost --port 5173 --strictPort
 
 브라우저에서 실행한 웹 UI는 로컬 CLI를 직접 실행하지 않습니다. 데스크톱 앱은 Electron IPC를 통해 로컬 연결 기능을 제공합니다. 패키징된 앱은 `https://devlink.ai.kr`, 개발 중인 앱은 `http://localhost:5173`의 웹 UI를 불러옵니다.
 
-## 설정
+### 관련 저장소
 
-| 환경 변수 | 용도 | 로컬 기본값 |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | 브라우저가 호출할 백엔드 Origin | 빈 값 |
-| `DEVLINK_API_PROXY_TARGET` | Vite 개발 프록시가 연결할 백엔드 주소 | `http://localhost:8080` |
-
-### 로컬 API 연결
-
-`VITE_API_BASE_URL`을 비워두면 브라우저의 `/api` 요청을 Vite가 백엔드로 전달합니다. 로컬 개발에서는 이 프록시를 사용하므로 프론트 주소를 백엔드 CORS에 추가하지 않고 세션 쿠키를 사용할 수 있습니다.
-
-백엔드 포트가 다르면 `DEVLINK_API_PROXY_TARGET`을 변경하고 개발 서버를 다시 실행합니다. 개발 프록시는 전달 시 Origin 헤더를 제거하며, 백엔드의 세션·CSRF 검증은 유지됩니다.
-
-### 운영 배포
-
-배포 환경에서는 `VITE_API_BASE_URL`에 실제 HTTPS 백엔드 Origin을 지정합니다.
-
-```dotenv
-VITE_API_BASE_URL=https://api.example.com
-```
-
-위 주소는 예시입니다. 실제 주소로 교체하고 **`/api` 또는 `/api/v1`은 붙이지 않습니다.** 공통 API 클라이언트가 경로를 추가합니다.
-
-- `VITE_` 변수는 빌드 결과에 포함되어 공개됩니다. 비밀번호·Agent 토큰을 넣지 마세요.
-- 값을 변경하면 다시 빌드·배포해야 합니다.
-- `DEVLINK_API_PROXY_TARGET`은 개발 서버 전용입니다. `npm run preview`와 정적 배포에는 적용되지 않습니다.
-- 백엔드에는 프론트 Origin에 대한 CORS 허용, 쿠키 포함 요청 허용과 운영 세션 쿠키 설정이 필요합니다. 사이트가 다르면 브라우저의 서드파티 쿠키 정책도 확인하세요.
-
-Vercel 설정은 다음과 같습니다.
-
-| 항목 | 값 |
+| 저장소 | 역할 |
 | --- | --- |
-| 프레임워크 | Vite |
-| 빌드 명령 | `npm run build` |
-| 출력 폴더 | `dist` |
-| 환경 변수 | `VITE_API_BASE_URL` |
-
-루트의 [vercel.json](vercel.json)은 `/tree` 같은 경로의 직접 접속·새로고침을 처리하는 SPA 재작성 설정입니다. 백엔드 API 프록시를 제공하지 않습니다.
-
-### 인증과 연결 토큰
-
-웹 API 요청은 `withCredentials`로 세션 쿠키를 포함하고, 상태 변경 요청 전에 CSRF 토큰을 조회합니다. 새로고침 시 내 정보 API로 로그인 상태를 복원합니다.
-
-비밀번호·세션 식별자·Agent 토큰은 브라우저 저장소에 보관하지 않습니다. 발급한 Agent 토큰은 현재 화면에서 확인·복사하며, 재발급 시 기존 연결이 영향을 받을 수 있으므로 안내를 확인하세요. 화면 설정과 작업 읽음 상태 등은 브라우저에 저장될 수 있습니다.
-
-웹 로그아웃과 Agent 연결 종료는 별개입니다. 두 계정으로 확인할 때는 다른 브라우저나 시크릿 창을 사용해 세션을 분리하세요.
-
-## 개발하기
-
-### 주요 명령
-
-저장소 루트의 명령입니다.
-
-| 명령 | 설명 |
-| --- | --- |
-| `npm run dev` | Vite 개발 서버 실행 |
-| `npm run build` | TypeScript 검사 후 프로덕션 번들 생성 |
-| `npm run preview` | 생성된 번들 미리보기 |
-| `npm run lint` | ESLint 검사 |
-
-루트에는 별도의 `npm test` 스크립트가 없습니다. 데스크톱 실행·패키징과 검증 명령은 [데스크톱 개발 문서](desktop/README.md)에서 안내합니다.
-
-### 코드 구조
-
-```text
-src/
-├── app/                    # 진입점, 라우팅, 공통 Provider
-├── pages/                  # 인증·워크스페이스·의존성 화면
-├── features/
-│   ├── auth/               # 계정과 세션
-│   ├── teams/              # 팀·팀원·초대코드
-│   ├── agents/             # Agent 관리와 토큰 발급
-│   ├── tasks/              # 작업 목록·대화·실시간 갱신
-│   ├── dependency-tree/    # 저장소 의존성과 변경 영향
-│   ├── desktop-setup/      # 프로젝트·MCP 연결과 알림
-│   ├── workspace/          # 워크스페이스 화면 구성
-│   └── team-preview/       # 3D 팀 화면과 디자인 미리보기
-├── components/             # 공통 UI
-└── lib/                    # 공통 API 클라이언트와 Query Client
-
-desktop/                    # Electron 앱과 Windows 설치 파일 구성
-```
-
-공통 Axios 인스턴스·Query Client를 재사용하고, 기능별 API와 훅은 해당 기능 폴더에서 관리합니다. `/team-network`, `/team-observatory`, `/team-orbit`, `/team-preview`, `/dashboard-design`은 디자인 미리보기 경로입니다.
+| **DevLink_frontend — 현재 저장소** | 웹 워크스페이스와 Windows 데스크톱 앱 |
+| [DevLink_server](https://github.com/SSAFY-URAYAHA/DevLink_server) | 인증, 사용자·팀·Agent·작업 관리와 API·데이터 저장 |
+| [DevLink_client](https://github.com/SSAFY-URAYAHA/DevLink_client) | CLI, 로컬 브로커, MCP 서버 |
 
 ## 문서
 
-- [DevLink 소개](https://about.devlink.ai.kr/)
-- [데스크톱 개발·프로젝트 연결·MCP 설정](desktop/README.md)
-- [3D 팀 스페이스 디자인 검토 기록](docs/team-space-design-notes.md)
-- [서버 실행과 API 안내](https://github.com/SSAFY-URAYAHA/DevLink_server#readme)
-- [클라이언트·CLI·MCP 안내](https://github.com/SSAFY-URAYAHA/DevLink_client#readme)
-- [Windows 설치 파일과 릴리스](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases)
-- [기여 가이드](CONTRIBUTING.ko.md)
-- [커뮤니티 행동 규칙](docs/ko/CODE_OF_CONDUCT.md)
-- [보안 정책](SECURITY.ko.md)
+| 문서 | 내용 |
+| --- | --- |
+| [프론트엔드 설정과 배포](docs/frontend-guide.ko.md) | API 연결, 환경 변수, 인증, 배포와 코드 구조 |
+| [데스크톱 개발·연결 설정](desktop/README.ko.md) | Electron 개발, 프로젝트 연결, MCP 설정, 알림과 Windows 패키징 |
+| [3D 팀 스페이스 디자인 검토 기록](docs/team-space-design-notes.md) | 디자인 목표와 검토 내용 |
+| [서버 실행과 API 안내](https://github.com/SSAFY-URAYAHA/DevLink_server#readme) | 백엔드 실행과 API 사용 |
+| [클라이언트·CLI·MCP 안내](https://github.com/SSAFY-URAYAHA/DevLink_client#readme) | 로컬 브로커와 AI 도구 연결 |
+| [Windows 설치 파일과 릴리스](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases) | 데스크톱 설치 파일과 릴리스 내역 |
+
+빌드·린트 명령은 [프론트엔드 개발 안내](docs/frontend-guide.ko.md#개발하기), 데스크톱 검증은 [데스크톱 안내](desktop/README.ko.md), 개발 참여와 PR 규칙은 [기여 가이드](CONTRIBUTING.ko.md)를 참고하세요.
+
+## 기여하기
+
+버그 제보, 문서 개선과 기능 제안을 환영합니다. [Issues](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues)에 재현 방법, 기대한 동작, 실제 동작과 사용 환경을 함께 남겨주세요. 로그와 화면 자료를 첨부할 때는 비밀번호와 토큰을 제거해 주세요.
+
+개발 참여와 브랜치·커밋·PR 규칙은 [기여 가이드](CONTRIBUTING.ko.md)를 참고하세요. 보안 취약점은 [보안 정책](SECURITY.ko.md)에 따라 제보해 주세요.
 
 ## 라이선스
 

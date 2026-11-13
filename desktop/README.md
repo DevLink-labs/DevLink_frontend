@@ -1,127 +1,149 @@
-# DevLink 데스크톱 개발
+<div align="center">
 
-## 직접 설정과 설정 다시 보기
+<a href="https://about.devlink.ai.kr/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../docs/images/devlink-logo-dark.png">
+    <img src="../docs/images/devlink-logo.png" alt="Visit the DevLink introduction page" width="480">
+  </picture>
+</a>
 
-프로젝트 연결에서 ‘직접 설정하기’를 선택하면 Agent·로컬 연결을 준비한 뒤 Host 파일의 적용 안내를 표시합니다. 파일이 없는 경우의 전체 설정과 기존 파일에 추가·교체할 DevLink 항목을 구분합니다. 기존 파일은 사용자가 백업하고 다른 MCP·프로젝트 설정을 유지해 편집합니다.
+# DevLink Desktop
 
-Agent 목록의 ‘연결 관리’는 현재 계정·팀에 저장된 로컬 연결을 보여줍니다. 브로커가 중지돼도 안내를 볼 수 있고, ‘연결 재개’를 눌렀을 때만 기존 Agent로 setup을 실행합니다. ‘설정 확인’과 ‘AI 도구 연결 확인’은 읽기 전용입니다. 설정 준비 완료와 실제 AI 도구 세션의 연결 관측은 별도로 표시합니다.
+**Connect local projects and follow your team's AI collaboration in one place.**
 
-이 기능에는 `setup mcp-guide`가 포함된 최신 CLI가 필요합니다. preload의 `capabilities.manualMcpSetup=1`을 확인하며 구형 앱은 기존 수동 안내 화면을 유지합니다. CLI·데스크톱 변경 후 설치 파일을 다시 생성해야 합니다. 로컬 UI 테스트가 실제 설치 앱·Codex 수용 검사를 대체하지는 않습니다.
+A Windows desktop app for setting up DevLink connections in Codex and Claude Code and following task conversations and notifications.
 
-## 작업 알림
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE.txt)
+![Windows](https://img.shields.io/badge/Windows-x64-0078D4)
+![Electron](https://img.shields.io/badge/Electron-45-47848F?logo=electron&logoColor=white)
+![Node.js](https://img.shields.io/badge/Bundled_Node.js-24-339933?logo=nodedotjs&logoColor=white)
 
-로그인한 사용자가 속한 팀의 로컬 프로필마다 5초 간격으로 `devlink updates`를 실행해 새 작업·질문·답변, 보낸 작업의 완료·실패·거절, 결과 지연을 알립니다. 브로커에 저장된 소식만 읽으며 작업 수락·읽음 처리·ACK를 하지 않습니다.
+**English** · [한국어](README.ko.md)
 
-- 조회 위치와 최근 알린 이벤트는 앱 데이터 폴더의 `update-cursors.json`에 프로필별로 저장합니다. AI 도구 훅·MCP의 조회 위치와 독립입니다.
-- 처음 조회하는 프로필은 기존 이력을 건너뜁니다. 저장소 정리 등으로 이력이 처음부터 다시 나오면 알리지 않고 위치만 옮깁니다.
-- 앱 창을 보고 있으면 앱 안 알림만, 아니면 PC 알림도 표시합니다. 한 번에 4건 이상이면 PC 알림은 요약 한 건입니다. 알림을 누르면 해당 팀의 작업 대화 화면을 엽니다.
-- 앱을 닫으면 알림도 멈춥니다. 다시 열면 저장한 위치부터 이어서 알립니다.
+[Quick Start](#quick-start) · [Usage](#usage) · [Architecture](#architecture) · [Documentation](#documentation) · [Report a Bug](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues)
 
-이 기능에는 `devlink updates`가 포함된 최신 CLI가 필요합니다. 명령 계약은 DevLink_client `rust/docs/desktop-updates.md`에 있습니다.
+</div>
 
-## 개발 환경
+## About
 
-Windows에서 Node.js 24와 로컬 DevLink 서버를 준비합니다. CLI와 MCP 서버는 `DevLink_client`에서 빌드한 결과물을 사용합니다.
+DevLink connects your team's AI coding tools to share work requests and development context. From Codex and Claude Code, teammates can request work from each other's Agents and review progress and results.
 
-도구 감지와 계정 전환 시 MCP 설정 갱신에는 `devlink setup tools` 및 `mcp.mode=replace`를 지원하는 최신 CLI가 필요합니다. 기존 바이너리를 사용 중이라면 `DevLink_client/rust`에서 `cargo build --release -p devlink-cli`로 다시 빌드합니다.
+This directory provides the **Electron-based Windows desktop app** that connects the web workspace to the local CLI. Choose a project folder and AI tool to prepare an Agent connection, then follow team task conversations and updates. Visit the [introduction page](https://about.devlink.ai.kr/) for the full service overview and demo.
 
-프론트 저장소 루트에서 Vite를 실행합니다. `61907`은 로컬 서버 포트에 맞춰 바꿉니다.
+## Features
 
-```powershell
-npm ci
-$env:VITE_API_BASE_URL = ''
-$env:DEVLINK_API_PROXY_TARGET = 'http://127.0.0.1:61907'
-npm run dev -- --host localhost --port 5173 --strictPort
+- **Project and AI tool connections** — Choose a project folder and Codex or Claude Code, then enter a discipline and role tags to prepare an Agent connection.
+- **MCP configuration guidance** — Apply project MCP settings for supported tool versions, or review instructions for editing the configuration manually.
+- **Connection management** — List local connections for the current account and team, inspect configuration and AI tool connection status, and resume connections.
+- **Team task views** — Use the web workspace to follow recent tasks, details, questions, answers, status changes, and completion results.
+- **Task notifications** — Check the local broker for new tasks, questions, answers, and task results, and open the relevant conversation from a notification.
+- **Project and tool profiles** — Connect the same project to Codex and Claude Code separately, keeping connection information scoped by account, team, project, and tool.
+
+## Quick Start
+
+### 1. Prerequisites
+
+- A **Windows x64 PC** with an internet connection
+- An installed **Codex or Claude Code**
+- A **DevLink service account and team membership** — if needed, sign up in the app and create or join a team.
+- A **local project folder** to open in your AI coding tool
+
+The installer includes the DevLink CLI, MCP server, and Node.js 24. See the [desktop development guide](docs/development.ko.md#개발-환경) for tools needed to develop from source and build installers.
+
+### 2. Install the desktop app
+
+Download and run the Windows installer, `DevLink-Setup-<version>.exe`, from [GitHub Releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases). Launch DevLink from its shortcut after installation. The installed application executable is named `DevLinkDesktop.exe`.
+
+The packaged app uses the web interface at `https://devlink.ai.kr` and the central server at `wss://api.devlink.ai.kr/`. To develop against a local server, follow the [development environment setup](docs/development.ko.md#개발-환경).
+
+### 3. Connect your project
+
+1. After logging in, prepare your team and project connection through **DevLink 시작하기 (Get started)**. Existing users can select **Agent → Agent 추가 (Add Agent)**.
+2. Select the project's root folder.
+3. Review the AI tool, discipline, and role tags, then click **연결하기 (Connect)**. If both Codex and Claude Code are detected, select the tool to use.
+4. If CLI authentication is needed for the current account, enter your password, then review and apply the MCP configuration changes.
+
+Configuration support depends on the bundled CLI and AI tool versions. If manual instructions appear, follow them while preserving other MCP servers and project settings in existing files.
+
+### 4. Check the connection
+
+Reopen Codex or Claude Code in that project to load the changed MCP settings. Ask your AI coding tool:
+
+```text
+Check DevLink's connection status and my Agent information.
+If the connection is healthy, bind this MCP session to the current Agent
+and show the team's Agents.
 ```
 
-별도 PowerShell에서 `desktop`으로 이동해 `.env.local`을 설정하고 Electron을 실행합니다.
+Also inspect the configuration and AI tool status under **연결 관리 (Connection management)** in the app. **Configuration readiness and an actual AI tool session connection are separate states.** Check that the displayed account, team, and Agent match your intended connection.
 
-```powershell
-cd desktop
-npm ci
-Copy-Item .env.example .env.local
-```
+For troubleshooting, see [manual setup and connection checks](docs/development.ko.md#직접-설정과-설정-다시-보기).
 
-`.env.local`의 `DEVLINK_DESKTOP_CONFIG_PATH`를 로컬 서버를 가리키는 테스트 프로필의 `config.json`으로 바꿉니다. 프로필이 없다면 사용자 홈 아래의 전용 폴더에 다음과 같이 만듭니다.
+## Usage
 
-```powershell
-$cli = (Resolve-Path '../../DevLink_client/rust/target/release/devlink.exe').Path
-$testDir = Join-Path $env:USERPROFILE 'devlink-test'
-New-Item -ItemType Directory -Force $testDir | Out-Null
-$testConfig = Join-Path $testDir 'config.json'
-# 새 테스트 프로필에서만 실행합니다.
-if (Test-Path $testConfig) { throw '이미 존재하는 테스트 프로필입니다.' }
-& $cli --config $testConfig init
-if ($LASTEXITCODE -ne 0) { throw '테스트 프로필 초기화 실패' }
-& $cli --config $testConfig config set serverUrl 'ws://127.0.0.1:61907/'
-```
+### Follow team tasks and results
 
-```powershell
-npm run dev
-```
+Exchange work through DevLink MCP in your respective AI tools, then select the task from the app's recent task list. Review the request, questions, answers, progress, and completion results in one conversation.
 
-창 아이콘은 `src/assets/image/logo/logo-icon.webp`를 원본 비율과 투명 배경을 유지해 Windows용으로 변환한 `desktop/assets/devlink.ico`를 사용합니다. 16~256px의 여러 해상도를 포함하며, Windows 실행 파일 패키징에도 같은 아이콘을 사용합니다. 개발 앱에는 Electron을 종료하고 다시 실행하면 반영되고, 설치본에는 재패키징 후 새 버전을 설치해야 반영됩니다.
+The recipient's AI tool performs code analysis, changes, and tests. The app displays team work and results and manages local connections.
 
-Electron이 최초 실행 시 Windows 런타임을 내려받습니다. 로그인 후 팀 대시보드의 **Agent → Agent 추가**에서 프로젝트의 루트 폴더를 선택합니다. Codex와 Claude Code 중 하나만 감지되면 자동으로 사용하고, 둘 다 감지되면 선택할 수 있습니다. 해당 계정의 CLI 세션이 없거나 다른 계정으로 인증돼 있으면 현재 계정의 비밀번호를 입력합니다.
+### Inspect or resume an existing connection
 
-`DEVLINK_DESKTOP_CONFIG_PATH`는 기준 프로필입니다. CLI 프로필 하나는 Agent 하나(서버·사용자·팀·프로젝트·AI 도구)에 묶이므로, 앱은 프로젝트와 AI 도구마다 기준 프로필 폴더 아래 `accounts/<서버 해시>/<사용자 ID>/teams/<팀 ID>/<프로젝트·도구 해시>/config.json`을 자동으로 사용합니다. 그래서 같은 폴더를 Codex와 Claude Code로 각각 연결하면 Agent 두 개가 생기고, 각 도구의 설정 파일(`.codex/config.toml`, `.mcp.json`)에 해당 Agent가 연결됩니다. 도구를 구분하기 전에 만든 프로젝트 프로필(`<프로젝트 해시>`)은 다른 도구의 Agent가 연결돼 있지 않을 때만 재사용합니다. 기준 프로필이나 이전 계정별 프로필(`accounts/<서버 해시>/<사용자 ID>/config.json`)의 Agent가 같은 서버·사용자·팀·프로젝트·AI 도구에 속하면 해당 프로필을 재사용하고, 기준 프로필에 Agent가 없으면 같은 계정의 로그인 세션이 있을 때 기준 프로필을 사용합니다. 프로젝트 연결과 수동 설정 확인은 선택한 프로젝트의 프로필을 사용하고, 대시보드의 연결 상태는 현재 팀에 연결된 프로필 중 하나라도 준비되면 연결됨으로 표시합니다. 새 프로필은 로그인 정보와 Agent 토큰을 복사하지 않으므로 처음 연결하는 프로젝트마다 비밀번호를 확인하며, 로컬 브로커 포트를 자동 할당합니다. 같은 도구로 Agent 두 개를 한 폴더에 연결하는 것은 지원하지 않습니다(도구 설정 파일의 `devlink` 항목이 하나뿐). 같은 프로젝트·도구 프로필은 Agent가 연결된 것을 Agent 없는 것보다 우선하고, 한 도구의 프로필 오류는 그 도구를 선택할 때만 표시합니다. 이미 등록한 Agent를 폴더로 다시 연결하면 폴더명 대신 프로필에 저장된 Agent·프로젝트 이름을 사용합니다. 기존 Agent의 토큰이 이 PC에 없으면(`SETUP_TOKEN_REQUIRED`) 다른 PC의 연결이 끊어질 수 있다는 안내와 함께 동의를 받은 뒤에만 `issueToken: true`로 다시 실행합니다.
+Open **연결 관리 (Connection management)** from the Agent list to view connections for the current account and team. **설정 확인 (Check configuration)** and **AI 도구 연결 확인 (Check AI tool connection)** are read-only. **연결 재개 (Resume connection)** runs setup again for the existing Agent.
 
-설정 이력과 본인 소유 Agent가 없는 계정은 로그인 후 **DevLink 시작하기**에서 팀 준비와 프로젝트 연결을 순서대로 진행합니다. 완료하거나 **나중에 설정**을 선택한 이력은 현재 브라우저·앱에 계정별로 저장합니다. 기존 Agent가 있는 계정은 대시보드로 바로 진입하며, 추가 연결은 **Agent → Agent 추가**에서 진행합니다.
+Connecting the same project to Codex and Claude Code uses separate Agents and profiles. Connecting two Agents for the same tool in one project folder is not supported. If an existing Agent's token is not available on this PC, the app may ask for consent to reissue it; reissuing can affect connections on other PCs.
 
-Windows 권한 검사를 통과하려면 사용자 전용 폴더에 프로젝트를 준비합니다. 바탕화면 아래의 MCP 경로가 권한 검사에서 거부되면 사용자 전용 폴더에 MCP의 `dist`, `package.json`, `node_modules`를 복사하고 `.env.local`의 `DEVLINK_DESKTOP_MCP_ENTRY`를 복사한 `dist/index.js`로 바꿉니다.
+### Open conversations from task notifications
 
-기존 브로커가 테스트 프로필의 포트를 사용 중이면 `devlink --config <테스트 config> config set localPort <빈 포트>`로 테스트 프로필에 다른 포트를 지정합니다.
+The app checks for updates every five seconds for each local profile connected to the logged-in user's teams. When the window is in the foreground, it shows in-app notifications; otherwise, it also shows Windows notifications. Clicking a notification opens the task conversation.
 
-프로젝트를 연결하면 지원 버전의 Codex·Claude Code 설정에서 DevLink 항목을 선택한 계정의 프로필로 갱신합니다. 기존 파일은 CLI가 비공개 백업으로 보존하고, 다른 MCP 서버와 프로젝트 설정은 유지합니다. 적용 직전 파일이 변경되면 덮어쓰지 않고 중단합니다. 같은 프로젝트에서 계정을 바꾼 뒤에는 AI 도구를 다시 열어 변경된 연결 정보를 사용합니다. 미검증 도구 버전은 기존과 같이 수동 설정 안내를 표시합니다.
+Checking notifications does not accept work or replace read and ACK handling by the AI tool. Notifications stop when the app exits and resume from the saved position when it starts again. A profile's first check skips historical events.
 
-계정별 프로필 및 데스크톱 IPC 회귀 테스트는 저장소 루트에서 `node --test desktop/tests/setup-profiles.test.cjs`로 실행합니다.
+After an update, reopen your AI tool to use the new runtime. See the [installer guide](docs/development.ko.md#windows-설치-파일) for how installation, updates, and removal handle profiles and running connections.
 
-SET-3-01의 연결 화면은 폴더 선택 후 AI 도구·담당 파트·역할 태그를 확인하고 **연결하기**를 눌러 등록합니다. 도구가 하나여도 담당 정보를 입력할 수 있습니다. 파트는 프론트엔드·백엔드·인프라·기타 중 선택하며, 태그는 쉼표로 구분해 최대 10개·각 UTF-16 64자로 입력합니다. 잘못된 태그는 CLI 실행 전에 화면에서 오류를 표시합니다. 앞뒤 U+0000–U+0020과 중복은 서버와 같이 제거하며 비밀번호 재입력·연결 재시도에도 입력값을 유지합니다. 등록 결과 불명과 프로필 충돌에는 재시도 버튼을 제공하지 않습니다. 이미 연결된 Agent와 담당 정보가 달라 `SETUP_AGENT_BINDING_CONFLICT`가 나면 한글 안내와 함께 **담당 정보 다시 입력**으로 입력 화면에 돌아가며, 비운 항목은 저장값을 유지합니다. 이때 AI 도구는 처음 실행한 도구로 고정됩니다. 담당 정보를 입력하지 않았는데 같은 충돌이 나면 이름·도구 등 다른 연결 정보 문제로 안내하고 다시 입력 버튼을 표시하지 않습니다.
+## Architecture
 
-화면은 preload의 `setup.run(id, tool, password?, metadata?)` 네 번째 인자로 `{ part: "BACKEND", roles: ["API", "인증"] }`를 전달합니다. 선택하지 않거나 비워 둔 필드는 생략해 CLI가 신규 등록 시 `OTHER`·`[]`, 기존 프로필 재사용 시 저장값으로 처리합니다. 기존 Agent의 담당 정보 변경은 이 화면에서 제공하지 않습니다. 새 CLI와 서버의 Agent 메타데이터 API 반영이 필요합니다.
+| Component | Responsibility |
+| --- | --- |
+| Electron app | Web interface hosting, window management, and local integration |
+| Web workspace | Login, team and Agent management, task conversations, and UI updates |
+| Preload and IPC | Passing requests from the allowed web interface to local connection features |
+| DevLink CLI, broker, and MCP | Project configuration, central server connections, and AI tool MCP requests |
+| Notification service | Reading local updates and displaying in-app and Windows notifications |
+| DevLink central server | User, team, Agent, and task storage, with REST APIs, WebSockets, and SSE |
 
-입력 검증 회귀는 `node --test desktop/tests/agent-metadata.test.cjs`로 실행합니다. 실제 React 화면의 입력·비밀번호 재입력·재시도·모달·좁은 화면 회귀는 `node --test desktop/tests/project-connect.test.cjs`로 실행합니다. 이 검사는 로컬 Vite 개발 서버와 모의 setup API를 사용하고 빌드를 실행하지 않습니다. Playwright 모듈이 없으면 화면 검사는 건너뜁니다. 외부 모듈 경로는 `DEVLINK_TEST_PLAYWRIGHT`, 설치된 Chromium 계열 브라우저 실행 경로는 `DEVLINK_TEST_BROWSER`로 지정할 수 있습니다.
+The packaged app loads the deployed web interface; the development app loads Vite at `http://localhost:5173`. The CLI, MCP server, and Node runtime run from installation resources. Account-scoped connection profiles are managed under `.devlink/desktop/` in the user's home directory.
 
-## Windows 설치 파일
+Local features are exposed only to the allowed top-level web frame, and the Electron main process also checks IPC caller origins. Opening the same web interface in a browser does not run the local CLI.
 
-Node 24 x64에서 최신 CLI 릴리스 빌드와 MCP의 `dist`를 준비한 뒤 `desktop`에서 실행합니다. 프론트 웹 빌드는 이 과정에 포함하지 않습니다.
+### Related repositories
 
-```powershell
-# DevLink_client/rust에서 먼저 실행
-cargo build --release --locked -p devlink-cli
-# DevLink_client/packages/mcp-server에서 먼저 실행
-npm ci
-npm run build
-# DevLink_frontend/desktop에서 실행
-npm ci
-npm run dist:win
-```
+| Repository | Responsibility |
+| --- | --- |
+| **DevLink_frontend — this repository** | Web workspace and this desktop app |
+| [DevLink_client](https://github.com/SSAFY-URAYAHA/DevLink_client) | Bundled CLI, local broker, and MCP server |
+| [DevLink_server](https://github.com/SSAFY-URAYAHA/DevLink_server) | Authentication, user/team/Agent/task management, and APIs |
 
-Windows x64 CLI는 `DevLink_client/rust/.cargo/config.toml`의 `+crt-static` 설정으로 C 런타임을 정적으로 연결합니다. 위 Cargo 명령은 `rust` 디렉터리에서 실행하며, 배포 PC에 Visual C++ 재배포 패키지를 별도로 요구하지 않습니다. `RUSTFLAGS`로 빌드 설정을 재정의할 때도 이 설정을 유지해야 합니다.
+## Documentation
 
-기존 연결 프로그램이 `target/release/devlink.exe`를 사용 중이면 별도 Cargo 출력 폴더로 빌드하고, `DEVLINK_VENDOR_CLI_PATH` 환경 변수로 해당 실행 파일을 지정할 수 있습니다. 이 변수는 설치 파일을 준비할 때만 사용합니다. `prepare:vendor`는 실행 중인 공식 Node 24의 `node.exe`, CLI, MCP의 운영 의존성을 `vendor`에 모읍니다. CLI를 실행하기 전에 일반·지연 DLL 가져오기 표를 검사하고, `VCRUNTIME`·`MSVCP` 등 Visual C++ 재배포 DLL 의존성이나 잘못된 Windows x64 실행 파일을 발견하면 중단합니다. 그다음 CLI 버전과 MCP 초기화 응답을 확인합니다. 결과는 `desktop/dist/DevLink-Setup-<버전>.exe`이며 바이너리와 `vendor`는 Git에 추가하지 않습니다.
+| Guide | Covers |
+| --- | --- |
+| [Desktop development, packaging, and verification](docs/development.ko.md) | Local execution, profiles, manual setup, notifications, Windows installers, and verification procedures (Korean) |
+| [Development environment example](.env.example) | CLI, MCP, Node, and test profile paths |
+| [Desktop package configuration](package.json) | Execution, test, and packaging scripts and installer settings |
+| [Frontend overview](../README.md) | Web workspace setup and features |
+| [Frontend configuration and deployment](../docs/frontend-guide.md) | API proxy, authentication, and web deployment |
+| [Client project setup](https://github.com/SSAFY-URAYAHA/DevLink_client/blob/master/rust/docs/setup.md) | CLI and AI tool configuration and profiles |
+| [Client desktop update contract](https://github.com/SSAFY-URAYAHA/DevLink_client/blob/master/rust/docs/desktop-updates.md) | The update query contract used by the desktop app |
 
-설치본은 `process.resourcesPath` 아래의 `bin/devlink.exe`, `bin/mcp-server/dist/index.js`, `node/node.exe`를 사용합니다. 서버는 `wss://api.devlink.ai.kr/`, 프로필은 사용자 홈의 `.devlink/desktop/accounts/...`를 사용합니다. 개발용 `.env.local`과 테스트 계정 프로필은 설치본에 포함하지 않습니다. 배포 화면(`https://devlink.ai.kr`)의 최상위 프레임에만 연결 API를 제공하며, main에서도 호출 출처를 확인합니다.
+The development guide documents source execution, packaging, and verification commands. After code or documentation changes, verify the relevant installed-app and AI tool behavior as well as the local UI, and record the results in the PR.
 
-데스크톱 실행 파일명은 `DevLinkDesktop.exe`입니다. 설치 프로그램의 실행 중 앱 검사에서 CLI인 `devlink.exe`를 함께 종료하지 않도록 구분합니다. 서로 다른 Agent의 프로젝트 연결 프로그램은 동시에 실행할 수 있지만, 같은 Agent의 중복 실행과 실행 중 토큰 변경은 거부합니다. 구버전 CLI가 같은 계정으로 실행 중이면 해당 연결을 한 번 중지한 뒤 새 CLI로 다시 시작해야 합니다.
+## Contributing
 
-업데이트·제거 시 설치본 소유의 실행 중인 연결 프로그램을 프로젝트별로 중지하고, 동봉한 Node에서 실행 중인 MCP도 종료합니다. 일부를 종료하지 못하거나 동봉 런타임이 없어도 설치·제거를 중단하지 않습니다. 제거는 사용 중인 파일만 남기고 완료하며, 업데이트는 사용 중인 파일이 있으면 기존 설치를 복원한 뒤 중단합니다. 업데이트 전 실행 중이던 프로필은 다음 앱 실행에서 다시 시작합니다. 실패한 재시작은 다음 실행에서 다시 시도합니다. 프로젝트 설정의 런타임 경로는 설치 위치로 유지하며, 업데이트 후 AI 도구를 다시 열어주세요. 제거해도 사용자 홈의 프로필과 자격 파일은 보존합니다.
+Bug reports, documentation improvements, and feature proposals are welcome. Open an [Issue](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues) with the app version, operating system, AI tool and CLI versions, reproduction steps, expected behavior, and actual behavior. Remove passwords, tokens, and personal information from logs and screenshots.
 
-배포 설정은 [Electron의 격리·보안 지침](https://www.electronjs.org/docs/latest/tutorial/security)과 [electron-builder의 NSIS 훅](https://www.electron.build/nsis/)을 기준으로 구성합니다. 코드 서명과 자동 업데이트는 이번 범위에 포함하지 않습니다.
+See the [contributing guide](../CONTRIBUTING.md) for development and PR conventions, and the [security policy](../SECURITY.md) for vulnerability reporting.
 
-## 연결 검증
+## License
 
-```powershell
-# desktop에서 회귀 테스트
-npm test
-# 로컬 서버 127.0.0.1:8080, Vite localhost:5173, vendor를 준비한 뒤 실행
-npm run verify:connection
-# 설치 파일 생성 후 실제 설치·실행 중 업데이트·제거도 검증
-npm run verify:installer
-```
-
-실제 Electron의 프로젝트 연결 화면과 CLI를 사용해 새 연결, 재연결, 두 번째 프로젝트, 다른 팀, 직접 적용 후 확인·재실행, 여러 연결 프로그램의 중지·복원을 확인합니다. 직접 적용 경로만 미검증 버전을 출력하는 테스트 Host를 사용합니다. AI 작업이나 모델 호출은 실행하지 않습니다. 테스트 전용 계정과 팀을 로컬 서버에 생성하고, 임시 프로필·설치 후보 폴더는 검증 후 삭제합니다. 화면과 검사 결과는 `dist/verification`에 남깁니다. 이 검사는 깨끗한 Windows 계정에서의 실제 설치·업데이트·제거 수용 검사를 대체하지 않습니다.
-
-Visual C++ 런타임은 PC 전체에 설치될 수 있으므로 같은 PC에 새 계정을 만드는 것만으로 런타임 미설치 환경을 보장하지 않습니다. 이 조건은 재배포 패키지가 없는 깨끗한 Windows VM 등에서 별도로 확인합니다.
-
-폴더 선택 대화상자의 반환값은 테스트 프로젝트로 고정하고 나머지 화면·IPC·CLI·로컬 서버는 실제 구현을 사용합니다. `verify:installer`는 기존 DevLink 설치와 `.devlink/desktop` 프로필이 없을 때만 실행합니다. `Programs` 아래의 임시 위치에 실제 NSIS 설치 파일을 설치하고 업데이트·제거 훅을 확인합니다. 제거 후 프로필과 자격 파일이 보존되는지 검사한 다음 테스트가 만든 프로필과 임시 설치만 정리합니다. 로컬 서버에 생성한 테스트 계정·팀·Agent 데이터는 남습니다.
+DevLink Desktop is distributed under the repository's [MIT License](../LICENSE.txt).
