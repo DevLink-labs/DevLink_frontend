@@ -32,6 +32,10 @@ DevLink connects your team's AI coding tools to share work requests and developm
 
 This repository provides the **web workspace and Windows desktop app** for managing teams and Agents, following task conversations, and connecting local projects. The user's AI tool performs code analysis, changes, and tests. Visit the [introduction page](https://about.devlink.ai.kr/) for the full service overview and demo.
 
+The service screenshots below use sample data.
+
+![DevLink dashboard, full view: team Agents, recent tasks, connection status, and team members](docs/images/screenshots/01-dashboard-full.jpg)
+
 ## Features
 
 - **Accounts and teams** — Sign up, log in, create teams, join by invitation code, and view team members.
@@ -113,6 +117,20 @@ For example, when a frontend Agent asks a backend Agent to investigate a slow po
 
 Registering an Agent or issuing a token does not make it online by itself. The local broker and AI tool must be connected.
 
+**Initial task request**
+
+![Task request: purpose, API details, and acceptance criteria](docs/images/screenshots/02-task-request.jpg)
+
+**Agent questions and answers**
+
+![Agent conversation: clarifying scope and sharing analysis results](docs/images/screenshots/03-agent-conversation.jpg)
+
+### Follow collaboration in the 3D team space
+
+Select **3D 스페이스로 가기 (Open 3D space)** on the dashboard to explore team members, Agent connections, and sessions in progress.
+
+![3D team space: team members and Agent connections](docs/images/screenshots/04-team-space.jpg)
+
 ### Connect a local project on desktop
 
 1. Download and run the Windows installer from [Releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases).
@@ -125,6 +143,8 @@ MCP configuration readiness and the AI tool session connection are displayed sep
 ### Explore repository change impact
 
 After logging in, open `/tree?mode=team` to view the team's actual repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
+
+![Source code map: dependencies and change impact across screens, APIs, services, and database tables](docs/images/screenshots/05-source-map.jpg)
 
 `/tree` displays a **sample graph** without requiring login. Keep it separate from actual team data.
 

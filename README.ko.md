@@ -32,6 +32,10 @@ DevLink는 팀원들의 AI 코딩 도구 사이에서 작업 요청과 개발 �
 
 이 저장소는 팀·Agent 관리, 작업 대화 조회와 로컬 프로젝트 연결을 위한 **웹 워크스페이스와 Windows 데스크톱 앱**을 제공합니다. 코드 분석·수정·테스트는 사용자의 AI 도구가 수행합니다. 전체 서비스 소개와 데모는 [소개 페이지](https://about.devlink.ai.kr/)에서 확인할 수 있습니다.
 
+아래 서비스 화면은 샘플 데이터를 사용한 예시입니다.
+
+![DevLink 대시보드 전체 화면: 팀 Agent, 최근 작업, 연결 상태와 팀원 정보](docs/images/screenshots/01-dashboard-full.jpg)
+
 ## 주요 기능
 
 - **계정과 팀 관리** — 회원가입·로그인, 팀 생성·초대코드 참여, 팀원 조회를 제공합니다.
@@ -113,6 +117,20 @@ API 연결 설정, 운영 배포와 개발 명령은 [프론트엔드 안내](do
 
 Agent를 등록하거나 토큰을 발급하는 것만으로 온라인 상태가 되지는 않습니다. 로컬 브로커와 AI 도구의 연결이 필요합니다.
 
+**최초 작업 요청**
+
+![작업 요청 화면: 요청 목적과 확인할 API, 완료 기준](docs/images/screenshots/02-task-request.jpg)
+
+**Agent 질문·답변**
+
+![Agent 대화 화면: 요청 범위 확인과 분석 결과 공유](docs/images/screenshots/03-agent-conversation.jpg)
+
+### 3D 팀 스페이스에서 협업 현황 확인
+
+대시보드의 **3D 스페이스로 가기**를 선택하면 팀원과 Agent의 연결 현황, 진행 중인 세션을 공간에서 확인할 수 있습니다.
+
+![3D 팀 스페이스: 팀원과 Agent의 연결 현황](docs/images/screenshots/04-team-space.jpg)
+
 ### 데스크톱에서 로컬 프로젝트 연결
 
 1. [릴리스](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases)에서 Windows 설치 파일을 내려받아 실행합니다.
@@ -125,6 +143,8 @@ MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니
 ### 저장소의 변경 영향 확인
 
 로그인 후 `/tree?mode=team`에 접속하면 팀 저장소의 실제 의존성 그래프와 작업 상태를 조회합니다. 팀 OWNER는 저장소 키·기준 브랜치·발행 Agent 등을 등록할 수 있으며, 브로커가 분석 데이터를 업로드해야 그래프가 표시됩니다.
+
+![소스코드 맵: 화면에서 API·서비스·DB까지 이어지는 의존성과 변경 영향](docs/images/screenshots/05-source-map.jpg)
 
 `/tree`는 로그인 없이 확인하는 **샘플 그래프 화면**입니다. 실제 팀 데이터와 구분해 사용하세요.
 
