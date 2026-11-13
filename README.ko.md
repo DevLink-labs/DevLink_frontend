@@ -102,9 +102,7 @@ npm run dev -- --host localhost --port 5173 --strictPort
 
 ### 4. 화면 확인
 
-브라우저에서 [http://localhost:5173](http://localhost:5173)에 접속합니다. 서버가 실행 중이면 로그인 화면이 표시되며, 회원가입 후 팀 생성·참여까지 진행할 수 있습니다.
-
-로그인·팀 조회가 실패하면 프론트 터미널뿐 아니라 백엔드 실행 상태와 `.env.local`의 연결 주소도 확인하세요. 이 화면은 실제 서버 API를 사용합니다.
+브라우저에서 [DevLink 서비스](https://devlink.ai.kr)에 접속합니다. 회원가입·로그인 후 팀을 생성하거나 초대코드로 참여할 수 있습니다.
 
 API 연결 설정, 운영 배포와 개발 명령은 [프론트엔드 안내](docs/frontend-guide.ko.md)를 참고하세요.
 
