@@ -10,6 +10,20 @@ import PageTitle from "../../../components/common/PageTitle";
 
 const rememberedEmailKey = "devlink:remembered-email";
 
+function validateSignupPassword(password: string): string | null {
+  if (password.length < 8 || password.length > 32) {
+    return "비밀번호는 8~32자로 입력해주세요.";
+  }
+  if (/[^!-~]/.test(password)) {
+    return "비밀번호에는 영문 대소문자, 숫자, 특수문자만 사용할 수 있습니다.";
+  }
+  const characterTypes = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/];
+  if (characterTypes.filter((type) => type.test(password)).length < 3) {
+    return "영문 대문자, 소문자, 숫자, 특수문자 중 3종류 이상을 조합해주세요.";
+  }
+  return null;
+}
+
 function readRememberedEmail() {
   try {
     return localStorage.getItem(rememberedEmailKey) ?? "";
@@ -65,12 +79,18 @@ export default function AuthPanel({
     event.preventDefault();
     if (busy) return;
     setError(null);
-    if (new TextEncoder().encode(password).length > 72) {
+    if (mode === "signup") {
+      const passwordError = validateSignupPassword(password);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+      if (!name.trim()) {
+        setError("이름을 입력해주세요.");
+        return;
+      }
+    } else if (new TextEncoder().encode(password).length > 72) {
       setError("비밀번호가 너무 깁니다. UTF-8 기준 72바이트 이하로 입력해주세요.");
-      return;
-    }
-    if (mode === "signup" && !name.trim()) {
-      setError("이름을 입력해주세요.");
       return;
     }
     try {
@@ -174,11 +194,9 @@ export default function AuthPanel({
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   required
-                  minLength={mode === "signup" ? 8 : undefined}
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  placeholder={
-                    mode === "signup" ? "8자 이상 입력해주세요" : "비밀번호를 입력해주세요"
-                  }
+                  aria-describedby={mode === "signup" ? `${id}-password-hint` : undefined}
+                  placeholder="비밀번호를 입력해주세요"
                   disabled={busy}
                 />
                 <button
@@ -192,6 +210,11 @@ export default function AuthPanel({
                   <Icon name={showPassword ? "eye-off" : "eye"} size={19} />
                 </button>
               </div>
+              {mode === "signup" && (
+                <p id={`${id}-password-hint`} className="field-hint">
+                  공백 없이 8~32자로, 영문 대문자·소문자·숫자·특수문자 중 3종류 이상을 조합해주세요.
+                </p>
+              )}
             </div>
             {mode === "login" && (
               <div className="auth-login-preferences">
