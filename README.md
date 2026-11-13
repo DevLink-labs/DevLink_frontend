@@ -161,7 +161,7 @@ The browser-based web UI does not execute the local CLI directly. The desktop ap
 | [Client, CLI, and MCP guide](https://github.com/SSAFY-URAYAHA/DevLink_client#readme) | Local broker and AI tool integration |
 | [Windows installers and releases](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases) | Desktop installers and release notes |
 
-See the [frontend development guide](docs/frontend-guide.md#development) for build and lint commands, the [desktop guide](desktop/README.md) for desktop verification, and the [contributing guide](CONTRIBUTING.md) for participation and PR conventions. The desktop guide and design notes are currently written in Korean.
+See the [frontend development guide](docs/frontend-guide.md#development) for build and lint commands, the [desktop guide](desktop/README.md) for desktop verification, and the [contributing guide](CONTRIBUTING.md) for participation and PR conventions. The detailed desktop development guide and design notes are currently written in Korean.
 
 ## Contributing
 

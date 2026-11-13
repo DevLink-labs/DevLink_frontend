@@ -120,7 +120,7 @@ Agent를 등록하거나 토큰을 발급하는 것만으로 온라인 상태가
 3. 프로젝트 폴더와 사용할 AI 도구를 선택하고 연결 안내를 따릅니다.
 4. 설정을 적용한 뒤 AI 도구를 다시 열어 실제 Agent 연결 상태를 확인합니다.
 
-MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니다. 직접 설정과 연결 재개 방법은 [데스크톱 안내](desktop/README.md)를 참고하세요.
+MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니다. 직접 설정과 연결 재개 방법은 [데스크톱 안내](desktop/README.ko.md)를 참고하세요.
 
 ### 저장소의 변경 영향 확인
 
@@ -155,13 +155,13 @@ MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니
 | 문서 | 내용 |
 | --- | --- |
 | [프론트엔드 설정과 배포](docs/frontend-guide.ko.md) | API 연결, 환경 변수, 인증, 배포와 코드 구조 |
-| [데스크톱 개발·연결 설정](desktop/README.md) | Electron 개발, 프로젝트 연결, MCP 설정, 알림과 Windows 패키징 |
+| [데스크톱 개발·연결 설정](desktop/README.ko.md) | Electron 개발, 프로젝트 연결, MCP 설정, 알림과 Windows 패키징 |
 | [3D 팀 스페이스 디자인 검토 기록](docs/team-space-design-notes.md) | 디자인 목표와 검토 내용 |
 | [서버 실행과 API 안내](https://github.com/SSAFY-URAYAHA/DevLink_server#readme) | 백엔드 실행과 API 사용 |
 | [클라이언트·CLI·MCP 안내](https://github.com/SSAFY-URAYAHA/DevLink_client#readme) | 로컬 브로커와 AI 도구 연결 |
 | [Windows 설치 파일과 릴리스](https://github.com/SSAFY-URAYAHA/DevLink_frontend/releases) | 데스크톱 설치 파일과 릴리스 내역 |
 
-빌드·린트 명령은 [프론트엔드 개발 안내](docs/frontend-guide.ko.md#개발하기), 데스크톱 검증은 [데스크톱 안내](desktop/README.md), 개발 참여와 PR 규칙은 [기여 가이드](CONTRIBUTING.ko.md)를 참고하세요.
+빌드·린트 명령은 [프론트엔드 개발 안내](docs/frontend-guide.ko.md#개발하기), 데스크톱 검증은 [데스크톱 안내](desktop/README.ko.md), 개발 참여와 PR 규칙은 [기여 가이드](CONTRIBUTING.ko.md)를 참고하세요.
 
 ## 기여하기
 

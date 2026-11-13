@@ -66,7 +66,7 @@ Vercel 설정은 다음과 같습니다.
 | `npm run preview` | 생성된 번들 미리보기 |
 | `npm run lint` | ESLint 검사 |
 
-루트에는 별도의 `npm test` 스크립트가 없습니다. 데스크톱 실행·패키징과 검증 명령은 [데스크톱 개발 문서](../desktop/README.md)에서 안내합니다.
+루트에는 별도의 `npm test` 스크립트가 없습니다. 데스크톱 실행·패키징과 검증 명령은 [데스크톱 개발 문서](../desktop/README.ko.md)에서 안내합니다.
 
 ### 코드 구조
 
