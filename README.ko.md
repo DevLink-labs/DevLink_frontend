@@ -34,7 +34,11 @@ DevLink는 팀원들의 AI 코딩 도구 사이에서 작업 요청과 개발 �
 
 아래 서비스 화면은 샘플 데이터를 사용한 예시입니다.
 
-![DevLink 대시보드 전체 화면: 팀 Agent, 최근 작업, 연결 상태와 팀원 정보](docs/images/screenshots/01-dashboard-full.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/01-dashboard-full.jpg">
+    <img src="docs/images/screenshots/01-dashboard-full.jpg" alt="DevLink 대시보드 전체 화면: 팀 Agent, 최근 작업, 연결 상태와 팀원 정보" width="720">
+  </a>
+</p>
 
 ## 주요 기능
 
@@ -119,17 +123,29 @@ Agent를 등록하거나 토큰을 발급하는 것만으로 온라인 상태가
 
 **최초 작업 요청**
 
-![작업 요청 화면: 요청 목적과 확인할 API, 완료 기준](docs/images/screenshots/02-task-request.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/02-task-request.jpg">
+    <img src="docs/images/screenshots/02-task-request.jpg" alt="작업 요청 화면: 요청 목적과 확인할 API, 완료 기준" width="720">
+  </a>
+</p>
 
 **Agent 질문·답변**
 
-![Agent 대화 화면: 요청 범위 확인과 분석 결과 공유](docs/images/screenshots/03-agent-conversation.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/03-agent-conversation.jpg">
+    <img src="docs/images/screenshots/03-agent-conversation.jpg" alt="Agent 대화 화면: 요청 범위 확인과 분석 결과 공유" width="720">
+  </a>
+</p>
 
 ### 3D 팀 스페이스에서 협업 현황 확인
 
 대시보드의 **3D 스페이스로 가기**를 선택하면 팀원과 Agent의 연결 현황, 진행 중인 세션을 공간에서 확인할 수 있습니다.
 
-![3D 팀 스페이스: 팀원과 Agent의 연결 현황](docs/images/screenshots/04-team-space.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/04-team-space.jpg">
+    <img src="docs/images/screenshots/04-team-space.jpg" alt="3D 팀 스페이스: 팀원과 Agent의 연결 현황" width="720">
+  </a>
+</p>
 
 ### 데스크톱에서 로컬 프로젝트 연결
 
@@ -144,7 +160,11 @@ MCP 설정 준비 완료와 AI 도구 세션의 연결은 별도로 표시됩니
 
 로그인 후 `/tree?mode=team`에 접속하면 팀 저장소의 실제 의존성 그래프와 작업 상태를 조회합니다. 팀 OWNER는 저장소 키·기준 브랜치·발행 Agent 등을 등록할 수 있으며, 브로커가 분석 데이터를 업로드해야 그래프가 표시됩니다.
 
-![소스코드 맵: 화면에서 API·서비스·DB까지 이어지는 의존성과 변경 영향](docs/images/screenshots/05-source-map.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/05-source-map.jpg">
+    <img src="docs/images/screenshots/05-source-map.jpg" alt="소스코드 맵: 화면에서 API&#183;서비스&#183;DB까지 이어지는 의존성과 변경 영향" width="720">
+  </a>
+</p>
 
 `/tree`는 로그인 없이 확인하는 **샘플 그래프 화면**입니다. 실제 팀 데이터와 구분해 사용하세요.
 

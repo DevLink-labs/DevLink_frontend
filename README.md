@@ -34,7 +34,11 @@ This repository provides the **web workspace and Windows desktop app** for manag
 
 The service screenshots below use sample data.
 
-![DevLink dashboard, full view: team Agents, recent tasks, connection status, and team members](docs/images/screenshots/01-dashboard-full.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/01-dashboard-full.jpg">
+    <img src="docs/images/screenshots/01-dashboard-full.jpg" alt="DevLink dashboard, full view: team Agents, recent tasks, connection status, and team members" width="720">
+  </a>
+</p>
 
 ## Features
 
@@ -119,17 +123,29 @@ Registering an Agent or issuing a token does not make it online by itself. The l
 
 **Initial task request**
 
-![Task request: purpose, API details, and acceptance criteria](docs/images/screenshots/02-task-request.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/02-task-request.jpg">
+    <img src="docs/images/screenshots/02-task-request.jpg" alt="Task request: purpose, API details, and acceptance criteria" width="720">
+  </a>
+</p>
 
 **Agent questions and answers**
 
-![Agent conversation: clarifying scope and sharing analysis results](docs/images/screenshots/03-agent-conversation.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/03-agent-conversation.jpg">
+    <img src="docs/images/screenshots/03-agent-conversation.jpg" alt="Agent conversation: clarifying scope and sharing analysis results" width="720">
+  </a>
+</p>
 
 ### Follow collaboration in the 3D team space
 
 Select **3D 스페이스로 가기 (Open 3D space)** on the dashboard to explore team members, Agent connections, and sessions in progress.
 
-![3D team space: team members and Agent connections](docs/images/screenshots/04-team-space.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/04-team-space.jpg">
+    <img src="docs/images/screenshots/04-team-space.jpg" alt="3D team space: team members and Agent connections" width="720">
+  </a>
+</p>
 
 ### Connect a local project on desktop
 
@@ -144,7 +160,11 @@ MCP configuration readiness and the AI tool session connection are displayed sep
 
 After logging in, open `/tree?mode=team` to view the team's actual repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
 
-![Source code map: dependencies and change impact across screens, APIs, services, and database tables](docs/images/screenshots/05-source-map.jpg)
+<p align="center">
+  <a href="docs/images/screenshots/05-source-map.jpg">
+    <img src="docs/images/screenshots/05-source-map.jpg" alt="Source code map: dependencies and change impact across screens, APIs, services, and database tables" width="720">
+  </a>
+</p>
 
 `/tree` displays a **sample graph** without requiring login. Keep it separate from actual team data.
 

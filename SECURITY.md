@@ -2,29 +2,23 @@
 
 **English** · [한국어](SECURITY.ko.md)
 
-[Project overview](README.md) · [Contributing guide](CONTRIBUTING.md)
+## Reporting a Vulnerability
 
-## Reporting a vulnerability
+Please report security vulnerabilities, such as authentication bypasses, token exposure, and authorization flaws, through GitHub's private vulnerability reporting feature.
 
-Please report security issues, such as cross-site scripting (XSS), session or token exposure, authorization failures, or unintended file and command access through Electron IPC or local integration, through a private channel.
+Go to **Security → Advisories → Report a vulnerability** in the affected repository. Do not disclose vulnerability details in public issues or pull requests.
 
-1. Check whether the repository's [Security Advisories](https://github.com/SSAFY-URAYAHA/DevLink_frontend/security/advisories) page provides a **Report a vulnerability** button. If available, use it to submit a private report.
-2. If private reporting is unavailable, use [Issues](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues) only to ask maintainers for a private contact method, without describing the vulnerability.
+For general bugs and feature requests, use the repository's Issues page.
 
-Do not include exploitable reproduction steps, attack code, personal information, real passwords, or tokens in public Issues or PRs. A dedicated reporting email address and response deadline have not yet been established.
+## What to Include
 
-## What to include in a private report
-
-- Affected version or commit, operating system, browser or desktop app version, and relevant AI tool or CLI versions
-- Impact and conditions under which the issue occurs
-- Reproduction steps or a minimal example
+- The affected version or commit, operating system, and relevant tool versions
+- The impact and conditions required to trigger the issue
+- Reproduction steps or a minimal proof of concept
 - Logs or screenshots with secrets and personal information removed
-- A possible remediation approach, if available
 
-Investigate only in environments you own or are explicitly authorized to test. Do not access other users' data or disrupt services.
+Do not include real passwords, tokens, or personal information. Reproduce the issue only in environments you own or are authorized to test.
 
-## Supported versions
+## Handling and Disclosure
 
-Security support periods have not yet been defined for individual versions. Include the release tag or commit you used when reporting an issue. The scope of security fixes and disclosure timing will be decided after the issue has been assessed.
-
-For general bugs and feature requests, use [Issues](https://github.com/SSAFY-URAYAHA/DevLink_frontend/issues). See the [contributing guide](CONTRIBUTING.md) for development participation.
+Maintainers will verify the issue and assess its impact before preparing and releasing a fix. The timing of public disclosure will be coordinated with the reporter.
