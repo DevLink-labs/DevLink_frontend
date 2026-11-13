@@ -32,8 +32,8 @@ const eventLabels: Record<string, string> = {
 
 const fileChangeLabels = { ADDED: '추가', MODIFIED: '수정', DELETED: '삭제', RENAMED: '이름 변경' }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : '기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+function errorMessage(error: unknown, fallback = '기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.') {
+  return error instanceof Error ? error.message : fallback
 }
 
 function isAccessError(error: unknown): error is ApiError {
@@ -528,7 +528,7 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
       {acceptTask.isError && !accessError && <div className="tc-refresh-error" role="alert">
         {acceptTask.error instanceof ApiError && acceptTask.error.status === 409
           ? "작업 상태가 변경되었습니다. 최신 상태를 확인해주세요."
-          : acceptTask.error.message}
+          : errorMessage(acceptTask.error, '요청을 수락하지 못했습니다. 잠시 후 다시 시도해주세요.')}
       </div>}
 
       <div className="tc-body">
