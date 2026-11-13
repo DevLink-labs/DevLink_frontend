@@ -46,6 +46,14 @@ export interface TaskListResponse {
 
 export interface TaskDetail extends TaskListItem {
   teamName: string;
+  version?: number;
+  canAccept?: boolean;
+}
+
+export interface TaskAcceptance {
+  status: "IN_PROGRESS";
+  version: number;
+  startedAt: string;
 }
 
 export interface TaskEvent {

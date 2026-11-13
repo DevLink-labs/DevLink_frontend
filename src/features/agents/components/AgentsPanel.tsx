@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import type { Agent, CreateAgentInput } from "../types";
 import type { Team, TeamMember } from "@/features/teams/types";
 import { useAgent, useAgentMutations } from "../hooks/useAgents";
+import { agentApi } from "../api/agentApi";
 import { copyText, formatDate } from "@/utils";
 import { EmptyState, Icon, Modal } from "@/components/ui";
 import chatgptLogo from "@/assets/image/agent-logo/chatgpt.svg";
@@ -47,6 +48,9 @@ function toolName(toolType: Agent["toolType"]): string {
   return toolType === "CODEX" ? "Codex" : "Claude Code";
 }
 
+const onlineCheckInterval = 2_000;
+const onlineCheckTimeout = 90_000;
+
 export default function AgentsPanel({
   team,
   agents,
@@ -61,10 +65,12 @@ export default function AgentsPanel({
   const fieldId = useId();
   const desktop = getDesktopApi();
   const active = useRef(true);
+  const connecting = useRef<AbortController | null>(null);
   const mutations = useAgentMutations(currentUserId, team.teamId);
   const [search, setSearch] = useState("");
   const [connection, setConnection] = useState<Agent["status"] | "all">("all");
   const [pcReady, setPcReady] = useState<boolean | null>(null);
+  const [connectingAgentId, setConnectingAgentId] = useState<number | null>(null);
   const [formTarget, setFormTarget] = useState<Agent | "register" | null>(null);
   const [form, setForm] = useState<AgentForm>(emptyForm);
   const saving = mutations.registerAgent.isPending || mutations.updateAgent.isPending;
@@ -96,6 +102,7 @@ export default function AgentsPanel({
     active.current = true;
     return () => {
       active.current = false;
+      connecting.current?.abort();
     };
   }, []);
 
@@ -121,6 +128,38 @@ export default function AgentsPanel({
   function ownerName(agent: Agent): string {
     const owner = members.find((member) => member.userId === agent.ownerUserId);
     return owner?.nickname || owner?.name || `사용자 #${agent.ownerUserId}`;
+  }
+
+  async function connectAgent(agent: Agent) {
+    const launch = desktop?.setup?.connectAgent;
+    if (!launch || connecting.current || agent.ownerUserId !== currentUserId ||
+        agent.status !== "OFFLINE" || agent.toolType !== "CODEX") return;
+    const controller = new AbortController();
+    connecting.current = controller;
+    setConnectingAgentId(agent.agentId);
+
+    try {
+      await launch({ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }, agent.agentId);
+      const deadline = Date.now() + onlineCheckTimeout;
+      while (!controller.signal.aborted && Date.now() < deadline) {
+        const latest = await agentApi.getAgent(agent.agentId, controller.signal);
+        if (controller.signal.aborted) return;
+        if (latest.status === "ONLINE") {
+          onRefresh();
+          onNotice(`${agent.name} Agent가 온라인으로 연결됐습니다.`);
+          return;
+        }
+        await new Promise<void>((resolve) => window.setTimeout(resolve, onlineCheckInterval));
+      }
+      if (!controller.signal.aborted) {
+        onError(new Error("온라인 연결을 아직 확인하지 못했습니다. 열린 Codex 터미널의 승인 요청과 연결 결과를 확인해주세요."));
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) onError(error);
+    } finally {
+      connecting.current = null;
+      if (!controller.signal.aborted) setConnectingAgentId(null);
+    }
   }
 
   function openRegister() {
@@ -401,8 +440,9 @@ export default function AgentsPanel({
                       <div className="status-cell">
                         <span
                           className={`badge ${agent.status === "ONLINE" ? "badge-online" : "badge-offline"}`}
+                          aria-live={connectingAgentId === agent.agentId ? "polite" : undefined}
                         >
-                          {agent.status === "ONLINE" ? "온라인" : "오프라인"}
+                          {agent.status === "ONLINE" ? "온라인" : connectingAgentId === agent.agentId ? "연결 중" : "오프라인"}
                         </span>
                         <div className="status-detail">
                           {agent.lastSeenAt ? formatDate(agent.lastSeenAt) : "접속 기록 없음"}
@@ -412,6 +452,17 @@ export default function AgentsPanel({
                     <td>
                       {agent.ownerUserId === currentUserId ? (
                         <div className="section-actions">
+                          {desktop?.setup?.connectAgent && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (
+                            <button
+                              className="button button-secondary button-small"
+                              type="button"
+                              onClick={() => void connectAgent(agent)}
+                              disabled={connectingAgentId !== null || deleting}
+                              aria-label={`${agent.name} 이 PC에서 연결`}
+                            >
+                              {connectingAgentId === agent.agentId ? "연결 중…" : "이 PC에서 연결"}
+                            </button>
+                          )}
                           <button
                             className="button button-secondary button-small"
                             type="button"

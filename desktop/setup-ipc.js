@@ -9,7 +9,9 @@ const {
   runSetup,
   runStatus,
   runGuide,
+  startBroker,
 } = require("./setup-runner");
+const { prepareCodex, launchCodex } = require("./codex-launcher");
 const {
   listTeamProfiles,
   prepareAccountProfile,
@@ -280,6 +282,41 @@ function registerSetupHandlers(
     reset();
     accountKey = undefined;
   });
+
+  handle("connectAgent", (frame, account, agentId) =>
+    exclusive(async () => {
+      useAccount(account);
+      if (process.platform !== "win32" || !validId(agentId)) {
+        throw new Error("Windows에서 연결할 Codex Agent를 확인해주세요.");
+      }
+      const version = documentVersion;
+      const base = await loadPaths();
+      for (const paths of await listTeamProfiles(base, account)) {
+        const binding = await readSavedBinding(paths, account).catch(() => null);
+        if (binding?.agentId !== String(agentId) || binding.toolType !== "codex") continue;
+        const project = await realpath(binding.projectPath).catch(() => null);
+        if (!project || !(await stat(project)).isDirectory()) {
+          throw new Error("저장된 프로젝트 폴더를 찾을 수 없습니다. 연결 관리에서 확인해주세요.");
+        }
+        const current = await resolveProjectPaths(base, account, project, "codex");
+        if (!samePath(paths.config, current.config)) continue;
+        const before = await fingerprint(current);
+        const launcher = await prepareCodex(project, current);
+        const latest = await readSavedBinding(current, account);
+        if (latest?.agentId !== binding.agentId || !samePath(latest.projectPath, project) ||
+            before !== (await fingerprint(current)) || version !== documentVersion || frame.detached) {
+          throw new Error("연결 정보가 변경됐습니다. Agent 목록에서 다시 시도해주세요.");
+        }
+        await startBroker(current);
+        if (version !== documentVersion || frame.detached) {
+          throw new Error("계정이나 화면이 변경됐습니다. Agent 목록에서 다시 시도해주세요.");
+        }
+        await launchCodex(launcher, project);
+        return;
+      }
+      throw new Error("이 PC에 저장된 Codex 연결이 없습니다. 먼저 연결 관리에서 프로젝트를 연결해주세요.");
+    }),
+  );
 
   handle("listConnections", (_frame, account) =>
     exclusive(async () => {

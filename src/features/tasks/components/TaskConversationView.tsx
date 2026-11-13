@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from "react";
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Icon } from '@/components/ui'
 import { ApiError } from '@/lib/apiClient'
+import { taskApi } from '../api/taskApi'
 import { taskKeys, useTaskDetail, useTaskHistory } from '../hooks/useTasks'
 import type { TaskDetail, TaskEvent, TaskHistory } from '../types'
 import { compareSequences, formatTaskTime, mergeTaskEvents, parseTaskPrompt, taskStatusLabels, taskTitle } from '../utils/taskPresentation'
@@ -226,10 +227,31 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
   const activeTaskId = blockedError ? null : taskId
   const detailQuery = useTaskDetail(userId, teamId, activeTaskId, autoRefresh)
   const historyQuery = useTaskHistory(userId, teamId, activeTaskId, autoRefresh)
+  const acceptTask = useMutation({
+    mutationFn: (version: number) => taskApi.acceptTask(teamId, taskId, version),
+    retry: false,
+    onSuccess: (accepted) => {
+      queryClient.setQueryData<TaskDetail>(taskKeys.detail(userId, teamId, taskId), (current) =>
+        current?.status === "PENDING" && (current.version ?? 0) <= accepted.version
+          ? { ...current, status: accepted.status, version: accepted.version, startedAt: accepted.startedAt, canAccept: false }
+          : current,
+      );
+    },
+    onError,
+    onSettled: async (_accepted, error) => {
+      if (error instanceof ApiError && error.status === 401) return;
+      await Promise.all([
+        detailQuery.refetch(),
+        historyQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: taskKeys.list(userId, teamId), exact: true }),
+      ]);
+    },
+  });
   const observedAccessError = [detailQuery.error, historyQuery.error].find(isAccessError) ?? null
   if (observedAccessError && blockedError === null) setBlockedError(observedAccessError)
   const accessError = blockedError ?? observedAccessError
   const detail = accessError ? undefined : detailQuery.data
+  const acceptVersion = detail?.canAccept === true && detail.status === "PENDING" ? detail.version : undefined;
   const pages = accessError ? undefined : historyQuery.data?.pages
   const latestHistory = pages?.[0]
   const events = useMemo(() => mergeTaskEvents(pages), [pages])
@@ -493,10 +515,21 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
         </div>
         <div className="tc-header-actions">
           {detail && <span className={`dashboard-task-badge dashboard-task-${detail.status.toLowerCase()}`}>{taskStatusLabels[detail.status]}</span>}
+          {typeof acceptVersion === "number" && !acceptTask.isSuccess && (
+            <button type="button" className="button button-primary button-small" disabled={acceptTask.isPending}
+              onClick={() => acceptTask.mutate(acceptVersion)}>
+              {acceptTask.isPending ? "수락 중…" : "수락"}
+            </button>
+          )}
         </div>
       </header>
 
       {error && (detail || latestHistory) && <div className="tc-refresh-error" role="alert"><span>{errorMessage(error)}</span><button type="button" onClick={refresh} disabled={refreshing}>다시 시도</button></div>}
+      {acceptTask.isError && !accessError && <div className="tc-refresh-error" role="alert">
+        {acceptTask.error instanceof ApiError && acceptTask.error.status === 409
+          ? "작업 상태가 변경되었습니다. 최신 상태를 확인해주세요."
+          : acceptTask.error.message}
+      </div>}
 
       <div className="tc-body">
         <div className="tc-viewport" ref={viewport} onScroll={trackScroll} onWheel={interruptFollowing} onTouchStart={interruptFollowing} onPointerDown={interruptFollowing} onFocusCapture={(event) => {

@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import type { TaskDetail, TaskHistory, TaskListItem, TaskListResponse } from "../types";
+import type { TaskAcceptance, TaskDetail, TaskHistory, TaskListItem, TaskListResponse } from "../types";
 import { compareSequences } from "../utils/taskPresentation";
 
 function teamTasksPath(teamId: number): string {
@@ -12,6 +12,9 @@ export const taskApi = {
 
   getTaskDetail: (teamId: number, taskId: number, signal?: AbortSignal) =>
     apiClient.get<TaskDetail>(`${teamTasksPath(teamId)}/${taskId}`, signal),
+
+  acceptTask: (teamId: number, taskId: number, version: number) =>
+    apiClient.post<TaskAcceptance>(`${teamTasksPath(teamId)}/${taskId}/accept`, { version }),
 
   getTaskHistory: (
     teamId: number,
