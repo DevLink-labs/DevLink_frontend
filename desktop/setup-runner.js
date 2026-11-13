@@ -2,7 +2,9 @@ const { execFile, spawn } = require("node:child_process");
 const { mkdtemp, readFile, rmdir, stat, unlink, writeFile } = require("node:fs/promises");
 const path = require("node:path");
 const { createInterface } = require("node:readline");
-const { parseEnv } = require("node:util");
+const { parseEnv, promisify } = require("node:util");
+
+const execute = promisify(execFile);
 
 function developmentPath(env, key) {
   const value = (process.env[key] ?? env[key])?.trim();
@@ -78,6 +80,16 @@ function runGuide(paths) {
 
 function runUpdates(paths, args) {
   return runJson(paths, ["updates", ...args], true);
+}
+
+async function startBroker({ cli, config }) {
+  const env = { ...process.env };
+  delete env.DEVLINK_TOKEN;
+  try {
+    await execute(cli, ["--config", config, "start"], { env, windowsHide: true, timeout: 45_000 });
+  } catch {
+    throw new Error("연결 프로그램을 시작하지 못했습니다. 연결 관리에서 이 Agent의 설정을 확인해주세요.");
+  }
 }
 
 async function checkSession(paths) {
@@ -156,4 +168,4 @@ async function runSetup(paths, input, password, onProgress) {
   }
 }
 
-module.exports = { checkSession, detectTools, loadDevelopmentPaths, runSetup, runStatus, runGuide, runUpdates };
+module.exports = { checkSession, detectTools, loadDevelopmentPaths, runSetup, runStatus, runGuide, runUpdates, startBroker };

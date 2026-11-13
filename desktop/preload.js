@@ -41,6 +41,9 @@ if (process.isMainFrame && window.location.origin === origin) {
             options,
           ),
         resetContext: () => ipcRenderer.invoke("devlink:resetSetupContext"),
+        ...(process.platform === "win32" && {
+          connectAgent: (account, agentId) => ipcRenderer.invoke("devlink:connectAgent", account, agentId),
+        }),
         listConnections: (account) =>
           ipcRenderer.invoke("devlink:listConnections", account),
         getGuide: (id) => ipcRenderer.invoke("devlink:getGuide", id),

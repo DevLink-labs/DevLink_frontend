@@ -112,6 +112,7 @@ export interface DesktopSetupApi {
     options?: { mcpMode: "automatic" | "manual" },
   ) => Promise<SetupResult>;
   resetContext?: () => Promise<void>;
+  connectAgent?: (account: SetupAccount, agentId: number) => Promise<void>;
   listConnections?: (account: SetupAccount) => Promise<SavedConnection[]>;
   getGuide?: (id: string) => Promise<McpGuide>;
   inspect?: (id: string) => Promise<SetupInspection>;
