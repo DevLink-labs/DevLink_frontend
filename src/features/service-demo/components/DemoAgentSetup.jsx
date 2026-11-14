@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui";
 import ProjectConnectForm from "@/features/desktop-setup/components/ProjectConnectForm";
@@ -7,8 +8,9 @@ import { createSetupAgentMetadata } from "@/features/desktop-setup/lib/agentMeta
 import { demoProject, demoTeam } from "../data/demoScenario";
 
 export default function DemoAgentSetup({ progress, capture, onAdvance, onClose }) {
+  const { t } = useTranslation();
   const [agentPart, setAgentPart] = useState("FRONTEND");
-  const [rolesText, setRolesText] = useState("웹 UI, 프론트엔드");
+  const [rolesText, setRolesText] = useState(t("웹 UI, 프론트엔드"));
   const [metadataError, setMetadataError] = useState("");
   const closeButton = useRef(null);
 
@@ -28,7 +30,7 @@ export default function DemoAgentSetup({ progress, capture, onAdvance, onClose }
   }
 
   return (
-    <section className="demo-agent-setup" role="dialog" aria-label="Agent 추가" onKeyDown={(event) => {
+    <section className="demo-agent-setup" role="dialog" aria-label={t("Agent 추가")} onKeyDown={(event) => {
       if (event.key === "Escape" && !capture) {
         event.stopPropagation();
         onClose();
@@ -36,10 +38,10 @@ export default function DemoAgentSetup({ progress, capture, onAdvance, onClose }
     }}>
       <div className="modal-heading">
         <div>
-          <h2>Agent 추가</h2>
-          <p className="muted">{demoTeam} 팀의 이 PC 프로젝트 설정입니다.</p>
+          <h2>{t("Agent 추가")}</h2>
+          <p className="muted">{t("{{team}} 팀의 이 PC 프로젝트 설정입니다.", { team: demoTeam })}</p>
         </div>
-        <button ref={closeButton} type="button" className="icon-button" onClick={onClose} aria-label="창 닫기">
+        <button ref={closeButton} type="button" className="icon-button" onClick={onClose} aria-label={t("창 닫기")}>
           <Icon name="close" />
         </button>
       </div>
@@ -75,9 +77,9 @@ export default function DemoAgentSetup({ progress, capture, onAdvance, onClose }
               teamName={demoTeam}
               showCompletion
             />
-            <p>Codex에서 프로젝트를 다시 열고 “DevLink의 연결 상태와 내 Agent 정보를 확인해줘.”라고 요청합니다.</p>
+            <p>{t("Codex에서 프로젝트를 다시 열고 “DevLink의 연결 상태와 내 Agent 정보를 확인해줘.”라고 요청합니다.")}</p>
             <div className="modal-footer">
-              <button type="button" className="button button-primary" onClick={onAdvance}>Codex 연결 확인</button>
+              <button type="button" className="button button-primary" onClick={onAdvance}>{t("Codex 연결 확인")}</button>
             </div>
           </>
         )}

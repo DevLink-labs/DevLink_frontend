@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import type { SetupResult } from "../api/desktopApi";
 
 // CLI 영문 안내 대신 다음 행동을 알려주는 오류 문구
@@ -8,6 +9,6 @@ const messages: Record<string, string> = {
 
 export function localizeSetupError(result: SetupResult): SetupResult {
   return result.state === "error" && result.code && messages[result.code]
-    ? { ...result, message: messages[result.code] }
+    ? { ...result, message: t(messages[result.code]) }
     : result;
 }

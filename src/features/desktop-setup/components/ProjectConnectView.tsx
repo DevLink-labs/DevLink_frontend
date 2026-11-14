@@ -1,3 +1,4 @@
+import { t as translate, useTranslation } from "@/lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Icon, Modal } from "@/components/ui";
@@ -72,7 +73,7 @@ function stepLabel(statuses: (string | undefined)[]) {
 }
 
 function messageFrom(error: unknown) {
-  if (!(error instanceof Error)) return "프로젝트 연결 중 오류가 발생했습니다.";
+  if (!(error instanceof Error)) return translate("프로젝트 연결 중 오류가 발생했습니다.");
   return error.message.replace(
     /^Error invoking remote method '[^']+': Error: /,
     "",
@@ -92,6 +93,7 @@ export default function ProjectConnectView({
   onFinish,
   onOpenDashboard,
 }: ProjectConnectViewProps) {
+  const { t } = useTranslation();
   const [view, setView] = useState<View | null>(
     presentation === "page" ? { state: "choose" } : null,
   );
@@ -282,7 +284,7 @@ export default function ProjectConnectView({
         setView({
           state: "error",
           message:
-            "실행 가능한 Codex 또는 Claude Code를 찾지 못했습니다. 도구를 설치하거나 실행할 수 있는지 확인해주세요.",
+            t("실행 가능한 Codex 또는 Claude Code를 찾지 못했습니다. 도구를 설치하거나 실행할 수 있는지 확인해주세요."),
         });
       } else {
         if (selection.tools.length === 1) setSelectedTool(selection.tools[0]);
@@ -340,7 +342,7 @@ export default function ProjectConnectView({
     ) {
       setView({
         state: "password",
-        message: "비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.",
+        message: t("비밀번호는 UTF-8 기준 72바이트 이하여야 합니다."),
       });
       return;
     }
@@ -357,7 +359,7 @@ export default function ProjectConnectView({
       if (confirmed) complete();
       else
         setNotice(
-          "아직 연결을 확인하지 못했습니다. 안내된 파일에 설정을 적용했는지 확인해주세요.",
+          t("아직 연결을 확인하지 못했습니다. 안내된 파일에 설정을 적용했는지 확인해주세요."),
         );
     } catch (error) {
       if (active.current) setNotice(messageFrom(error));
@@ -399,11 +401,8 @@ export default function ProjectConnectView({
       )}
       {view.state === "connections" && (
         <div className="grid gap-3">
-          <p>
-            현재 계정·팀에서 이 PC에 준비한 프로젝트입니다. 설정을 여는 것만으로
-            연결 프로그램을 시작하거나 Agent를 생성하지 않습니다.
-          </p>
-          {checking && <p role="status">프로젝트 목록을 읽고 있습니다…</p>}
+          <p>{t("현재 계정·팀에서 이 PC에 준비한 프로젝트입니다. 설정을 여는 것만으로 연결 프로그램을 시작하거나 Agent를 생성하지 않습니다.")}</p>
+          {checking && <p role="status">{t("프로젝트 목록을 읽고 있습니다…")}</p>}
           {!checking &&
             connections.map((connection) => (
               <button
@@ -432,20 +431,18 @@ export default function ProjectConnectView({
                   <br />
                   <span className="field-hint">
                     {connection.availability === "auth_required"
-                      ? "로그인 만료 · 비밀번호 입력 후 재개"
+                      ? t("로그인 만료 · 비밀번호 입력 후 재개")
                       : connection.availability !== "ready"
-                        ? "로컬 연결 준비 필요"
+                        ? t("로컬 연결 준비 필요")
                         : connection.fileState === "matches"
-                          ? "설정 파일 일치"
-                          : "설정 확인 필요"}
+                          ? t("설정 파일 일치")
+                          : t("설정 확인 필요")}
                   </span>
                 </span>
               </button>
             ))}
           {!checking && connections.length === 0 && !notice && (
-            <p>
-              저장된 연결이 없습니다. Agent 목록의 ‘Agent 추가’에서 시작해주세요.
-            </p>
+            <p>{t("저장된 연결이 없습니다. Agent 목록의 ‘Agent 추가’에서 시작해주세요.")}</p>
           )}
           {notice && (
             <p role="alert" className="inline-error">
@@ -495,7 +492,7 @@ export default function ProjectConnectView({
       {view.state === "running" && (
         <ol
           className="project-connect-progress"
-          aria-label="연결 진행 상태"
+          aria-label={t("연결 진행 상태")}
           aria-live="polite"
         >
           {steps.map(({ label, keys }, index) => {
@@ -518,8 +515,8 @@ export default function ProjectConnectView({
                     index + 1
                   )}
                 </span>
-                <span>{label}</span>
-                <span className="field-hint">{status}</span>
+                <span>{t(label, { context: "step" })}</span>
+                <span className="field-hint">{t(status)}</span>
               </li>
             );
           })}
@@ -527,13 +524,8 @@ export default function ProjectConnectView({
       )}
       {view.state === "password" && (
         <form className="grid gap-4" onSubmit={submitPassword}>
-          <p>
-            PC 연결을 위해 {account.email} 계정의 비밀번호를 한 번 더
-            확인합니다.
-          </p>
-          <label className="field">
-            비밀번호
-            <input
+          <p>{t("PC 연결을 위해 {{email}} 계정의 비밀번호를 한 번 더 확인합니다.", { email: account.email })}</p>
+          <label className="field">{t("비밀번호")}<input
               type="password"
               name="password"
               autoComplete="current-password"
@@ -547,52 +539,37 @@ export default function ProjectConnectView({
             </p>
           )}
           <div className="modal-footer">
-            <button className="button button-primary" type="submit">
-              계속
-            </button>
+            <button className="button button-primary" type="submit">{t("계속")}</button>
           </div>
         </form>
       )}
       {view.state === "token" && (
         <div className="grid gap-4">
-          <p>
-            이 폴더에 연결된 Agent {view.agentId}의 연결 토큰이 이 PC에
-            없습니다. 새 토큰을 발급하면 연결을 이어서 진행해요.
-          </p>
-          <p className="field-hint">
-            다른 PC에서 이 Agent로 연결해 두었다면 기존 토큰이 무효가 되어 그
-            연결은 끊어집니다.
-          </p>
+          <p>{t("이 폴더에 연결된 Agent {{agentId}}의 연결 토큰이 이 PC에 없습니다. 새 토큰을 발급하면 연결을 이어서 진행해요.", { agentId: view.agentId })}</p>
+          <p className="field-hint">{t("다른 PC에서 이 Agent로 연결해 두었다면 기존 토큰이 무효가 되어 그 연결은 끊어집니다.")}</p>
           <div className="modal-footer">
             <button
               className="button button-secondary"
               type="button"
               disabled={busy}
               onClick={close}
-            >
-              취소
-            </button>
+            >{t("취소")}</button>
             <button
               className="button button-primary"
               type="button"
               disabled={busy || !setup.issueToken}
               onClick={() => void issueToken()}
-            >
-              토큰 발급 후 연결
-            </button>
+            >{t("토큰 발급 후 연결")}</button>
           </div>
         </div>
       )}
       {view.state === "manual" && project && selectedTool && (
         <>
-          <p>
-            아래 설정을 파일에 추가한 뒤 {setupToolNames[selectedTool]}을 다시
-            열어주세요.
-          </p>
+          <p>{t("아래 설정을 파일에 추가한 뒤 {{tool}}을 다시 열어주세요.", { tool: setupToolNames[selectedTool] })}</p>
           <p className="field-hint break-all">{view.targetPath}</p>
           <pre
             className="max-h-48 overflow-auto"
-            aria-label="추가할 AI 도구 설정"
+            aria-label={t("추가할 AI 도구 설정")}
           >
             {view.snippet}
           </pre>
@@ -609,12 +586,10 @@ export default function ProjectConnectView({
               onClick={() => {
                 void manualAction(
                   () => copyText(view.snippet),
-                  "설정을 복사했습니다.",
+                  t("설정을 복사했습니다."),
                 );
               }}
-            >
-              설정 복사
-            </button>
+            >{t("설정 복사")}</button>
             <button
               className="button button-secondary"
               type="button"
@@ -622,9 +597,7 @@ export default function ProjectConnectView({
               onClick={() => {
                 void manualAction(() => setup.openConfigFolder(project.id), "");
               }}
-            >
-              폴더 열기
-            </button>
+            >{t("폴더 열기")}</button>
             <button
               className="button button-primary"
               type="button"
@@ -633,7 +606,7 @@ export default function ProjectConnectView({
                 void checkManual();
               }}
             >
-              {checking ? "연결 확인 중…" : "설정 확인"}
+              {checking ? t("연결 확인 중…") : t("설정 확인")}
             </button>
           </div>
         </>
@@ -652,7 +625,7 @@ export default function ProjectConnectView({
               type="button"
               onClick={presentation === "page" ? onFinish : close}
             >
-              {presentation === "page" ? "대시보드로 이동" : "닫기"}
+              {presentation === "page" ? t("대시보드로 이동") : t("닫기")}
               {presentation === "page" && <Icon name="arrow" size={16} />}
             </button>
           </div>
@@ -665,7 +638,7 @@ export default function ProjectConnectView({
           </p>
           {view.code && (
             <details className="field-hint">
-              <summary>자세히</summary>
+              <summary>{t("자세히")}</summary>
               {view.code}
             </details>
           )}
@@ -678,9 +651,7 @@ export default function ProjectConnectView({
                   className="button button-primary"
                   type="button"
                   onClick={() => setView({ state: "select-tool" })}
-                >
-                  담당 정보 다시 입력
-                </button>
+                >{t("담당 정보 다시 입력")}</button>
               )}
             {project &&
               selectedTool &&
@@ -691,9 +662,7 @@ export default function ProjectConnectView({
                   onClick={() => {
                     void run(project, selectedTool);
                   }}
-                >
-                  다시 시도
-                </button>
+                >{t("다시 시도")}</button>
               )}
             {view.code === "SETUP_REGISTRATION_UNKNOWN" ? (
               <button
@@ -706,9 +675,7 @@ export default function ProjectConnectView({
                     onRefreshAgents();
                   }
                 }}
-              >
-                Agent 목록 확인
-              </button>
+              >{t("Agent 목록 확인")}</button>
             ) : (
               <button
                 className="button button-secondary"
@@ -718,9 +685,7 @@ export default function ProjectConnectView({
                   setSelectedTool(null);
                   setView({ state: "choose" });
                 }}
-              >
-                폴더 다시 선택
-              </button>
+              >{t("폴더 다시 선택")}</button>
             )}
           </div>
         </>
@@ -736,7 +701,7 @@ export default function ProjectConnectView({
           className={`badge ${ready ? "badge-online" : "badge-offline"}`}
           role="status"
         >
-          PC: {ready ? "연결" : "미연결"}
+          PC: {ready ? t("연결", { context: "status" }) : t("미연결")}
         </span>
       )}
       {manualSetup && hasSavedConnections && (
@@ -745,9 +710,7 @@ export default function ProjectConnectView({
           type="button"
           disabled={busy}
           onClick={() => void openConnections()}
-        >
-          연결 관리
-        </button>
+        >{t("연결 관리")}</button>
       )}
       <button
         className="button button-primary"
@@ -755,18 +718,17 @@ export default function ProjectConnectView({
         disabled={busy}
         onClick={() => setView({ state: "choose" })}
       >
-        <Icon name="plus" size={18} /> Agent 추가
-      </button>
+        <Icon name="plus" size={18} />{" "}{t("Agent 추가")}</button>
       {view && (
         <Modal
           title={
             view.state === "guide"
-              ? "AI 도구 직접 설정"
+              ? t("AI 도구 직접 설정")
               : view.state === "connections"
-                ? "연결 관리"
-                : "Agent 추가"
+                ? t("연결 관리")
+                : t("Agent 추가")
           }
-          description={`${teamName} 팀의 이 PC 프로젝트 설정입니다.`}
+          description={t("{{teamName}} 팀의 이 PC 프로젝트 설정입니다.", { teamName })}
           onClose={close}
           busy={busy}
         >

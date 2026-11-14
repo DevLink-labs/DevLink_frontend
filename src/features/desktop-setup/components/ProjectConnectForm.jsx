@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useId } from "react";
 import { Icon } from "@/components/ui";
 import { agentParts, setupToolNames } from "../lib/agentMetadata";
@@ -32,6 +33,7 @@ export default function ProjectConnectForm({
   onSubmit,
   onManualSetup,
 }) {
+  const { t } = useTranslation();
   const fieldId = useId();
 
   return (
@@ -40,7 +42,7 @@ export default function ProjectConnectForm({
         className="project-connect-tool-selection"
         disabled={busy || toolLocked}
       >
-        <legend>프로젝트에 연결할 AI 도구</legend>
+        <legend>{t("프로젝트에 연결할 AI 도구")}</legend>
         <div className="project-connect-tools">
           {tools.map((tool) => (
             <button
@@ -52,46 +54,40 @@ export default function ProjectConnectForm({
             >
               <Icon name="agent" size={23} />
               <strong>{setupToolNames[tool]}</strong>
-              <span>이 PC에서 사용 가능</span>
+              <span>{t("이 PC에서 사용 가능")}</span>
               <Icon name="arrow" size={17} />
             </button>
           ))}
         </div>
       </fieldset>
       <div className="field">
-        <label htmlFor={`${fieldId}-part`}>담당 파트</label>
+        <label htmlFor={`${fieldId}-part`}>{t("담당 파트")}</label>
         <select
           id={`${fieldId}-part`}
           value={agentPart}
           onChange={(event) => onPartChange(event.target.value)}
         >
-          <option value="">선택 안 함</option>
+          <option value="">{t("선택 안 함")}</option>
           {agentParts.map((part) => (
             <option key={part.value} value={part.value}>
-              {part.label}
+              {t(part.label)}
             </option>
           ))}
         </select>
       </div>
       <div className="field">
-        <label htmlFor={`${fieldId}-roles`}>역할 태그</label>
+        <label htmlFor={`${fieldId}-roles`}>{t("역할 태그")}</label>
         <input
           id={`${fieldId}-roles`}
           value={rolesText}
-          placeholder="예: API 개발, 인증, 테스트"
+          placeholder={t("예: API 개발, 인증, 테스트")}
           aria-describedby={`${fieldId}-roles-hint${metadataError ? ` ${fieldId}-metadata-error` : ""}`}
           aria-invalid={Boolean(metadataError)}
           onChange={(event) => onRolesChange(event.target.value)}
         />
-        <span className="field-hint" id={`${fieldId}-roles-hint`}>
-          쉼표로 구분해 최대 10개, 각 64자까지 입력할 수 있어요.
-        </span>
+        <span className="field-hint" id={`${fieldId}-roles-hint`}>{t("쉼표로 구분해 최대 10개, 각 64자까지 입력할 수 있어요.")}</span>
       </div>
-      <p className="field-hint">
-        비워 둔 항목은 기존 담당 정보를 유지해요. 이미 연결된 Agent의 담당
-        정보는 여기서 바꿀 수 없어요. 새 Agent는 미입력 시 기타·태그
-        없음으로 등록돼요.
-      </p>
+      <p className="field-hint">{t("비워 둔 항목은 기존 담당 정보를 유지해요. 이미 연결된 Agent의 담당 정보는 여기서 바꿀 수 없어요. 새 Agent는 미입력 시 기타·태그 없음으로 등록돼요.")}</p>
       {metadataError && (
         <p
           id={`${fieldId}-metadata-error`}
@@ -108,23 +104,16 @@ export default function ProjectConnectForm({
             type="button"
             disabled={busy || !selectedTool}
             onClick={onManualSetup}
-          >
-            직접 설정하기
-          </button>
+          >{t("직접 설정하기")}</button>
         )}
         <button
           className="button button-primary"
           type="submit"
           disabled={busy || !selectedTool}
-        >
-          연결하기
-        </button>
+        >{t("연결하기")}</button>
       </div>
       {onManualSetup && (
-        <p className="field-hint">
-          직접 설정은 Agent와 이 PC의 연결을 준비한 뒤, AI 도구 설정을 직접
-          적용하는 방식입니다.
-        </p>
+        <p className="field-hint">{t("직접 설정은 Agent와 이 PC의 연결을 준비한 뒤, AI 도구 설정을 직접 적용하는 방식입니다.")}</p>
       )}
     </form>
   );

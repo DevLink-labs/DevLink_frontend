@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { lazy, Suspense } from 'react'
 import PageTitle from '../components/common/PageTitle'
 import BrandLogo from "@/components/common/BrandLogo";
@@ -23,6 +24,7 @@ const previewRoutes = [
 ]
 
 export default function AppRouter() {
+  const { t } = useTranslation();
   const path = window.location.pathname.replace(/\/$/, '')
   if (path === "/tree" && new URLSearchParams(window.location.search).get("mode") === "team") {
     return <Providers><App dependencyTree /></Providers>;
@@ -31,7 +33,7 @@ export default function AppRouter() {
   const route = previewRoutes.find((route) => route.path === path || route.aliases.includes(preview ?? ''))
   if (!route) return <Providers><App /></Providers>
   const Preview = route.component
-  return <Suspense fallback={<div className="grid min-h-svh place-items-center bg-workspace text-ink" role="status" aria-label={`${route.title}를 준비하는 중`}><PageTitle title={route.title} /><BrandLogo /></div>}>
+  return <Suspense fallback={<div className="grid min-h-svh place-items-center bg-workspace text-ink" role="status" aria-label={t("{{title}}를 준비하는 중", { title: t(route.title) })}><PageTitle title={t(route.title)} /><BrandLogo /></div>}>
     <Preview />
   </Suspense>
 }

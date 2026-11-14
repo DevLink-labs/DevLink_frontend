@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import BrandLogo from "@/components/common/BrandLogo";
 import { Icon } from "@/components/ui";
@@ -23,6 +24,7 @@ function sceneHref(stepIndex, mode, progress) {
 }
 
 export default function ServiceDemoView() {
+  const { t } = useTranslation();
   const [{ stepIndex, progress, mode }, setScene] = useState(readScene);
   const step = demoSteps[stepIndex];
   const action = step.actions[progress];
@@ -99,22 +101,22 @@ export default function ServiceDemoView() {
         <header className="demo-topbar">
           <BrandLogo />
           <div className="demo-top-actions">
-            <button className="demo-control" type="button" onClick={() => changeMode("record")} title="조작 영역 숨기기 · Enter로 진행 · 방향키로 이동 · Esc로 종료">녹화 모드</button>
-            <button className="demo-control" type="button" onClick={() => changeMode("capture")} title="현재 화면에서 시연 조작과 애니메이션 숨기기"><Icon name="eye" size={17} />캡처 모드</button>
+            <button className="demo-control" type="button" onClick={() => changeMode("record")} title={t("조작 영역 숨기기 · Enter로 진행 · 방향키로 이동 · Esc로 종료")}>{t("녹화 모드")}</button>
+            <button className="demo-control" type="button" onClick={() => changeMode("capture")} title={t("현재 화면에서 시연 조작과 애니메이션 숨기기")}><Icon name="eye" size={17} />{t("캡처 모드")}</button>
           </div>
         </header>
 
         <div className="demo-intro demo-stage-enter" key={`intro-${step.id}`}>
-          <h1>{step.title}</h1>
-          <p>{step.description}</p>
+          <h1>{t(step.title)}</h1>
+          <p>{t(step.description)}</p>
         </div>
 
-        <nav aria-label="DevLink 시연 단계">
+        <nav aria-label={t("DevLink 시연 단계")}>
           <ol className="demo-steps">
             {demoSteps.map((item, index) => (
               <li key={item.id}>
                 <button className="demo-step" type="button" aria-current={index === stepIndex ? "step" : undefined} onClick={() => openStep(index)}>
-                  <span className="demo-step-number" aria-hidden="true">{index + 1}</span>{item.label}
+                  <span className="demo-step-number" aria-hidden="true">{index + 1}</span>{t(item.label)}
                 </button>
               </li>
             ))}
@@ -123,11 +125,11 @@ export default function ServiceDemoView() {
 
         <div className="demo-controls">
           <div className="demo-action-copy" role="status">
-            {action ? <p>{action.description}</p> : <strong>{finalStep ? "시연 완료" : `${step.label} 완료`}</strong>}
+            {action ? <p>{t(action.description)}</p> : <strong>{finalStep ? t("시연 완료") : t("{{value0}} 완료", { value0: t(step.label) })}</strong>}
           </div>
           <div className="demo-buttons">
-            {progress > 0 && <button className="demo-control" type="button" onClick={reset}><Icon name="refresh" size={16} />장면 다시 보기</button>}
-            {!choosingSetup && <button className="demo-control is-primary" type="button" onClick={advance}>{action?.label ?? (finalStep ? "처음으로" : "다음 단계")}<Icon name="arrow" size={17} /></button>}
+            {progress > 0 && <button className="demo-control" type="button" onClick={reset}><Icon name="refresh" size={16} />{t("장면 다시 보기")}</button>}
+            {!choosingSetup && <button className="demo-control is-primary" type="button" onClick={advance}>{action ? t(action.label) : finalStep ? t("처음으로") : t("다음 단계")}<Icon name="arrow" size={17} /></button>}
           </div>
         </div>
 
@@ -136,8 +138,8 @@ export default function ServiceDemoView() {
 
       {clean && (
         <div className="demo-presentation-controls">
-          {mode === "record" && !choosingSetup && <button className="demo-control" type="button" onClick={advance} title="Enter로 진행 · 방향키로 이동">{action?.label ?? (finalStep ? "처음으로" : "다음 단계")}<Icon name="arrow" size={17} /></button>}
-          <button className="demo-control" type="button" onClick={() => changeMode("interactive")} title="Esc로 종료 · 방향키로 단계 이동"><Icon name="close" size={18} />{capturing ? "캡처" : "녹화"} 모드 종료</button>
+          {mode === "record" && !choosingSetup && <button className="demo-control" type="button" onClick={advance} title={t("Enter로 진행 · 방향키로 이동")}>{action ? t(action.label) : finalStep ? t("처음으로") : t("다음 단계")}<Icon name="arrow" size={17} /></button>}
+          <button className="demo-control" type="button" onClick={() => changeMode("interactive")} title={t("Esc로 종료 · 방향키로 단계 이동")}><Icon name="close" size={18} />{capturing ? t("캡처 모드 종료") : t("녹화 모드 종료")}</button>
         </div>
       )}
     </main>

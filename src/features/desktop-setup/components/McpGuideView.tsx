@@ -1,3 +1,4 @@
+import { getLocale, useTranslation } from "@/lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { copyText } from "@/utils";
@@ -85,6 +86,7 @@ export default function McpGuideView({
   onReady,
   onClose,
 }: Props) {
+  const { t, i18n } = useTranslation();
   const [guide, setGuide] = useState<McpGuide | null>(null);
   const [inspection, setInspection] = useState<SetupInspection | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,13 +99,13 @@ export default function McpGuideView({
   const statusLabels = {
     config:
       guide?.fileState === "invalid" || guide?.fileState === "unavailable"
-        ? "설정 확인 필요"
-        : "설정 적용 필요",
-    resume: "로컬 연결 준비 필요",
-    check: "설정 파일 일치 · 로컬 연결 상태 확인 필요",
-    connect: "설정 완료 · AI 도구 확인 전",
-    connected: "AI 도구 연결 확인됨",
-    conflict: "다른 세션과 충돌",
+        ? t("설정 확인 필요")
+        : t("설정 적용 필요"),
+    resume: t("로컬 연결 준비 필요"),
+    check: t("설정 파일 일치 · 로컬 연결 상태 확인 필요"),
+    connect: t("설정 완료 · AI 도구 확인 전"),
+    connected: t("AI 도구 연결 확인됨"),
+    conflict: t("다른 세션과 충돌"),
   };
 
   useEffect(() => {
@@ -117,13 +119,13 @@ export default function McpGuideView({
         .catch(() => {
           if (version === generation.current)
             setNotice(
-              "설정을 읽지 못했습니다. 프로젝트 설정을 다시 선택하거나 연결 프로필을 확인해주세요.",
+              t("설정을 읽지 못했습니다. 프로젝트 설정을 다시 선택하거나 연결 프로필을 확인해주세요."),
             );
         });
     return () => {
       generation.current = version + 1;
     };
-  }, [authRequired, id, setup]);
+  }, [authRequired, id, setup, t]);
 
   useEffect(() => {
     onBusyChange(busy);
@@ -144,7 +146,7 @@ export default function McpGuideView({
                 /^Error invoking remote method '[^']+': Error: /,
                 "",
               )
-            : "설정을 확인하지 못했습니다.",
+            : t("설정을 확인하지 못했습니다."),
         );
     } finally {
       if (version === generation.current) setBusy(false);
@@ -188,7 +190,7 @@ export default function McpGuideView({
       !password ||
       new TextEncoder().encode(password).length > 72
     ) {
-      setNotice("비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.");
+      setNotice(t("비밀번호는 UTF-8 기준 72바이트 이하여야 합니다."));
       return;
     }
     void action(() => resume(password));
@@ -207,18 +209,12 @@ export default function McpGuideView({
           {step === "config" && (
             <>
               <p className="break-all">{guide.targetPath}</p>
-              <p>{configInstructions(guide)}</p>
+              <p>{t(configInstructions(guide))}</p>
               {guide.automaticSupported === false && (
-                <p className="field-hint">
-                  이 버전의 자동 적용은 검증되지 않았습니다. 안내된 설정 형식으로
-                  직접 적용한 뒤 AI 도구에서 확인해주세요.
-                </p>
+                <p className="field-hint">{t("이 버전의 자동 적용은 검증되지 않았습니다. 안내된 설정 형식으로 직접 적용한 뒤 AI 도구에서 확인해주세요.")}</p>
               )}
               {guide.fileState === "different" && (
-                <p className="field-hint">
-                  같은 폴더의 DevLink 항목에는 한 계정·팀의 연결만 적용할 수
-                  있습니다. 변경 후 AI 도구를 재시작해주세요.
-                </p>
+                <p className="field-hint">{t("같은 폴더의 DevLink 항목에는 한 계정·팀의 연결만 적용할 수 있습니다. 변경 후 AI 도구를 재시작해주세요.")}</p>
               )}
               <div className="section-actions">
                 <button
@@ -226,9 +222,7 @@ export default function McpGuideView({
                   type="button"
                   disabled={busy}
                   onClick={() => void action(() => setup.openConfigFolder(id))}
-                >
-                  폴더 열기
-                </button>
+                >{t("폴더 열기")}</button>
               </div>
               {guide.copyItems.map((item) => (
                 <div key={item.scope} className="grid gap-2">
@@ -259,38 +253,31 @@ export default function McpGuideView({
                         );
                         if (!copy || copy.snippet !== item.snippet) {
                           setNotice(
-                            "파일 상태가 변경됐습니다. 최신 안내를 확인한 뒤 다시 복사해주세요.",
+                            t("파일 상태가 변경됐습니다. 최신 안내를 확인한 뒤 다시 복사해주세요."),
                           );
                           return;
                         }
                         await copyText(copy.snippet);
                       })
                     }
-                  >
-                    설정 복사
-                  </button>
+                  >{t("설정 복사")}</button>
                 </div>
               ))}
-              <p className="field-hint">
-                이 설정은 현재 PC·계정용입니다. 팀원에게 공용 설정으로 배포하거나
-                비밀값과 함께 공유하지 마세요.
-              </p>
+              <p className="field-hint">{t("이 설정은 현재 PC·계정용입니다. 팀원에게 공용 설정으로 배포하거나 비밀값과 함께 공유하지 마세요.")}</p>
             </>
           )}
           {step === "resume" && (
-            <p>이 프로젝트에서 사용하던 DevLink 연결을 다시 준비해주세요.</p>
+            <p>{t("이 프로젝트에서 사용하던 DevLink 연결을 다시 준비해주세요.")}</p>
           )}
           {step === "conflict" && (
-            <p>이 Agent를 사용 중인 다른 AI 도구가 있는지 확인해주세요.</p>
+            <p>{t("이 Agent를 사용 중인 다른 AI 도구가 있는지 확인해주세요.")}</p>
           )}
           {step === "connect" && (
             <>
               <p>
                 {guide.toolType === "codex"
-                  ? "Codex에서 이 프로젝트를 열고 폴더 신뢰를 허용해주세요."
-                  : "Claude Code에서 이 프로젝트를 열고 프로젝트 MCP 사용을 승인해주세요."}{" "}
-                설정을 변경했다면 도구를 재시작한 뒤, 아래 요청을 채팅에 보내세요.
-              </p>
+                  ? t("Codex에서 이 프로젝트를 열고 폴더 신뢰를 허용해주세요.")
+                  : t("Claude Code에서 이 프로젝트를 열고 프로젝트 MCP 사용을 승인해주세요.")}{" "}{t("설정을 변경했다면 도구를 재시작한 뒤, 아래 요청을 채팅에 보내세요.")}</p>
               <p className="field-hint">{usagePrompt}</p>
             </>
           )}
@@ -307,13 +294,11 @@ export default function McpGuideView({
                       await copyText(usagePrompt);
                       if (version === generation.current)
                         setNotice(
-                          "요청을 복사했어요. AI 도구의 채팅에 붙여넣어 보내세요.",
+                          t("요청을 복사했어요. AI 도구의 채팅에 붙여넣어 보내세요."),
                         );
                     })
                   }
-                >
-                  확인 요청 복사
-                </button>
+                >{t("확인 요청 복사")}</button>
               )}
               <button
                 className="button button-primary"
@@ -324,41 +309,40 @@ export default function McpGuideView({
                 }
               >
                 {step === "resume"
-                  ? "연결 재개"
+                  ? t("연결 재개")
                   : step === "config"
-                    ? "설정 확인"
-                    : "AI 도구 연결 확인"}
+                    ? t("설정 확인")
+                    : t("AI 도구 연결 확인")}
               </button>
             </div>
           )}
           {inspection && (
             <details className="field-hint">
-              <summary>연결 상태 자세히 보기</summary>
+              <summary>{t("연결 상태 자세히 보기")}</summary>
               {connection && (
                 <dl className="project-connect-summary">
                   <div>
-                    <dt>로컬 연결 프로그램</dt>
-                    <dd>{observationLabel(connection.broker)}</dd>
+                    <dt>{t("로컬 연결 프로그램")}</dt>
+                    <dd>{t(observationLabel(connection.broker))}</dd>
                   </div>
                   <div>
-                    <dt>중앙 연결 / 신원 / 자격</dt>
+                    <dt>{t("중앙 연결 / 신원 / 자격")}</dt>
                     <dd>
-                      {observationLabel(connection.central)} /{" "}
-                      {observationLabel(connection.identity)} /{" "}
-                      {observationLabel(connection.credentials)}
+                      {t(observationLabel(connection.central))} /{" "}
+                      {t(observationLabel(connection.identity))} /{" "}
+                      {t(observationLabel(connection.credentials))}
                     </dd>
                   </div>
                   <div>
-                    <dt>AI 도구 세션</dt>
-                    <dd>{observationLabel(connection.hostSession)}</dd>
+                    <dt>{t("AI 도구 세션")}</dt>
+                    <dd>{t(observationLabel(connection.hostSession))}</dd>
                   </div>
                 </dl>
               )}
-              <p>
-                확인 시각:{" "}
+              <p>{t("확인 시각:")}{" "}
                 {new Date(
                   connection?.observedAt ?? guide.observedAt,
-                ).toLocaleString()}
+                ).toLocaleString(getLocale(i18n.language))}
               </p>
             </details>
           )}
@@ -366,36 +350,26 @@ export default function McpGuideView({
       )}
       {tokenAgentId && (
         <div className="grid gap-2">
-          <p>
-            Agent {tokenAgentId}의 연결 토큰이 이 PC에 없습니다. 새 토큰을
-            발급하면 연결을 이어서 준비해요.
-          </p>
-          <p className="field-hint">
-            다른 PC에서 이 Agent로 연결해 두었다면 기존 토큰이 무효가 되어 그
-            연결은 끊어집니다.
-          </p>
+          <p>{t("Agent {{agentId}}의 연결 토큰이 이 PC에 없습니다. 새 토큰을 발급하면 연결을 이어서 준비해요.", { agentId: tokenAgentId })}</p>
+          <p className="field-hint">{t("다른 PC에서 이 Agent로 연결해 두었다면 기존 토큰이 무효가 되어 그 연결은 끊어집니다.")}</p>
           <button
             className="button button-primary"
             type="button"
             disabled={busy || !setup.issueToken}
             onClick={() => void action(() => resume(undefined, true))}
-          >
-            토큰 발급 후 재개
-          </button>
+          >{t("토큰 발급 후 재개")}</button>
         </div>
       )}
       {!guide && !notice && !tokenAgentId && (
         <p role="status">
           {passwordRequired
-            ? "이 PC의 DevLink 로그인이 만료됐습니다. 현재 계정 비밀번호를 입력해 연결을 재개해주세요."
-            : "프로젝트 설정을 읽고 있습니다…"}
+            ? t("이 PC의 DevLink 로그인이 만료됐습니다. 현재 계정 비밀번호를 입력해 연결을 재개해주세요.")
+            : t("프로젝트 설정을 읽고 있습니다…")}
         </p>
       )}
       {passwordRequired && (
         <form className="grid gap-2" onSubmit={submitPassword}>
-          <label className="field">
-            현재 계정 비밀번호
-            <input
+          <label className="field">{t("현재 계정 비밀번호")}<input
               name="password"
               type="password"
               required
@@ -407,9 +381,7 @@ export default function McpGuideView({
             className="button button-primary"
             type="submit"
             disabled={busy}
-          >
-            연결 재개 계속
-          </button>
+          >{t("연결 재개 계속")}</button>
         </form>
       )}
       {notice && (
@@ -424,7 +396,7 @@ export default function McpGuideView({
           disabled={busy}
           onClick={onClose}
         >
-          {step === "connected" ? "닫기" : "나중에 하기"}
+          {step === "connected" ? t("닫기") : t("나중에 하기")}
         </button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useCallback, useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { Team } from "@/features/teams/types";
@@ -85,6 +86,7 @@ function TeamPicker({
   selectedTeamId: string;
   onSelectTeam: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const listId = useId();
   const picker = useRef<HTMLDivElement>(null);
@@ -153,7 +155,7 @@ function TeamPicker({
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
     >
-      <span className="itp-team-picker-label">현재 팀</span>
+      <span className="itp-team-picker-label">{t("현재 팀")}</span>
       <h1>
         {teams.length === 0 ? (
           teamName
@@ -164,7 +166,7 @@ function TeamPicker({
             ref={trigger}
             aria-expanded={open}
             aria-controls={open ? listId : undefined}
-            aria-label={`팀 선택, 현재 팀 ${teamName}`}
+            aria-label={t("팀 선택, 현재 팀 {{value0}}", { value0: teamName })}
             onClick={() => setOpen((current) => !current)}
           >
             <span className="itp-team-picker-name">{teamName}</span>
@@ -177,10 +179,10 @@ function TeamPicker({
       {open && (
         <div className="itp-team-picker-panel">
           <div className="itp-team-picker-heading">
-            <span>참여 중인 팀</span>
+            <span>{t("참여 중인 팀")}</span>
             <span>{teams.length}</span>
           </div>
-          <ul className="itp-team-picker-list" id={listId} ref={list} aria-label="참여 중인 팀">
+          <ul className="itp-team-picker-list" id={listId} ref={list} aria-label={t("참여 중인 팀")}>
             {teams.map((team) => (
               <li key={team.id}>
                 <button
@@ -199,7 +201,7 @@ function TeamPicker({
                   {team.id === selectedTeamId && (
                     <span className="itp-team-picker-current">
                       <Icon name="check" size={15} />
-                      <span className="itp-sr-only">현재 팀</span>
+                      <span className="itp-sr-only">{t("현재 팀")}</span>
                     </span>
                   )}
                 </button>
@@ -277,6 +279,7 @@ interface LiveWorkspace {
 }
 
 export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWorkspace }) {
+  const { t } = useTranslation();
   const [teamId, setTeamId] = useState(immersivePreviewTeams[0].id);
   const [selection, setSelection] = useState<{
     teamId: string;
@@ -318,12 +321,12 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   const loadingTeam = sceneStatus === "loading";
   const mountScene = loadingTeam || showTeam;
   const loadingMessage = loadingTeam
-    ? "팀 정보를 불러오는 중이에요"
+    ? t("팀 정보를 불러오는 중이에요")
     : showTeam && availability === "loading"
-      ? "3D 공간을 준비하는 중이에요"
+      ? t("3D 공간을 준비하는 중이에요")
       : null;
   const showTeamControls = showTeam && availability !== "loading";
-  const teamName = workspace ? (workspace.selectedTeam?.name ?? "DevLink 워크스페이스") : team.name;
+  const teamName = workspace ? (workspace.selectedTeam?.name ?? t("DevLink 워크스페이스")) : team.name;
   const members = workspace ? workspace.members : team.members;
   const teamOptions = workspace
     ? workspace.teams.map((item) => ({ id: String(item.teamId), name: item.name }))
@@ -671,7 +674,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
       data-transitioning={transitioning ? "true" : "false"}
       data-scene-returning={sceneReturning ? "true" : "false"}
     >
-      {!workspace && <PageTitle title="3D 팀 스페이스" />}
+      {!workspace && <PageTitle title={t("3D 팀 스페이스")} />}
       <div
         className="itp-transition-scroll-clock"
         ref={transitionScrollClock}
@@ -683,7 +686,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
       <section
         className="itp-journey"
         ref={journey}
-        aria-label="3D 팀 스페이스"
+        aria-label={t("3D 팀 스페이스")}
         tabIndex={-1}
         hidden={!sceneVisible}
         inert={transitioning || sceneReturning || !sceneActive}
@@ -714,16 +717,14 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
               )}
               {sceneStatus === "empty" && (
                 <div className="itp-scene-message" role="status">
-                  <strong>아직 참여한 팀이 없어요</strong>
-                  <span>대시보드에서 팀을 만들거나 초대 코드로 참여할 수 있어요.</span>
+                  <strong>{t("아직 참여한 팀이 없어요")}</strong>
+                  <span>{t("대시보드에서 팀을 만들거나 초대 코드로 참여할 수 있어요.")}</span>
                 </div>
               )}
               {sceneStatus === "error" && (
                 <div className="itp-scene-message">
-                  <strong role="alert">팀 정보를 불러오지 못했어요</strong>
-                  <button type="button" className="itp-dashboard-jump" onClick={workspace?.onRetry}>
-                    다시 불러오기
-                  </button>
+                  <strong role="alert">{t("팀 정보를 불러오지 못했어요")}</strong>
+                  <button type="button" className="itp-dashboard-jump" onClick={workspace?.onRetry}>{t("다시 불러오기")}</button>
                 </div>
               )}
               {showTeam && availability === "unavailable" && (
@@ -743,7 +744,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                         type="button"
                         className={member?.id === item.id ? "is-active" : ""}
                         onClick={() => selectMember(item.id)}
-                        aria-label={`${item.name} 선택`}
+                        aria-label={t("{{value0}} 선택", { value0: item.name })}
                         aria-pressed={member?.id === item.id}
                         style={
                           {
@@ -774,7 +775,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                       </button>
                     ))}
                   </div>
-                  <span className="itp-fallback-note">이 환경에서는 기본 그래픽으로 표시해요</span>
+                  <span className="itp-fallback-note">{t("이 환경에서는 기본 그래픽으로 표시해요")}</span>
                 </div>
               )}
             </div>
@@ -794,7 +795,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
             </div>
             <div className="itp-ui">
               <header className="itp-header">
-                <a href="/" className="itp-brand" aria-label="DevLink 워크스페이스">
+                <a href="/" className="itp-brand" aria-label={t("DevLink 워크스페이스")}>
                   <BrandLogo />
                 </a>
                 <div className="itp-header-actions">
@@ -804,9 +805,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                       className="itp-overview-button"
                       onClick={returnToOverview}
                     >
-                      <Icon name="arrow" size={17} />
-                      전체 팀 보기
-                    </button>
+                      <Icon name="arrow" size={17} />{t("전체 팀 보기")}</button>
                   )}
                 </div>
               </header>
@@ -825,22 +824,22 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                     />
                     <div
                       className="itp-stats"
-                      aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개, 진행 중인 세션 ${activeSessionCount}개`}
+                      aria-label={t("팀원 {{value0}}명, 에이전트 {{value1}}개, 진행 중인 세션 {{value2}}개", { value0: members.length, value1: agentCount, value2: activeSessionCount })}
                     >
                       <div>
                         <strong>{members.length}</strong>
-                        <span>팀원</span>
+                        <span>{t("팀원")}</span>
                       </div>
                       <span className="itp-stat-line" />
                       <div>
                         <strong>{agentCount}</strong>
-                        <span>에이전트</span>
+                        <span>{t("에이전트")}</span>
                       </div>
                       {activeSessionCount > 0 && <>
                         <span className="itp-stat-line" />
-                        <div className="itp-session-stat" title="블루 연결선은 진행 중인 세션의 Agent를 연결합니다.">
+                        <div className="itp-session-stat" title={t("블루 연결선은 진행 중인 세션의 Agent를 연결합니다.")}>
                           <strong>{activeSessionCount}</strong>
-                          <span><i className="itp-session-signal" aria-hidden="true" />진행 중</span>
+                          <span><i className="itp-session-signal" aria-hidden="true" />{t("진행 중")}</span>
                         </div>
                       </>}
                     </div>
@@ -854,15 +853,11 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                       onOpenDashboard={showDashboard}
                     />
                   )}
-                  <p className="itp-sr-only">
-                    팀원을 선택하면 카메라가 이동합니다. 전체 팀 보기 버튼이나 Escape 키로 돌아올 수
-                    있습니다. 스크롤로 3D 화면을 확대하거나 축소하고, 대시보드로 가기 버튼으로
-                    화면을 전환할 수 있습니다.
-                  </p>
+                  <p className="itp-sr-only">{t("팀원을 선택하면 카메라가 이동합니다. 전체 팀 보기 버튼이나 Escape 키로 돌아올 수 있습니다. 스크롤로 3D 화면을 확대하거나 축소하고, 대시보드로 가기 버튼으로 화면을 전환할 수 있습니다.")}</p>
                   {members.length > 0 && (
-                    <div className="itp-dock itp-member-list" role="group" aria-label="팀원 선택">
+                    <div className="itp-dock itp-member-list" role="group" aria-label={t("팀원 선택")}>
                       <div className="itp-member-list-heading">
-                        <span>팀원</span>
+                        <span>{t("팀원")}</span>
                         <span>{members.length}</span>
                       </div>
                       {members.map((item) => (
@@ -874,7 +869,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                             { "--itp-member-color": memberColors[item.color] } as CSSProperties
                           }
                           aria-pressed={member?.id === item.id}
-                          aria-label={`${item.name} 선택`}
+                          aria-label={t("{{value0}} 선택", { value0: item.name })}
                           onClick={() => selectMember(item.id)}
                         >
                           <span className="itp-member-avatar" aria-hidden="true">
@@ -891,13 +886,13 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
               {showTeamControls && (
                 <div className={`itp-bottom${availability === "ready" ? " itp-team-reveal" : ""}`}>
                   {availability === "ready" && (
-                    <div className="itp-orbit-controls" role="group" aria-label="3D 화면 조작">
+                    <div className="itp-orbit-controls" role="group" aria-label={t("3D 화면 조작")}>
                       <button
                         type="button"
                         className="itp-icon-button"
                         onClick={toggleTopView}
-                        aria-label={topView ? "기본 각도로 돌아가기" : "위에서 보기"}
-                        title={topView ? "기본 각도로 돌아가기" : "위에서 보기"}
+                        aria-label={topView ? t("기본 각도로 돌아가기") : t("위에서 보기")}
+                        title={topView ? t("기본 각도로 돌아가기") : t("위에서 보기")}
                         aria-pressed={topView}
                       >
                         <TopViewIcon />
@@ -906,8 +901,8 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                         type="button"
                         className="itp-icon-button"
                         onClick={() => setPaused(!paused)}
-                        aria-label={paused ? "애니메이션 재생" : "애니메이션 일시정지"}
-                        title={paused ? "애니메이션 재생" : "애니메이션 일시정지"}
+                        aria-label={paused ? t("애니메이션 재생") : t("애니메이션 일시정지")}
+                        title={paused ? t("애니메이션 재생") : t("애니메이션 일시정지")}
                         aria-pressed={paused}
                       >
                         <MotionIcon paused={paused} />
@@ -919,8 +914,8 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                       type="button"
                       className="itp-invite-trigger"
                       onClick={openInvite}
-                      aria-label="팀원 초대"
-                      title="팀원 초대"
+                      aria-label={t("팀원 초대")}
+                      title={t("팀원 초대")}
                     >
                       <Icon name="plus" size={23} />
                     </button>
@@ -932,9 +927,9 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                 className="space-navigation-button itp-scroll-prompt"
                 data-direction="down"
                 onClick={showDashboard}
-                aria-label={workspace?.unreadCount ? `대시보드로 가기, 읽지 않은 채팅 ${workspace.unreadCount}개` : undefined}
+                aria-label={workspace?.unreadCount ? t("대시보드로 가기, 읽지 않은 채팅 {{value0}}개", { value0: workspace.unreadCount }) : undefined}
               >
-                <span>대시보드로 가기{(workspace?.unreadCount ?? 0) > 0 && <span className="itp-unread-count">{workspace?.unreadCount}</span>}</span>
+                <span>{t("대시보드로 가기")}{(workspace?.unreadCount ?? 0) > 0 && <span className="itp-unread-count">{workspace?.unreadCount}</span>}</span>
                 <Icon name="chevrons" size={20} className="space-navigation-arrows" />
               </button>
             </div>
@@ -945,7 +940,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
         className="itp-dashboard-section"
         id="team-dashboard"
         ref={dashboardSection}
-        aria-label="팀 대시보드"
+        aria-label={t("팀 대시보드")}
         tabIndex={-1}
         hidden={sceneActive && !transitioning}
         inert={transitioning || sceneActive}
@@ -987,12 +982,12 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
               type="button"
               className="itp-icon-button"
               onClick={closeInvite}
-              aria-label="초대 카드 닫기"
+              aria-label={t("초대 카드 닫기")}
             >
               <Icon name="close" size={19} />
             </button>
           </div>
-          <label htmlFor="itp-invite-code">초대 코드</label>
+          <label htmlFor="itp-invite-code">{t("초대 코드")}</label>
           <input
             id="itp-invite-code"
             value={team.inviteCode}
@@ -1007,10 +1002,10 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
             }}
           >
             <Icon name={copyStatus === "copied" ? "check" : "copy"} size={16} />
-            {copyStatus === "copied" ? "복사 완료" : "초대 코드 복사"}
+            {copyStatus === "copied" ? t("복사 완료") : t("초대 코드 복사")}
           </button>
           <p className="itp-invite-note" role="status">
-            {copyStatus === "error" ? "코드를 선택해 직접 복사해주세요." : "미리보기용 초대 코드"}
+            {copyStatus === "error" ? t("코드를 선택해 직접 복사해주세요.") : t("미리보기용 초대 코드")}
           </p>
         </dialog>
       )}

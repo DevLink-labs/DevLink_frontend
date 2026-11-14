@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useState } from "react";
 import { Icon } from "@/components/ui";
 import AgentListView from "@/features/agents/components/AgentListView";
@@ -50,18 +51,19 @@ function ownerName(agent) {
 }
 
 export default function DemoStages({ step, progress, capture, onAdvance, onReset, onOpenStep }) {
+  const { t } = useTranslation();
   const [setupDismissed, setSetupDismissed] = useState(false);
   const connect = step.id === "connect";
   const codex = step.id === "request" && progress < step.actions.length;
   const registered = progress >= 3;
   const connected = progress >= step.actions.length;
   const setupOpen = connect && progress > 0 && !connected && (!registered || !setupDismissed);
-  const agents = registered
+  const agents = (registered
     ? [{ ...requester, status: connected ? "ONLINE" : "OFFLINE", lastSeenAt: connected ? demoDate : null }, receiver]
-    : [receiver];
+    : [receiver]).map((agent) => ({ ...agent, name: t(agent.name), roleDescription: t(agent.roleDescription) }));
   const task = {
     taskId: demoTask.id,
-    taskSummary: demoTask.title,
+    taskSummary: t(demoTask.title),
     status: demoTaskStatus(step.id, progress),
   };
 
@@ -87,7 +89,7 @@ export default function DemoStages({ step, progress, capture, onAdvance, onReset
   }
 
   return (
-    <section className="demo-stage" aria-label={step.label}>
+    <section className="demo-stage" aria-label={t(step.label)}>
       {codex ? (
         <div className="demo-codex-frame demo-stage-enter">
           <DemoCodexRequest progress={progress} onAdvance={onAdvance} />
@@ -122,8 +124,7 @@ export default function DemoStages({ step, progress, capture, onAdvance, onReset
                     ownerName={ownerName}
                     headingActions={(
                       <button className="button button-primary" type="button" onClick={openSetup} aria-disabled={connected || undefined}>
-                        <Icon name="plus" size={18} /> Agent 추가
-                      </button>
+                        <Icon name="plus" size={18} />{t(" Agent 추가")}</button>
                     )}
                     onConnect={onAdvance}
                   />

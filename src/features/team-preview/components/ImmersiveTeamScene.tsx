@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 import type { CSSProperties, RefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -120,6 +121,7 @@ export default function ImmersiveTeamScene({
   topView,
   onAvailabilityChange,
 }: ImmersiveTeamSceneProps) {
+  const { t } = useTranslation();
   const host = useRef<HTMLDivElement>(null);
   const labelsLayer = useRef<HTMLDivElement>(null);
   const teamLabel = useRef<HTMLDivElement>(null);
@@ -1268,13 +1270,13 @@ export default function ImmersiveTeamScene({
       className="itp-canvas"
       ref={host}
       role="group"
-      aria-label={`팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 진행 중인 세션의 Agent 연결 ${connections.length}개. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다.`}
+      aria-label={t("팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 진행 중인 세션의 Agent 연결 {{count}}개. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다.", { count: connections.length })}
     >
       <div
         className="itp-scene-labels"
         ref={labelsLayer}
         style={{ visibility: "hidden" }}
-        aria-label="팀과 팀원 이름"
+        aria-label={t("팀과 팀원 이름")}
       >
         {!loading && (
           <div
@@ -1297,7 +1299,7 @@ export default function ImmersiveTeamScene({
             type="button"
             aria-pressed={selectedMemberId === member.id}
             hidden={focusedMemberId !== null && focusedMemberId !== member.id}
-            aria-label={`${member.name} 팀원 선택`}
+            aria-label={t("{{name}} 팀원 선택", { name: member.name })}
             onClick={() => {
               if (control.current.active && control.current.transitionState.current.progress === 0 &&
                 control.current.transitionState.current.sceneProgress === 0)
@@ -1319,18 +1321,18 @@ export default function ImmersiveTeamScene({
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
           >
-            <span>Agent 상태</span>
+            <span>{t("Agent 상태")}</span>
             <select
               ref={agentPicker}
               value={selectedAgent?.id ?? ""}
-              aria-label={`${focusedMember.name} 팀원의 Agent 상태 확인`}
+              aria-label={t("{{name}} 팀원의 Agent 상태 확인", { name: focusedMember.name })}
               aria-controls={selectedAgent ? popoverId : undefined}
               onChange={(event) => {
                 const agentId = event.currentTarget.value;
                 if (agentId) chooseAgent.current(focusedMember.id, agentId, event.currentTarget);
               }}
             >
-              <option value="" disabled>Agent 선택</option>
+              <option value="" disabled>{t("Agent 선택")}</option>
               {focusedMember.agents.map((agent) => (
                 <option key={agent.id} value={agent.id}>{agent.name}</option>
               ))}

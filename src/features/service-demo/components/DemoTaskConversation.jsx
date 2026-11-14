@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import TaskConversationView from "@/features/tasks/components/TaskConversationView";
 import { demoActors, demoTask, demoTaskStatus, demoTeam } from "../data/demoScenario";
 
@@ -51,23 +52,30 @@ const recordedEvents = [
   },
 ];
 
-const taskPrompt = JSON.stringify({ title: demoTask.title, description: demoTask.request });
-const resultText = `${demoTask.result}\n\n${demoTask.checks.map((check) => `• ${check}`).join("\n")}`;
-
 export default function DemoTaskConversation({ stepId, progress, capture = false, onBack, onAccept }) {
+  const { t } = useTranslation();
+  const translatedRequester = { ...requesterAgent, name: t(requesterAgent.name) };
+  const translatedReceiver = { ...receiverAgent, name: t(receiverAgent.name) };
+  const taskPrompt = JSON.stringify({ title: t(demoTask.title), description: t(demoTask.request) });
+  const resultText = `${t(demoTask.result)}\n\n${demoTask.checks.map((check) => `• ${t(check)}`).join("\n")}`;
   const status = demoTaskStatus(stepId, progress);
   const completed = status === "COMPLETED";
   const resultStep = stepId === "result";
   const eventCount = resultStep ? (completed ? 5 : 4) : stepId === "conversation" ? progress + 1 : 1;
-  const items = recordedEvents.slice(0, eventCount);
+  const items = recordedEvents.slice(0, eventCount).map((event) => ({
+    ...event,
+    message: event.message ? t(event.message) : null,
+    authorAgent: event.authorAgent?.agentId === requesterAgent.agentId
+      ? translatedRequester : event.authorAgent ? translatedReceiver : null,
+  }));
   const latestEvent = items.at(-1);
   const detail = {
     taskId: demoTask.id,
     teamId: 1,
     teamName: demoTeam,
-    taskSummary: demoTask.title,
-    requesterAgent,
-    receiverAgent,
+    taskSummary: t(demoTask.title),
+    requesterAgent: translatedRequester,
+    receiverAgent: translatedReceiver,
     status,
     createdAt: recordedEvents[0].createdAt,
     startedAt: status === "PENDING" ? null : recordedEvents[1].createdAt,

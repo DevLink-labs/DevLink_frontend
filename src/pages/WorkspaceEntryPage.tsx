@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { lazy, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@/features/auth/types";
@@ -13,6 +14,7 @@ const WorkspacePage = lazy(() => import("./WorkspacePage"));
 const OnboardingPage = lazy(() => import("./OnboardingPage"));
 
 export default function WorkspaceEntryPage({ user }: { user: User }) {
+  const { t } = useTranslation();
   const historyKey = `devlink:${user.userId}:onboarding-v1`;
   const [finished, setFinished] = useState(() => {
     try {
@@ -64,7 +66,7 @@ export default function WorkspaceEntryPage({ user }: { user: User }) {
       localStorage.setItem(historyKey, status);
     } catch {
       notify(
-        "설정 이력을 저장하지 못했습니다. 현재 접속에서는 대시보드로 이동합니다.",
+        t("설정 이력을 저장하지 못했습니다. 현재 접속에서는 대시보드로 이동합니다."),
         "error",
       );
     }
@@ -81,7 +83,7 @@ export default function WorkspaceEntryPage({ user }: { user: User }) {
           <BrandLogo variant="icon" className="boot-brand-icon" />
         </span>
         <h1 className="boot-brand-title"><BrandLogo variant="wordmark" className="boot-brand-wordmark" /></h1>
-        <p className="muted">작업 공간을 준비하고 있어요.</p>
+        <p className="muted">{t("작업 공간을 준비하고 있어요.")}</p>
         <span className="loading-bar" />
       </div>
     );
@@ -89,16 +91,14 @@ export default function WorkspaceEntryPage({ user }: { user: User }) {
     return (
       <main className="boot-screen">
         <Icon name="shield" size={28} />
-        <h1>설정 이력을 확인하지 못했어요</h1>
-        <p className="muted">연결 상태를 확인한 뒤 다시 시도해주세요.</p>
+        <h1>{t("설정 이력을 확인하지 못했어요")}</h1>
+        <p className="muted">{t("연결 상태를 확인한 뒤 다시 시도해주세요.")}</p>
         <div className="section-actions">
           <button
             className="button button-secondary"
             type="button"
             onClick={() => finish("skipped")}
-          >
-            대시보드로 이동
-          </button>
+          >{t("대시보드로 이동")}</button>
           <button
             className="button button-primary"
             type="button"
@@ -106,9 +106,7 @@ export default function WorkspaceEntryPage({ user }: { user: User }) {
             onClick={() => {
               void existingAccount.refetch();
             }}
-          >
-            다시 확인
-          </button>
+          >{t("다시 확인")}</button>
         </div>
       </main>
     );
