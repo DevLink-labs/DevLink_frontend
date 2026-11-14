@@ -1,4 +1,9 @@
-import type { SetupAgentMetadata } from "../api/desktopApi";
+import type { SetupAgentMetadata, SetupTool } from "../api/desktopApi";
+
+export const setupToolNames: Record<SetupTool, string> = {
+  codex: "Codex",
+  "claude-code": "Claude Code",
+};
 
 export const agentParts = [
   { value: "FRONTEND", label: "프론트엔드" },

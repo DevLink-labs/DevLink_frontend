@@ -5,12 +5,13 @@ import type { Team, TeamMember } from "@/features/teams/types";
 import { useAgent, useAgentMutations } from "../hooks/useAgents";
 import { agentApi } from "../api/agentApi";
 import { copyText, formatDate } from "@/utils";
-import { EmptyState, Icon, Modal } from "@/components/ui";
+import { Icon, Modal } from "@/components/ui";
 import chatgptLogo from "@/assets/image/agent-logo/chatgpt.svg";
 import claudeLogo from "@/assets/image/agent-logo/claude.svg";
 import { getDesktopApi } from "@/features/desktop-setup/api/desktopApi";
 import ProjectConnectView from "@/features/desktop-setup/components/ProjectConnectView";
-import "@/styles/workspace-management.css";
+import AgentListView from "./AgentListView";
+import { agentToolName } from "../lib/agentToolName";
 
 interface AgentsPanelProps {
   team: Team;
@@ -44,10 +45,6 @@ function errorMessage(error: unknown): string {
     : "요청을 처리하지 못했습니다. 잠시 후 다시 확인해주세요.";
 }
 
-function toolName(toolType: Agent["toolType"]): string {
-  return toolType === "CODEX" ? "Codex" : "Claude Code";
-}
-
 const onlineCheckInterval = 2_000;
 const onlineCheckTimeout = 90_000;
 
@@ -67,8 +64,6 @@ export default function AgentsPanel({
   const active = useRef(true);
   const connecting = useRef<AbortController | null>(null);
   const mutations = useAgentMutations(currentUserId, team.teamId);
-  const [search, setSearch] = useState("");
-  const [connection, setConnection] = useState<Agent["status"] | "all">("all");
   const [pcReady, setPcReady] = useState<boolean | null>(null);
   const [connectingAgentId, setConnectingAgentId] = useState<number | null>(null);
   const [formTarget, setFormTarget] = useState<Agent | "register" | null>(null);
@@ -110,21 +105,12 @@ export default function AgentsPanel({
     if (detailAgentId !== null && detailQuery.error) onError(detailQuery.error);
   }, [detailAgentId, detailQuery.error, onError]);
 
-  const query = search.trim().toLocaleLowerCase();
   const editingAgent = formTarget === "register" ? null : formTarget;
   const formChanged =
     !editingAgent ||
     form.name !== editingAgent.name ||
     form.projectName !== editingAgent.projectName ||
     form.roleDescription !== (editingAgent.roleDescription ?? "");
-  const teamAgents = agents.filter((agent) => agent.teamId === team.teamId);
-  const visibleAgents = teamAgents.filter((agent) =>
-    (connection === "all" || agent.status === connection)
-    && [agent.name, agent.projectName, agent.roleDescription ?? ""].some((value) =>
-      value.toLocaleLowerCase().includes(query),
-    ),
-  );
-
   function ownerName(agent: Agent): string {
     const owner = members.find((member) => member.userId === agent.ownerUserId);
     return owner?.nickname || owner?.name || `사용자 #${agent.ownerUserId}`;
@@ -322,197 +308,41 @@ export default function AgentsPanel({
   }
 
   return (
-    <section className="panel agents-panel" aria-labelledby={`${fieldId}-heading`}>
-      <div className="panel-heading">
-        <div className="management-heading">
-          <div className="management-title-row">
-            <h2 className="section-title" id={`${fieldId}-heading`}>Agent 목록</h2>
-            <span className="management-count">{loading ? "—" : teamAgents.length}</span>
-            {pcReady !== null && (
-              <span className={`badge ${pcReady ? "badge-online" : "badge-offline"}`} role="status">
-                PC : {pcReady ? "연결" : "미연결"}
-              </span>
-            )}
-          </div>
-          <p className="management-description">{team.name}의 Agent와 프로젝트 연결 현황</p>
-        </div>
-        <div className="section-actions management-actions">
-          {desktop?.setup && desktop.getStatus ? (
-            <ProjectConnectView
-              key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
-              setup={desktop.setup}
-              getStatus={desktop.getStatus}
-              account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}
-              teamName={team.name}
-              onRefreshAgents={onRefresh}
-              onReadyChange={setPcReady}
-            />
-          ) : (
-            <button
-              className="button button-primary"
-              type="button"
-              onClick={openRegister}
-              disabled={loading}
-            >
-              <Icon name="plus" size={18} /> Agent 등록
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="agents-toolbar">
-        <div className="management-filters" aria-label="Agent 연결 상태 필터">
-          {(["all", "ONLINE", "OFFLINE"] as const).map((value) => (
-            <button key={value} type="button" aria-pressed={connection === value} onClick={() => setConnection(value)}>
-              {value === "all" ? "전체" : value === "ONLINE" ? "온라인" : "오프라인"}
-              <span>{loading ? "—" : value === "all" ? teamAgents.length : teamAgents.filter((agent) => agent.status === value).length}</span>
-            </button>
-          ))}
-        </div>
-        <label className="search-field" htmlFor={`${fieldId}-search`}>
-          <span className="sr-only">Agent, 프로젝트, 역할 검색</span>
-          <input
-            id={`${fieldId}-search`}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Agent, 프로젝트, 역할 검색"
-            type="search"
+    <AgentListView
+      team={team}
+      agents={agents}
+      currentUserId={currentUserId}
+      loading={loading}
+      pcReady={pcReady}
+      connectingAgentId={connectingAgentId}
+      ownerName={ownerName}
+      onShowDetail={showDetail}
+      onConnect={desktop?.setup?.connectAgent ? connectAgent : undefined}
+      onEdit={openEdit}
+      onToken={openToken}
+      onDelete={openDelete}
+      deleting={deleting}
+      headingActions={desktop?.setup && desktop.getStatus ? (
+          <ProjectConnectView
+            key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
+            setup={desktop.setup}
+            getStatus={desktop.getStatus}
+            account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}
+            teamName={team.name}
+            onRefreshAgents={onRefresh}
+            onReadyChange={setPcReady}
           />
-        </label>
-      </div>
-
-      {loading && (
-        <p className="loading-copy" role="status">
-          Agent 목록을 불러오고 있습니다.
-        </p>
-      )}
-      {!loading && teamAgents.length === 0 ? (
-        <EmptyState
-          icon={<Icon name="agent" size={28} />}
-          title="등록된 Agent 없음"
-          description="이 팀에서 사용할 내 Agent와 담당 프로젝트를 등록할 수 있습니다."
-        />
-      ) : (
-        teamAgents.length > 0 && (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Agent</th>
-                  <th scope="col">프로젝트</th>
-                  <th scope="col">도구</th>
-                  <th scope="col">소유자</th>
-                  <th scope="col">연결 상태</th>
-                  <th scope="col">관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleAgents.map((agent) => (
-                  <tr key={agent.agentId}>
-                    <td>
-                      <div className="agent-cell">
-                        <span className="agent-icon">
-                          <img src={agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt={toolName(agent.toolType)} width={22} height={22} />
-                        </span>
-                        <div>
-                          <button
-                            className="agent-name-button"
-                            type="button"
-                            onClick={() => showDetail(agent.agentId)}
-                          >
-                            {agent.name}
-                          </button>
-                          <div className="agent-meta">{agent.roleDescription || "역할 미등록"}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{agent.projectName}</td>
-                    <td>
-                      <span className="management-tool-name">{toolName(agent.toolType)}</span>
-                    </td>
-                    <td>
-                      {ownerName(agent)}
-                      {agent.ownerUserId === currentUserId && (
-                        <span className="self-label">나</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="status-cell">
-                        <span
-                          className={`badge ${agent.status === "ONLINE" ? "badge-online" : "badge-offline"}`}
-                          aria-live={connectingAgentId === agent.agentId ? "polite" : undefined}
-                        >
-                          {agent.status === "ONLINE" ? "온라인" : connectingAgentId === agent.agentId ? "연결 중" : "오프라인"}
-                        </span>
-                        <div className="status-detail">
-                          {agent.lastSeenAt ? formatDate(agent.lastSeenAt) : "접속 기록 없음"}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {agent.ownerUserId === currentUserId ? (
-                        <div className="section-actions">
-                          {desktop?.setup?.connectAgent && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (
-                            <button
-                              className="button button-secondary button-small"
-                              type="button"
-                              onClick={() => void connectAgent(agent)}
-                              disabled={connectingAgentId !== null || deleting}
-                              aria-label={`${agent.name} 이 PC에서 연결`}
-                            >
-                              {connectingAgentId === agent.agentId ? "연결 중…" : "이 PC에서 연결"}
-                            </button>
-                          )}
-                          <button
-                            className="button button-secondary button-small"
-                            type="button"
-                            onClick={() => openEdit(agent)}
-                            disabled={deleting}
-                            aria-label={`${agent.name} 수정`}
-                          >
-                            수정
-                          </button>
-                          <button
-                            className="button button-secondary button-small"
-                            type="button"
-                            onClick={() => openToken(agent)}
-                            disabled={deleting}
-                          >
-                            <Icon name="key" size={15} /> 연결 토큰
-                          </button>
-                          <button
-                            className="button button-danger button-small"
-                            type="button"
-                            onClick={() => openDelete(agent)}
-                            disabled={deleting}
-                            aria-label={`${agent.name} 삭제`}
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {visibleAgents.length === 0 && (
-                  <tr>
-                    <td className="empty-table-cell" colSpan={6}>
-                      조건에 맞는 Agent가 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-      <p className="field-hint agents-footnote">
-        {!loading && <span className="management-result-count">{visibleAgents.length}개 표시</span>}
-        등록 직후에는 오프라인으로 표시됩니다. 실제 접속 상태는 로컬 연결이 보고된 뒤 반영됩니다.
-      </p>
-
+        ) : (
+          <button
+            className="button button-primary"
+            type="button"
+            onClick={openRegister}
+            disabled={loading}
+          >
+            <Icon name="plus" size={18} /> Agent 등록
+          </button>
+        )}
+    >
       {deleteTarget && (
         <Modal
           title="Agent 삭제"
@@ -695,7 +525,7 @@ export default function AgentsPanel({
               </div>
               <div className="detail-item">
                 <dt>도구</dt>
-                <dd className="management-tool-detail"><img src={detail.agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt="" width={18} height={18} />{toolName(detail.agent.toolType)}</dd>
+                <dd className="management-tool-detail"><img src={detail.agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt="" width={18} height={18} />{agentToolName(detail.agent.toolType)}</dd>
               </div>
               <div className="detail-item">
                 <dt>소유자</dt>
@@ -822,6 +652,6 @@ export default function AgentsPanel({
           </div>
         </Modal>
       )}
-    </section>
+    </AgentListView>
   );
 }

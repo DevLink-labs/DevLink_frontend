@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client'
 import AppRouter from './app/router'
 import './styles/index.css'
 
-const Agentation = import.meta.env.DEV
+const isServiceDemo = window.location.pathname.replace(/\/$/, "") === "/demo";
+const Agentation = import.meta.env.DEV && !isServiceDemo
   ? lazy(() => import('agentation').then((module) => ({ default: module.Agentation })))
   : null
 

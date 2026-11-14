@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Icon, Modal } from "@/components/ui";
 import { copyText } from "@/utils";
@@ -12,9 +12,12 @@ import type {
   SavedConnection,
 } from "../api/desktopApi";
 import { getDesktopApi } from "../api/desktopApi";
-import { agentParts, createSetupAgentMetadata } from "../lib/agentMetadata";
+import { createSetupAgentMetadata, setupToolNames } from "../lib/agentMetadata";
 import { localizeSetupError } from "../lib/setupErrors";
 import McpGuideView from "./McpGuideView";
+import ProjectConnectForm from "./ProjectConnectForm";
+import ProjectConnectSummary from "./ProjectConnectSummary";
+import ProjectFolderPicker from "./ProjectFolderPicker";
 
 interface ProjectConnectViewProps {
   setup: DesktopSetupApi;
@@ -50,11 +53,6 @@ const noRetryCodes = [
   "SETUP_AGENT_BINDING_CONFLICT",
   "SETUP_AGENT_REJECTED",
 ];
-
-const toolNames: Record<SetupTool, string> = {
-  codex: "Codex",
-  "claude-code": "Claude Code",
-};
 
 const steps = [
   { label: "계정 확인", keys: ["validate", "authenticate"] },
@@ -104,7 +102,6 @@ export default function ProjectConnectView({
   const [metadataError, setMetadataError] = useState("");
   // 한 번 실행한 폴더는 IPC가 도구를 고정하므로 화면에서도 변경 차단
   const [toolLocked, setToolLocked] = useState(false);
-  const fieldId = useId();
   const [progress, setProgress] = useState<Record<string, string>>({});
   const [readiness, setReadiness] = useState<{
     userId: number;
@@ -397,7 +394,7 @@ export default function ProjectConnectView({
         <p className="project-connect-selection">
           <Icon name="grid" size={17} />
           {project.name}
-          {selectedTool && <span>{toolNames[selectedTool]}</span>}
+          {selectedTool && <span>{setupToolNames[selectedTool]}</span>}
         </p>
       )}
       {view.state === "connections" && (
@@ -426,7 +423,7 @@ export default function ProjectConnectView({
                 }}
               >
                 <span>
-                  {connection.name} · {toolNames[connection.tool]} · Agent{" "}
+                  {connection.name} · {setupToolNames[connection.tool]} · Agent{" "}
                   {connection.agentId}
                   <br />
                   <span className="field-hint break-all">
@@ -469,132 +466,31 @@ export default function ProjectConnectView({
         />
       )}
       {(view.state === "choose" || view.state === "picking") && (
-        <>
-          <div className="project-connect-folder">
-            <span className="project-connect-symbol">
-              <Icon name="grid" size={26} />
-            </span>
-            <h3>PC에서 작업할 폴더를 선택하세요</h3>
-            <p>
-              폴더와 AI 도구를 선택하면 Agent 등록과 연결 설정을 함께 진행해요.
-            </p>
-          </div>
-          <div className="modal-footer">
-            <button
-              className="button button-primary"
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                void pickFolder();
-              }}
-            >
-              {busy ? "폴더 선택 및 도구 확인 중…" : "폴더 선택"}
-            </button>
-          </div>
-        </>
+        <ProjectFolderPicker busy={busy} onPickFolder={() => { void pickFolder(); }} />
       )}
       {view.state === "select-tool" && project && (
-        <form className="grid gap-4" onSubmit={submitConnection}>
-          <fieldset
-            className="project-connect-tool-selection"
-            disabled={busy || toolLocked}
-          >
-            <legend>프로젝트에 연결할 AI 도구</legend>
-            <div className="project-connect-tools">
-              {project.tools.map((tool) => (
-                <button
-                  key={tool}
-                  className={`project-connect-tool${selectedTool === tool ? " is-selected" : ""}`}
-                  type="button"
-                  aria-pressed={selectedTool === tool}
-                  onClick={() => setSelectedTool(tool)}
-                >
-                  <Icon name="agent" size={23} />
-                  <strong>{toolNames[tool]}</strong>
-                  <span>이 PC에서 사용 가능</span>
-                  <Icon name="arrow" size={17} />
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <div className="field">
-            <label htmlFor={`${fieldId}-part`}>담당 파트</label>
-            <select
-              id={`${fieldId}-part`}
-              value={agentPart}
-              onChange={(event) => {
-                setAgentPart(event.target.value);
-                setMetadataError("");
-              }}
-            >
-              <option value="">선택 안 함</option>
-              {agentParts.map((part) => (
-                <option key={part.value} value={part.value}>
-                  {part.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor={`${fieldId}-roles`}>역할 태그</label>
-            <input
-              id={`${fieldId}-roles`}
-              value={rolesText}
-              placeholder="예: API 개발, 인증, 테스트"
-              aria-describedby={`${fieldId}-roles-hint${metadataError ? ` ${fieldId}-metadata-error` : ""}`}
-              aria-invalid={Boolean(metadataError)}
-              onChange={(event) => {
-                setRolesText(event.target.value);
-                setMetadataError("");
-              }}
-            />
-            <span className="field-hint" id={`${fieldId}-roles-hint`}>
-              쉼표로 구분해 최대 10개, 각 64자까지 입력할 수 있어요.
-            </span>
-          </div>
-          <p className="field-hint">
-            비워 둔 항목은 기존 담당 정보를 유지해요. 이미 연결된 Agent의 담당
-            정보는 여기서 바꿀 수 없어요. 새 Agent는 미입력 시 기타·태그
-            없음으로 등록돼요.
-          </p>
-          {metadataError && (
-            <p
-              id={`${fieldId}-metadata-error`}
-              className="inline-error"
-              role="alert"
-            >
-              {metadataError}
-            </p>
-          )}
-          <div className="modal-footer">
-            {manualSetup && (
-              <button
-                className="button button-secondary"
-                type="button"
-                disabled={busy || !selectedTool}
-                onClick={() => {
-                  if (selectedTool)
-                    void run(project, selectedTool, undefined, "manual");
-                }}
-              >
-                직접 설정하기
-              </button>
-            )}
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={busy || !selectedTool}
-            >
-              연결하기
-            </button>
-          </div>
-          {manualSetup && (
-            <p className="field-hint">
-              직접 설정은 Agent와 이 PC의 연결을 준비한 뒤, AI 도구 설정을 직접
-              적용하는 방식입니다.
-            </p>
-          )}
-        </form>
+        <ProjectConnectForm
+          tools={project.tools}
+          selectedTool={selectedTool}
+          agentPart={agentPart}
+          rolesText={rolesText}
+          metadataError={metadataError}
+          busy={busy}
+          toolLocked={toolLocked}
+          onSelectTool={setSelectedTool}
+          onPartChange={(part) => {
+            setAgentPart(part);
+            setMetadataError("");
+          }}
+          onRolesChange={(roles) => {
+            setRolesText(roles);
+            setMetadataError("");
+          }}
+          onSubmit={submitConnection}
+          onManualSetup={manualSetup ? () => {
+            if (selectedTool) void run(project, selectedTool, undefined, "manual");
+          } : undefined}
+        />
       )}
       {view.state === "running" && (
         <ol
@@ -690,7 +586,7 @@ export default function ProjectConnectView({
       {view.state === "manual" && project && selectedTool && (
         <>
           <p>
-            아래 설정을 파일에 추가한 뒤 {toolNames[selectedTool]}을 다시
+            아래 설정을 파일에 추가한 뒤 {setupToolNames[selectedTool]}을 다시
             열어주세요.
           </p>
           <p className="field-hint break-all">{view.targetPath}</p>
@@ -744,43 +640,12 @@ export default function ProjectConnectView({
       )}
       {view.state === "done" && (
         <>
-          {presentation === "modal" && (
-            <div className="project-connect-complete" role="status">
-              <span className="project-connect-symbol">
-                <Icon name="check" size={27} />
-              </span>
-              <h3>프로젝트 연결을 완료했습니다</h3>
-              <p>AI 도구에서 마지막 안내를 확인해주세요.</p>
-            </div>
-          )}
-          {project && selectedTool && (
-            <dl className="project-connect-summary">
-              <div>
-                <dt>프로젝트</dt>
-                <dd>{project.name}</dd>
-              </div>
-              <div>
-                <dt>AI 도구</dt>
-                <dd>{toolNames[selectedTool]}</dd>
-              </div>
-              <div>
-                <dt>팀</dt>
-                <dd>{teamName}</dd>
-              </div>
-            </dl>
-          )}
-          {selectedTool === "codex" && (
-            <p>
-              Codex에서 이 프로젝트를 열고 폴더 신뢰 여부를 묻는다면 신뢰를
-              선택해주세요.
-            </p>
-          )}
-          {selectedTool === "claude-code" && (
-            <p>
-              Claude Code에서 이 프로젝트를 열고 DevLink MCP 사용을 묻는다면
-              승인해주세요.
-            </p>
-          )}
+          <ProjectConnectSummary
+            projectName={project?.name}
+            selectedTool={selectedTool}
+            teamName={teamName}
+            showCompletion={presentation === "modal"}
+          />
           <div className="modal-footer">
             <button
               className="button button-primary"

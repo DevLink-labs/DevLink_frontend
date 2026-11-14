@@ -31,6 +31,7 @@ interface DashboardLayoutProps {
   onSelectTask?: (taskId: number) => void;
   unreadTaskIds?: ReadonlySet<number>;
   unreadByTeam?: Record<string, number>;
+  demo?: boolean;
 }
 
 const viewLabels: Record<WorkspaceView, string> = {
@@ -317,6 +318,7 @@ export default function DashboardLayout({
   taskList = [], tasksLoading = false, tasksError = null,
   selectedTaskId = null, onSelectTask,
   unreadTaskIds, unreadByTeam,
+  demo = false,
 }: DashboardLayoutProps) {
   const { user, connection, loggingOut, logout } = useSession();
   const sidebar = useRef<HTMLElement>(null);
@@ -337,8 +339,10 @@ export default function DashboardLayout({
   const profileEmail = user.email;
   const selectedTask = taskList.find((task) => task.taskId === selectedTaskId);
   const pageLabel = viewLabels[view];
+  const WorkspaceContent = demo ? "div" : "main";
 
   function changeView(next: WorkspaceView) {
+    if (demo && next !== "agents" && next !== "conversation") return;
     onViewChange(next);
     setMenuOpen(false);
   }
@@ -354,15 +358,15 @@ export default function DashboardLayout({
     const emptyChatMessage = tasksLoading ? "채팅을 불러오고 있어요." : selectedTeamId === null ? "팀을 선택하면 채팅이 표시됩니다." : "아직 시작한 대화가 없어요.";
     return <>
       <div className="dashboard-sidebar-brand">
-        <a className="brand" href="/" aria-label="DevLink 홈" {...hint("DevLink 홈")}><BrandLogo /></a>
+        <a className="brand" href={demo ? "/demo" : "/"} aria-label="DevLink 홈" {...hint("DevLink 홈")}><BrandLogo /></a>
         {mobile && <button type="button" className="icon-button" aria-label="메뉴 닫기" onClick={() => setMenuOpen(false)}><Icon name="close" /></button>}
       </div>
       <span className="dashboard-nav-label">워크스페이스</span>
       <nav className="main-nav" aria-label="주 메뉴">
-        <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-current={view === "workspace" ? "page" : undefined} aria-label="대시보드" {...hint("대시보드")}><Icon name="grid" size={19} /><span>대시보드</span></button>
+        <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-disabled={demo || undefined} aria-current={view === "workspace" ? "page" : undefined} aria-label="대시보드" {...hint("대시보드")}><Icon name="grid" size={19} /><span>대시보드</span></button>
         <button type="button" className={`nav-item${view === "agents" ? " active" : ""}`} onClick={() => changeView("agents")} aria-current={view === "agents" ? "page" : undefined} aria-label="Agent 관리" {...hint("Agent 관리")}><Icon name="agent" size={19} /><span>Agent 관리</span></button>
-        <button type="button" className={`nav-item${view === "teams" ? " active" : ""}`} onClick={() => changeView("teams")} aria-current={view === "teams" ? "page" : undefined} aria-label="팀 관리" {...hint("팀 관리")}><Icon name="team" size={19} /><span>팀 관리</span></button>
-        <a className="nav-item" href="/tree" aria-label="소스코드 맵" {...hint("소스코드 맵")}><Icon name="activity" size={19} /><span>소스코드 맵</span></a>
+        <button type="button" className={`nav-item${view === "teams" ? " active" : ""}`} onClick={() => changeView("teams")} aria-disabled={demo || undefined} aria-current={view === "teams" ? "page" : undefined} aria-label="팀 관리" {...hint("팀 관리")}><Icon name="team" size={19} /><span>팀 관리</span></button>
+        {!demo && <a className="nav-item" href="/tree" aria-label="소스코드 맵" {...hint("소스코드 맵")}><Icon name="activity" size={19} /><span>소스코드 맵</span></a>}
       </nav>
       {!collapsed && <section className="dashboard-chats" aria-label="최근 채팅">
         <div className="dashboard-chats-heading"><h2>최근 채팅</h2><span>{taskList.length}</span>{tasksLoading && <span className="dashboard-chat-updating" role="status">갱신 중</span>}</div>
@@ -380,12 +384,12 @@ export default function DashboardLayout({
         </div>
       </section>}
       <div className="dashboard-sidebar-footer">
-      {import.meta.env.DEV && <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined} aria-label="디자인 미리보기" {...hint("디자인 미리보기")}><Icon name="eye" size={18} /><span>디자인 미리보기</span><Icon name="chevron" size={14} /></button></div>}
+      {!demo && import.meta.env.DEV && <div className="dashboard-sidebar-utility"><button type="button" className={`nav-item dashboard-design-link${view === "design" ? " active" : ""}`} onClick={() => changeView("design")} aria-current={view === "design" ? "page" : undefined} aria-label="디자인 미리보기" {...hint("디자인 미리보기")}><Icon name="eye" size={18} /><span>디자인 미리보기</span><Icon name="chevron" size={14} /></button></div>}
       <div className="sidebar-bottom"><div className="sidebar-profile">
-        <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-label={`${profileName}, 내 프로필과 설정 열기`} {...hint(`${profileName} · 내 프로필과 설정`)}><span className="avatar">{profileName.slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{profileName}</strong><span title={collapsed ? undefined : profileEmail}>{profileEmail}</span></span></button>
+        <button type="button" className="dashboard-profile" onClick={() => changeView("settings")} aria-disabled={demo || undefined} aria-label={`${profileName}, 내 프로필과 설정 열기`} {...hint(`${profileName} · 내 프로필과 설정`)}><span className="avatar">{profileName.slice(0, 1)}</span><span className="dashboard-profile-text"><strong>{profileName}</strong><span title={collapsed ? undefined : profileEmail}>{profileEmail}</span></span></button>
         {!collapsed && <>
-          <button type="button" className={`icon-button${view === "settings" || view === "guide" ? " is-selected" : ""}`} onClick={() => changeView("settings")} aria-label="설정" title="설정"><SettingsIcon /></button>
-          <button type="button" className="icon-button" onClick={logout} disabled={loggingOut} aria-label={loggingOut ? "로그아웃 처리 중" : "로그아웃"} title="로그아웃"><Icon name="logout" size={17} /></button>
+          <button type="button" className={`icon-button${view === "settings" || view === "guide" ? " is-selected" : ""}`} onClick={() => changeView("settings")} aria-disabled={demo || undefined} aria-label="설정" title="설정"><SettingsIcon /></button>
+          <button type="button" className="icon-button" onClick={logout} disabled={loggingOut} aria-disabled={demo || undefined} aria-label={loggingOut ? "로그아웃 처리 중" : "로그아웃"} title="로그아웃"><Icon name="logout" size={17} /></button>
         </>}
       </div></div>
       </div>
@@ -393,7 +397,7 @@ export default function DashboardLayout({
   }
 
   return <div className={`workspace-dashboard app-shell min-h-screen${view === "conversation" ? " is-conversation" : ""}${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
-    <PageTitle title={view === "conversation" && selectedTask ? taskTitle(selectedTask) : pageLabel} />
+    {!demo && <PageTitle title={view === "conversation" && selectedTask ? taskTitle(selectedTask) : pageLabel} />}
     <aside className="sidebar" aria-label="워크스페이스 메뉴" ref={sidebar}>
       <div className="dashboard-sidebar-content" id={sidebarId}>{sidebarContent()}</div>
       <button type="button" className="dashboard-sidebar-toggle" onClick={() => setSidebarCollapsed((current) => !current)} aria-label={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"} title={sidebarCollapsed ? undefined : "사이드바 접기"} data-sidebar-tooltip={sidebarCollapsed ? "사이드바 펼치기" : undefined} aria-expanded={!sidebarCollapsed} aria-controls={sidebarId}>
@@ -408,16 +412,16 @@ export default function DashboardLayout({
           <button type="button" className="icon-button dashboard-mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label={`워크스페이스 메뉴 열기${unreadTaskIds?.size ? ", 읽지 않은 새 내용 있음" : ""}`} aria-haspopup="dialog" aria-expanded={menuOpen}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>{(unreadTaskIds?.size ?? 0) > 0 && <span className="dashboard-unread-dot dashboard-menu-unread" aria-hidden="true" />}</button>
           <div className="breadcrumb"><span>워크스페이스</span><Icon name="chevron" size={12} /><strong>{pageLabel}</strong></div>
         </div>
-        <button type="button" className="space-navigation-button dashboard-return-scene" data-direction="up" onClick={onReturnToScene}>
+        <button type="button" className="space-navigation-button dashboard-return-scene" data-direction="up" onClick={onReturnToScene} aria-disabled={demo || undefined}>
           <span>3D 스페이스로 가기</span><Icon name="chevrons" size={20} className="space-navigation-arrows" />
         </button>
         <div className="topbar-actions">
           {connection !== "online" && <span className={`connection-indicator connection-${connection}`} title={API_BASE_URL || "로컬 개발 프록시"} role="status"><span className="status-dot" />{connection === "checking" ? "확인 중" : "연결 확인 필요"}</span>}
           <DashboardTeamPicker teams={teams} selectedTeamId={selectedTeamId} loading={teamsLoading} onSelectTeam={onSelectTeam} unreadByTeam={unreadByTeam} />
-          <button type="button" className="icon-button refresh-button dashboard-refresh" onClick={onRefresh} aria-label="전체 새로고침" title="전체 새로고침" disabled={teamsLoading || workspaceLoading || tasksLoading} aria-busy={teamsLoading || workspaceLoading || tasksLoading}><Icon name="refresh" size={18} /></button>
+          <button type="button" className="icon-button refresh-button dashboard-refresh" onClick={onRefresh} aria-label="전체 새로고침" title="전체 새로고침" aria-disabled={demo || undefined} disabled={teamsLoading || workspaceLoading || tasksLoading} aria-busy={teamsLoading || workspaceLoading || tasksLoading}><Icon name="refresh" size={18} /></button>
         </div>
       </header>
-      <main className="workspace-main">{children}</main>
+      <WorkspaceContent className="workspace-main">{children}</WorkspaceContent>
     </div>
   </div>;
 }

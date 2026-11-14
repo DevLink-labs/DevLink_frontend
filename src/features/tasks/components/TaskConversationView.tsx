@@ -22,6 +22,18 @@ interface TaskConversationViewProps {
   onBack?: () => void
 }
 
+interface TaskConversationPreviewProps {
+  preview: {
+    detail: TaskDetail;
+    history: TaskHistory;
+    enteringEventId?: string;
+    followLatest?: boolean;
+    capture?: boolean;
+    onAccept?: () => void;
+  };
+  onBack?: () => void;
+}
+
 const eventLabels: Record<string, string> = {
   CREATED: '작업 생성',
   STATUS_CHANGED: '상태 변경',
@@ -144,20 +156,22 @@ function InitialTaskRequest({ prompt, fallbackTitle }: { prompt: string; fallbac
   );
 }
 
-function EventMessage({ event, detail, eventsById }: {
+function EventMessage({ event, detail, eventsById, enter = false }: {
   event: TaskEvent
   detail: TaskDetail
   eventsById: Map<string, TaskEvent>
+  enter?: boolean;
 }) {
   const conversation = event.eventType === 'QUESTION' || event.eventType === 'ANSWER'
   const author = event.authorAgent
   const requester = author?.agentId === detail.requesterAgent.agentId
   const receiver = author?.agentId === detail.receiverAgent.agentId
   const question = event.questionEventId ? eventsById.get(event.questionEventId) : undefined
+  const enterClass = enter ? " tc-record-enter" : "";
 
   if (!conversation || !author || (!requester && !receiver)) {
     return (
-      <li className="tc-system-record" data-event-id={event.eventId}>
+      <li className={`tc-system-record${enterClass}`} data-event-id={event.eventId}>
         <span className="tc-system-symbol"><Icon name={event.eventType === 'CREATED' ? 'plus' : 'check'} size={13} /></span>
         <div>
           <div className="tc-system-meta"><strong>{eventLabels[event.eventType] ?? '작업 기록'}</strong><RecordTime value={event.createdAt} utc={conversation} /></div>
@@ -170,7 +184,7 @@ function EventMessage({ event, detail, eventsById }: {
   }
 
   return (
-    <li className={`tc-message-row ${requester ? 'tc-requester' : 'tc-receiver'}`} data-event-id={event.eventId}>
+    <li className={`tc-message-row ${requester ? 'tc-requester' : 'tc-receiver'}${enterClass}`} data-event-id={event.eventId}>
       <span className="tc-agent-avatar" aria-hidden="true"><Icon name="agent" size={18} /></span>
       <div className="tc-message-content">
         <div className="tc-message-meta"><strong>{author.name}</strong></div>
@@ -192,14 +206,14 @@ function EventMessage({ event, detail, eventsById }: {
   )
 }
 
-function TaskResult({ history }: { history: TaskHistory }) {
+function TaskResult({ history, enter = false }: { history: TaskHistory; enter?: boolean }) {
   const failed = history.failureReason !== null
   const rejected = history.rejectionReason !== null
   const text = history.resultText ?? history.failureReason ?? history.rejectionReason
   if (text === null && history.taskFiles.length === 0) return null
 
   return (
-    <section className={`tc-result-card ${failed || rejected ? 'tc-result-attention' : ''}`} aria-label="저장된 작업 결과">
+    <section className={`tc-result-card ${failed || rejected ? 'tc-result-attention' : ''}${enter ? " tc-record-enter" : ""}`} aria-label="저장된 작업 결과">
       <header>
         <span className="tc-result-icon"><Icon name={failed || rejected ? 'shield' : 'check'} size={18} /></span>
         <div><h3>{failed ? "작업 실패" : rejected ? "작업 거절" : history.resultText !== null ? "작업 결과" : "변경 파일"}</h3></div>
@@ -219,6 +233,107 @@ function TaskResult({ history }: { history: TaskHistory }) {
       )}
     </section>
   )
+}
+
+function ConversationHeader({ taskId, detail, onBack, children }: {
+  taskId: number;
+  detail?: TaskDetail;
+  onBack?: () => void;
+  children?: ReactNode;
+}) {
+  const title = detail ? taskTitle(detail) : `작업 #${taskId}`;
+
+  return (
+    <header className="tc-header">
+      <div className="tc-heading">
+        {onBack && <button type="button" className="icon-button tc-back" onClick={onBack} aria-label="작업 목록으로 돌아가기"><Icon name="arrow" size={18} /></button>}
+        <div>
+          <h2 title={title}>{title}</h2>
+          {detail && (
+            <div className="tc-context">
+              <p className="tc-team-name" title={`팀 · ${detail.teamName}`}><Icon name="team" size={13} /><span>팀 · {detail.teamName}</span></p>
+              <div className="tc-participants" aria-label="대화 참여 Agent">
+                <Icon name="agent" size={13} />
+                <span title={detail.requesterAgent.name}>{detail.requesterAgent.name}</span>
+                <span className="tc-participant-divider" aria-hidden="true">·</span>
+                <span title={detail.receiverAgent.name}>{detail.receiverAgent.name}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="tc-header-actions">
+        {detail && <span key={detail.status} className={`dashboard-task-badge dashboard-task-${detail.status.toLowerCase()}`}>{taskStatusLabels[detail.status]}</span>}
+        {children}
+      </div>
+    </header>
+  );
+}
+
+function ConversationTimeline({ detail, history, events, enteringEventId, children }: {
+  detail: TaskDetail;
+  history: TaskHistory;
+  events: TaskEvent[];
+  enteringEventId?: string;
+  children?: ReactNode;
+}) {
+  const eventsById = useMemo(() => new Map(events.map((event) => [event.eventId, event])), [events]);
+
+  return (
+    <div className="tc-timeline">
+      <div className="tc-history-start"><span /> <span>작업 대화 기록</span> <span /></div>
+      <div className="tc-message-row tc-requester tc-initial-request">
+        <span className="tc-agent-avatar" aria-hidden="true"><Icon name="agent" size={18} /></span>
+        <div className="tc-message-content">
+          <div className="tc-message-meta"><strong>{detail.requesterAgent.name}</strong></div>
+          <InitialTaskRequest prompt={history.prompt} fallbackTitle={taskTitle(detail)} />
+          <RecordTime className="tc-message-time" value={detail.createdAt} />
+        </div>
+      </div>
+
+      {children}
+
+      {events.length > 0 ? (
+        <ol className="tc-events">
+          {events.map((event) => (
+            <EventMessage key={event.eventId} event={event} detail={detail} eventsById={eventsById}
+              enter={event.eventId === enteringEventId} />
+          ))}
+        </ol>
+      ) : <div className="tc-no-events"><Icon name="book" size={18} /><p>아직 저장된 대화 기록이 없습니다.</p><span>새로운 기록이 생기면 이곳에서 확인할 수 있습니다.</span></div>}
+
+      <TaskResult history={history} enter={enteringEventId !== undefined} />
+      <div className="tc-latest-marker"><span />현재 불러온 기록의 끝<span /></div>
+    </div>
+  );
+}
+
+function ConversationPreview({ preview, onBack }: TaskConversationPreviewProps) {
+  const { detail, history, enteringEventId, followLatest, capture, onAccept } = preview;
+  const viewport = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const container = viewport.current;
+    if (!container) return;
+    const smooth = followLatest && !capture && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    container.scrollTo({ top: followLatest ? container.scrollHeight : 0, behavior: smooth ? "smooth" : "instant" });
+  }, [history.items.length, followLatest, capture]);
+
+  return (
+    <section className="task-conversation demo-task-conversation" aria-label="작업 대화 기록">
+      <ConversationHeader taskId={detail.taskId} detail={detail} onBack={onBack}>
+        {detail.status === "PENDING" && onAccept && (
+          <button type="button" className="button button-primary button-small" onClick={onAccept}>수락</button>
+        )}
+      </ConversationHeader>
+      <div className="tc-body">
+        <div className="tc-viewport" ref={viewport} tabIndex={0} aria-label="작업 요청과 Agent 대화 기록">
+          <ConversationTimeline detail={detail} history={history} events={history.items}
+            enteringEventId={capture ? undefined : enteringEventId} />
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ConversationContent({ userId, teamId, taskId, autoRefresh, active = true, onRead, onError, onBack }: TaskConversationViewProps) {
@@ -255,7 +370,6 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
   const pages = accessError ? undefined : historyQuery.data?.pages
   const latestHistory = pages?.[0]
   const events = useMemo(() => mergeTaskEvents(pages), [pages])
-  const eventsById = useMemo(() => new Map(events.map((event) => [event.eventId, event])), [events])
   const viewport = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
   const pendingInitialScroll = useRef(true);
@@ -495,34 +609,14 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
 
   return (
     <section className="task-conversation" aria-label="작업 대화 기록">
-      <header className="tc-header">
-        <div className="tc-heading">
-          {onBack && <button type="button" className="icon-button tc-back" onClick={onBack} aria-label="작업 목록으로 돌아가기"><Icon name="arrow" size={18} /></button>}
-          <div>
-            <h2 title={detail ? taskTitle(detail) : `작업 #${taskId}`}>{detail ? taskTitle(detail) : `작업 #${taskId}`}</h2>
-            {detail && (
-              <div className="tc-context">
-                <p className="tc-team-name" title={`팀 · ${detail.teamName}`}><Icon name="team" size={13} /><span>팀 · {detail.teamName}</span></p>
-                <div className="tc-participants" aria-label="대화 참여 Agent">
-                  <Icon name="agent" size={13} />
-                  <span title={detail.requesterAgent.name}>{detail.requesterAgent.name}</span>
-                  <span className="tc-participant-divider" aria-hidden="true">·</span>
-                  <span title={detail.receiverAgent.name}>{detail.receiverAgent.name}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="tc-header-actions">
-          {detail && <span className={`dashboard-task-badge dashboard-task-${detail.status.toLowerCase()}`}>{taskStatusLabels[detail.status]}</span>}
-          {typeof acceptVersion === "number" && !acceptTask.isSuccess && (
-            <button type="button" className="button button-primary button-small" disabled={acceptTask.isPending}
-              onClick={() => acceptTask.mutate(acceptVersion)}>
-              {acceptTask.isPending ? "수락 중…" : "수락"}
-            </button>
-          )}
-        </div>
-      </header>
+      <ConversationHeader taskId={taskId} detail={detail} onBack={onBack}>
+        {typeof acceptVersion === "number" && !acceptTask.isSuccess && (
+          <button type="button" className="button button-primary button-small" disabled={acceptTask.isPending}
+            onClick={() => acceptTask.mutate(acceptVersion)}>
+            {acceptTask.isPending ? "수락 중…" : "수락"}
+          </button>
+        )}
+      </ConversationHeader>
 
       {error && (detail || latestHistory) && <div className="tc-refresh-error" role="alert"><span>{errorMessage(error)}</span><button type="button" onClick={refresh} disabled={refreshing}>다시 시도</button></div>}
       {acceptTask.isError && !accessError && <div className="tc-refresh-error" role="alert">
@@ -555,24 +649,9 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
           )}
 
           {detail && latestHistory && (
-            <div className="tc-timeline">
-              <div className="tc-history-start"><span /> <span>작업 대화 기록</span> <span /></div>
-              <div className="tc-message-row tc-requester tc-initial-request">
-                <span className="tc-agent-avatar" aria-hidden="true"><Icon name="agent" size={18} /></span>
-                <div className="tc-message-content">
-                  <div className="tc-message-meta"><strong>{detail.requesterAgent.name}</strong></div>
-                  <InitialTaskRequest prompt={latestHistory.prompt} fallbackTitle={taskTitle(detail)} />
-                  <RecordTime className="tc-message-time" value={detail.createdAt} />
-                </div>
-              </div>
-
+            <ConversationTimeline detail={detail} history={latestHistory} events={events}>
               {historyQuery.hasNextPage && <div className="tc-earlier"><button type="button" className="button button-secondary button-small" onClick={loadEarlier} disabled={historyQuery.isFetching}><Icon name={historyQuery.isFetchingNextPage ? 'refresh' : 'chevron'} size={14} className={historyQuery.isFetchingNextPage ? 'tc-spinning' : 'tc-earlier-chevron'} />{historyQuery.isFetchingNextPage ? '이전 기록 불러오는 중' : '이전 기록 더 보기'}</button><span>아래에는 불러온 기록만 표시됩니다.</span></div>}
-
-              {events.length > 0 ? <ol className="tc-events">{events.map((event) => <EventMessage key={event.eventId} event={event} detail={detail} eventsById={eventsById} />)}</ol> : <div className="tc-no-events"><Icon name="book" size={18} /><p>아직 저장된 대화 기록이 없습니다.</p><span>새로운 기록이 생기면 이곳에서 확인할 수 있습니다.</span></div>}
-
-              <TaskResult history={latestHistory} />
-              <div className="tc-latest-marker"><span />현재 불러온 기록의 끝<span /></div>
-            </div>
+            </ConversationTimeline>
           )}
         </div>
         {(newEvents > 0 || awayFromLatest) && detail && latestHistory && <button type="button" className="tc-latest-button" onClick={goToLatest}><span aria-live="polite">{newEvents > 0 ? `새 기록 ${newEvents}개 · 최신으로 이동` : '최신 기록으로 이동'}</span><Icon name="arrow" size={14} /></button>}
@@ -581,6 +660,7 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
   )
 }
 
-export default function TaskConversationView(props: TaskConversationViewProps) {
-  return <ConversationContent key={`${props.userId}:${props.teamId}:${props.taskId}`} {...props} />
+export default function TaskConversationView(props: TaskConversationViewProps | TaskConversationPreviewProps) {
+  if ("preview" in props) return <ConversationPreview {...props} />;
+  return <ConversationContent key={`${props.userId}:${props.teamId}:${props.taskId}`} {...props} />;
 }
