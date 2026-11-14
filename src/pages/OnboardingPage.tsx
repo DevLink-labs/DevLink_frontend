@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ export default function OnboardingPage({
   user,
   onFinish,
 }: OnboardingPageProps) {
+  const { t } = useTranslation();
   const id = useId();
   const client = useQueryClient();
   const { logout, loggingOut, onError } = useSession();
@@ -92,7 +94,7 @@ export default function OnboardingPage({
       setError(
         caught instanceof Error
           ? caught.message
-          : "팀을 준비하지 못했습니다. 다시 확인해주세요.",
+          : t("팀을 준비하지 못했습니다. 다시 확인해주세요."),
       );
       onError(caught);
     } finally {
@@ -105,9 +107,9 @@ export default function OnboardingPage({
     if (!issuedCode) return;
     try {
       await copyText(issuedCode);
-      if (active.current) setNotice("초대 코드를 복사했습니다.");
+      if (active.current) setNotice(t("초대 코드를 복사했습니다."));
     } catch {
-      if (active.current) setNotice("코드를 선택해 직접 복사해주세요.");
+      if (active.current) setNotice(t("코드를 선택해 직접 복사해주세요."));
     }
   }
 
@@ -120,13 +122,13 @@ export default function OnboardingPage({
 
   return (
     <main className="onboarding-page">
-      <PageTitle title="DevLink 시작하기" />
+      <PageTitle title={t("DevLink 시작하기")} />
       <header className="onboarding-header">
-        <a className="auth-brand" href="/" aria-label="DevLink 홈">
+        <a className="auth-brand" href="/" aria-label={t("DevLink 홈")}>
           <BrandLogo />
         </a>
         <div className="onboarding-account">
-          <span>{user.nickname || user.name}님</span>
+          <span>{t("{{name}}님", { name: user.nickname || user.name })}</span>
           <button
             className="button button-ghost button-small"
             type="button"
@@ -134,32 +136,23 @@ export default function OnboardingPage({
             onClick={() => {
               void logout();
             }}
-          >
-            로그아웃
-            <Icon name="logout" size={15} />
+          >{t("로그아웃")}<Icon name="logout" size={15} />
           </button>
         </div>
       </header>
 
       <div className="onboarding-layout">
-        <aside className="onboarding-story" aria-label="시작하기 진행 단계">
+        <aside className="onboarding-story" aria-label={t("시작하기 진행 단계")}>
           <div className="onboarding-story-copy">
             <p className="eyebrow">LET’S GET CONNECTED</p>
-            <h1>
-              첫 연결부터,
-              <br />
-              팀과 함께<span className="heading-dot">.</span>
+            <h1>{t("첫 연결부터,")}<br />{t("팀과 함께")}<span className="heading-dot">.</span>
             </h1>
-            <p>
-              작업할 프로젝트와 AI 도구를
-              <br />
-              DevLink에 연결해보세요.
-            </p>
+            <p>{t("작업할 프로젝트와 AI 도구를")}<br />{t("DevLink에 연결해보세요.")}</p>
           </div>
           <ol className="onboarding-steps">
             {steps.map((item, index) => (
               <li
-                key={item.title}
+                key={t(item.title)}
                 className={`${index === step ? "is-current" : ""} ${index < step ? "is-complete" : ""}`}
                 aria-current={index === step ? "step" : undefined}
               >
@@ -171,8 +164,8 @@ export default function OnboardingPage({
                   )}
                 </span>
                 <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.description}</p>
+                  <strong>{t(item.title)}</strong>
+                  <p>{t(item.description)}</p>
                 </div>
               </li>
             ))}
@@ -184,7 +177,7 @@ export default function OnboardingPage({
               width={934}
               height={854}
             />
-            <span>사람과 Agent가 함께하는 작업 공간</span>
+            <span>{t("사람과 Agent가 함께하는 작업 공간")}</span>
           </div>
         </aside>
 
@@ -195,25 +188,24 @@ export default function OnboardingPage({
             </span>
             <h2 id={`${id}-heading`}>
               {connected
-                ? "첫 연결을 완료했어요"
+                ? t("첫 연결을 완료했어요")
                 : selectedTeam
-                  ? "프로젝트를 연결해볼까요?"
-                  : "함께할 팀을 준비하세요"}
+                  ? t("프로젝트를 연결해볼까요?")
+                  : t("함께할 팀을 준비하세요")}
             </h2>
             <p>
               {connected
-                ? "연결한 프로젝트를 확인하고 작업 공간으로 이동하세요."
+                ? t("연결한 프로젝트를 확인하고 작업 공간으로 이동하세요.")
                 : selectedTeam
-                  ? "폴더를 선택하면 이 PC에 설치된 AI 도구를 확인합니다."
-                  : "새 팀을 만들거나, 동료에게 받은 초대 코드로 참여하세요."}
+                  ? t("폴더를 선택하면 이 PC에 설치된 AI 도구를 확인합니다.")
+                  : t("새 팀을 만들거나, 동료에게 받은 초대 코드로 참여하세요.")}
             </p>
           </div>
 
           {!selectedTeam ? (
             <div className="onboarding-team-content">
               {teamsQuery.isError && (
-                <div className="inline-error" role="alert">
-                  팀 목록을 불러오지 못했습니다.{" "}
+                <div className="inline-error" role="alert">{t("팀 목록을 불러오지 못했습니다.")}{" "}
                   <button
                     className="text-button"
                     type="button"
@@ -221,19 +213,15 @@ export default function OnboardingPage({
                       void teamsQuery.refetch();
                     }}
                     disabled={teamsQuery.isFetching}
-                  >
-                    다시 확인
-                  </button>
+                  >{t("다시 확인")}</button>
                 </div>
               )}
               {teamsQuery.isPending && (
-                <p className="loading-copy" role="status">
-                  참여 중인 팀을 확인하고 있어요.
-                </p>
+                <p className="loading-copy" role="status">{t("참여 중인 팀을 확인하고 있어요.")}</p>
               )}
               {teams.length > 0 && mode === "choose" && (
                 <div className="onboarding-existing-teams">
-                  <p className="onboarding-label">참여 중인 팀에서 시작하기</p>
+                  <p className="onboarding-label">{t("참여 중인 팀에서 시작하기")}</p>
                   {teams.map((team) => (
                     <button
                       className="onboarding-team-option"
@@ -252,8 +240,8 @@ export default function OnboardingPage({
                         <strong>{team.name}</strong>
                         <small>
                           {team.myRole === "OWNER"
-                            ? "내가 만든 팀"
-                            : "참여 중인 팀"}
+                            ? t("내가 만든 팀")
+                            : t("참여 중인 팀")}
                         </small>
                       </span>
                       <Icon name="arrow" size={18} />
@@ -263,7 +251,7 @@ export default function OnboardingPage({
               )}
               <div
                 className="onboarding-team-choices"
-                aria-label="팀 준비 방법"
+                aria-label={t("팀 준비 방법")}
               >
                 <button
                   className={`onboarding-choice ${mode === "create" ? "is-selected" : ""}`}
@@ -275,8 +263,8 @@ export default function OnboardingPage({
                   <span className="onboarding-option-icon">
                     <Icon name="plus" size={22} />
                   </span>
-                  <strong>새 팀 만들기</strong>
-                  <span>새로운 작업 공간을 만들어요.</span>
+                  <strong>{t("새 팀 만들기")}</strong>
+                  <span>{t("새로운 작업 공간을 만들어요.")}</span>
                 </button>
                 <button
                   className={`onboarding-choice ${mode === "join" ? "is-selected" : ""}`}
@@ -288,8 +276,8 @@ export default function OnboardingPage({
                   <span className="onboarding-option-icon">
                     <Icon name="key" size={22} />
                   </span>
-                  <strong>초대 코드로 참여</strong>
-                  <span>동료의 작업 공간에 합류해요.</span>
+                  <strong>{t("초대 코드로 참여")}</strong>
+                  <span>{t("동료의 작업 공간에 합류해요.")}</span>
                 </button>
               </div>
               {mode !== "choose" && (
@@ -301,7 +289,7 @@ export default function OnboardingPage({
                 >
                   <div className="field">
                     <label htmlFor={`${id}-team-input`}>
-                      {mode === "create" ? "팀 이름" : "초대 코드"}
+                      {mode === "create" ? t("팀 이름") : t("초대 코드")}
                     </label>
                     {mode === "create" ? (
                       <input
@@ -310,7 +298,7 @@ export default function OnboardingPage({
                         name="teamName"
                         value={teamName}
                         onChange={(event) => setTeamName(event.target.value)}
-                        placeholder="예: DevLink 개발팀"
+                        placeholder={t("예: DevLink 개발팀")}
                         maxLength={120}
                         required
                         disabled={busy}
@@ -323,7 +311,7 @@ export default function OnboardingPage({
                         name="inviteCode"
                         value={inviteCode}
                         onChange={(event) => setInviteCode(event.target.value)}
-                        placeholder="동료에게 받은 초대 코드"
+                        placeholder={t("동료에게 받은 초대 코드")}
                         maxLength={64}
                         required
                         disabled={busy}
@@ -345,9 +333,7 @@ export default function OnboardingPage({
                       type="button"
                       onClick={() => changeMode("choose")}
                       disabled={busy}
-                    >
-                      돌아가기
-                    </button>
+                    >{t("돌아가기")}</button>
                     <button
                       className="button button-primary"
                       type="submit"
@@ -357,10 +343,10 @@ export default function OnboardingPage({
                       }
                     >
                       {submitting
-                        ? "팀을 준비하고 있어요…"
+                        ? t("팀을 준비하고 있어요…")
                         : mode === "create"
-                          ? "팀 만들고 계속"
-                          : "참여하고 계속"}
+                          ? t("팀 만들고 계속")
+                          : t("참여하고 계속")}
                       <Icon name="arrow" size={16} />
                     </button>
                   </div>
@@ -375,7 +361,7 @@ export default function OnboardingPage({
                     <Icon name="team" size={21} />
                   </span>
                   <div>
-                    <small>현재 연결할 팀</small>
+                    <small>{t("현재 연결할 팀")}</small>
                     <strong>{selectedTeam.name}</strong>
                   </div>
                   <button
@@ -386,9 +372,7 @@ export default function OnboardingPage({
                       setSelectedTeam(null);
                       setNotice("");
                     }}
-                  >
-                    변경
-                  </button>
+                  >{t("변경")}</button>
                 </div>
               )}
               {desktop?.setup && desktop.getStatus ? (
@@ -416,34 +400,27 @@ export default function OnboardingPage({
                   <span className="onboarding-option-icon">
                     <Icon name="agent" size={24} />
                   </span>
-                  <h3>프로젝트 연결은 데스크톱 앱에서</h3>
-                  <p>
-                    데스크톱 앱에서 같은 계정으로 로그인하면 프로젝트 폴더와 AI
-                    도구를 연결할 수 있어요.
-                  </p>
-                  <p className="field-hint">
-                    먼저 대시보드에서 팀을 둘러봐도 좋아요.
-                  </p>
+                  <h3>{t("프로젝트 연결은 데스크톱 앱에서")}</h3>
+                  <p>{t("데스크톱 앱에서 같은 계정으로 로그인하면 프로젝트 폴더와 AI 도구를 연결할 수 있어요.")}</p>
+                  <p className="field-hint">{t("먼저 대시보드에서 팀을 둘러봐도 좋아요.")}</p>
                   <button
                     className="button button-primary"
                     type="button"
                     onClick={() => onFinish("skipped", selectedTeam.teamId)}
-                  >
-                    대시보드 먼저 보기
-                    <Icon name="arrow" size={16} />
+                  >{t("대시보드 먼저 보기")}<Icon name="arrow" size={16} />
                   </button>
                 </div>
               )}
               {issuedCode && (
                 <details className="onboarding-invite">
-                  <summary>동료를 초대할 코드가 필요해요</summary>
+                  <summary>{t("동료를 초대할 코드가 필요해요")}</summary>
                   <div className="onboarding-invite-content">
                     <label className="field">
-                      <span>팀 초대 코드</span>
+                      <span>{t("팀 초대 코드")}</span>
                       <input
                         value={issuedCode}
                         readOnly
-                        aria-label="팀 초대 코드"
+                        aria-label={t("팀 초대 코드")}
                         onFocus={(event) => event.currentTarget.select()}
                       />
                     </label>
@@ -455,9 +432,7 @@ export default function OnboardingPage({
                         void copyInvite();
                       }}
                     >
-                      <Icon name="copy" size={15} />
-                      복사
-                    </button>
+                      <Icon name="copy" size={15} />{t("복사")}</button>
                   </div>
                   {notice && (
                     <p className="field-hint" role="status">
@@ -471,15 +446,13 @@ export default function OnboardingPage({
 
           {!connected && (
             <footer className="onboarding-skip">
-              <p>연결은 대시보드에서도 시작할 수 있어요.</p>
+              <p>{t("연결은 대시보드에서도 시작할 수 있어요.")}</p>
               <button
                 className="text-button"
                 type="button"
                 disabled={busy}
                 onClick={() => onFinish("skipped", selectedTeam?.teamId)}
-              >
-                나중에 설정
-                <Icon name="chevron" size={15} />
+              >{t("나중에 설정")}<Icon name="chevron" size={15} />
               </button>
             </footer>
           )}
@@ -487,7 +460,7 @@ export default function OnboardingPage({
       </div>
       <footer className="onboarding-footer">
         <span className="onboarding-footer-brand"><BrandLogo variant="wordmark" /><span>Workspace</span></span>
-        <span>팀과 Agent를 잇는 첫걸음</span>
+        <span>{t("팀과 Agent를 잇는 첫걸음")}</span>
       </footer>
     </main>
   );

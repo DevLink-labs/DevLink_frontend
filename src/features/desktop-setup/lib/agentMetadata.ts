@@ -1,4 +1,10 @@
-import type { SetupAgentMetadata } from "../api/desktopApi";
+import { t as translate } from "@/lib/i18n";
+import type { SetupAgentMetadata, SetupTool } from "../api/desktopApi";
+
+export const setupToolNames: Record<SetupTool, string> = {
+  codex: "Codex",
+  "claude-code": "Claude Code",
+};
 
 export const agentParts = [
   { value: "FRONTEND", label: "프론트엔드" },
@@ -24,18 +30,18 @@ export function createSetupAgentMetadata(
   const metadata: SetupAgentMetadata = {};
   if (part) {
     const selected = agentParts.find((option) => option.value === part);
-    if (!selected) throw new Error("담당 파트를 다시 선택해주세요.");
+    if (!selected) throw new Error(translate("담당 파트를 다시 선택해주세요."));
     metadata.part = selected.value;
   }
   if (!rolesText.trim()) return metadata;
 
   const roles = rolesText.split(",");
-  if (roles.length > 10) throw new Error("역할 태그는 최대 10개까지 입력해주세요.");
+  if (roles.length > 10) throw new Error(translate("역할 태그는 최대 10개까지 입력해주세요."));
   if (roles.some((role) => role.length > 64)) {
-    throw new Error("각 역할 태그는 64자 이내로 입력해주세요. 이모지는 2자로 계산해요.");
+    throw new Error(translate("각 역할 태그는 64자 이내로 입력해주세요. 이모지는 2자로 계산해요."));
   }
   if (roles.some((role) => Array.from(role).every((character) => blankCharacters.includes(character)))) {
-    throw new Error("쉼표 사이에 비어 있는 역할 태그가 있어요. 태그를 입력하거나 쉼표를 지워주세요.");
+    throw new Error(translate("쉼표 사이에 비어 있는 역할 태그가 있어요. 태그를 입력하거나 쉼표를 지워주세요."));
   }
   metadata.roles = [...new Set(roles.map(trimTag))];
   return metadata;

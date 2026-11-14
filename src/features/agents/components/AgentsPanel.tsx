@@ -1,3 +1,4 @@
+import { getLocale, useTranslation } from "@/lib/i18n";
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { Agent, CreateAgentInput } from "../types";
@@ -5,12 +6,13 @@ import type { Team, TeamMember } from "@/features/teams/types";
 import { useAgent, useAgentMutations } from "../hooks/useAgents";
 import { agentApi } from "../api/agentApi";
 import { copyText, formatDate } from "@/utils";
-import { EmptyState, Icon, Modal } from "@/components/ui";
+import { Icon, Modal } from "@/components/ui";
 import chatgptLogo from "@/assets/image/agent-logo/chatgpt.svg";
 import claudeLogo from "@/assets/image/agent-logo/claude.svg";
 import { getDesktopApi } from "@/features/desktop-setup/api/desktopApi";
 import ProjectConnectView from "@/features/desktop-setup/components/ProjectConnectView";
-import "@/styles/workspace-management.css";
+import AgentListView from "./AgentListView";
+import { agentToolName } from "../lib/agentToolName";
 
 interface AgentsPanelProps {
   team: Team;
@@ -44,10 +46,6 @@ function errorMessage(error: unknown): string {
     : "요청을 처리하지 못했습니다. 잠시 후 다시 확인해주세요.";
 }
 
-function toolName(toolType: Agent["toolType"]): string {
-  return toolType === "CODEX" ? "Codex" : "Claude Code";
-}
-
 const onlineCheckInterval = 2_000;
 const onlineCheckTimeout = 90_000;
 
@@ -62,13 +60,12 @@ export default function AgentsPanel({
   onError,
   onNotice,
 }: AgentsPanelProps) {
+  const { t, i18n } = useTranslation();
   const fieldId = useId();
   const desktop = getDesktopApi();
   const active = useRef(true);
   const connecting = useRef<AbortController | null>(null);
   const mutations = useAgentMutations(currentUserId, team.teamId);
-  const [search, setSearch] = useState("");
-  const [connection, setConnection] = useState<Agent["status"] | "all">("all");
   const [pcReady, setPcReady] = useState<boolean | null>(null);
   const [connectingAgentId, setConnectingAgentId] = useState<number | null>(null);
   const [formTarget, setFormTarget] = useState<Agent | "register" | null>(null);
@@ -86,8 +83,8 @@ export default function AgentsPanel({
           ? { ...detailQuery.data, status: listedDetailAgent.status, lastSeenAt: listedDetailAgent.lastSeenAt }
           : null,
         loading: !!listedDetailAgent && detailQuery.isFetching && detailQuery.data === undefined,
-        error: detailQuery.error ? errorMessage(detailQuery.error)
-          : listedDetailAgent ? null : "현재 팀의 Agent 목록에서 찾을 수 없습니다.",
+        error: detailQuery.error ? t(errorMessage(detailQuery.error))
+          : listedDetailAgent ? null : t("현재 팀의 Agent 목록에서 찾을 수 없습니다."),
       };
   const [tokenAgent, setTokenAgent] = useState<Agent | null>(null);
   const [issuedToken, setIssuedToken] = useState<string | null>(null);
@@ -110,24 +107,15 @@ export default function AgentsPanel({
     if (detailAgentId !== null && detailQuery.error) onError(detailQuery.error);
   }, [detailAgentId, detailQuery.error, onError]);
 
-  const query = search.trim().toLocaleLowerCase();
   const editingAgent = formTarget === "register" ? null : formTarget;
   const formChanged =
     !editingAgent ||
     form.name !== editingAgent.name ||
     form.projectName !== editingAgent.projectName ||
     form.roleDescription !== (editingAgent.roleDescription ?? "");
-  const teamAgents = agents.filter((agent) => agent.teamId === team.teamId);
-  const visibleAgents = teamAgents.filter((agent) =>
-    (connection === "all" || agent.status === connection)
-    && [agent.name, agent.projectName, agent.roleDescription ?? ""].some((value) =>
-      value.toLocaleLowerCase().includes(query),
-    ),
-  );
-
   function ownerName(agent: Agent): string {
     const owner = members.find((member) => member.userId === agent.ownerUserId);
-    return owner?.nickname || owner?.name || `사용자 #${agent.ownerUserId}`;
+    return owner?.nickname || owner?.name || t("사용자 #{{value0}}", { value0: agent.ownerUserId });
   }
 
   async function connectAgent(agent: Agent) {
@@ -146,13 +134,13 @@ export default function AgentsPanel({
         if (controller.signal.aborted) return;
         if (latest.status === "ONLINE") {
           onRefresh();
-          onNotice(`${agent.name} Agent가 온라인으로 연결됐습니다.`);
+          onNotice(t("{{value0}} Agent가 온라인으로 연결됐습니다.", { value0: agent.name }));
           return;
         }
         await new Promise<void>((resolve) => window.setTimeout(resolve, onlineCheckInterval));
       }
       if (!controller.signal.aborted) {
-        onError(new Error("온라인 연결을 아직 확인하지 못했습니다. 열린 Codex 터미널의 승인 요청과 연결 결과를 확인해주세요."));
+        onError(new Error(t("온라인 연결을 아직 확인하지 못했습니다. 열린 Codex 터미널의 승인 요청과 연결 결과를 확인해주세요.")));
       }
     } catch (error) {
       if (!controller.signal.aborted) onError(error);
@@ -197,7 +185,7 @@ export default function AgentsPanel({
     const projectName = form.projectName.trim();
     const roleDescription = form.roleDescription.trim();
     if (!name || !projectName) {
-      setFormError("Agent 이름과 프로젝트명을 입력해주세요.");
+      setFormError(t("Agent 이름과 프로젝트명을 입력해주세요."));
       return;
     }
     setFormError(null);
@@ -224,10 +212,10 @@ export default function AgentsPanel({
       if (!active.current) return;
       setFormTarget(null);
       setForm(emptyForm);
-      onNotice(editingAgent ? "Agent 정보를 수정했습니다." : "내 Agent를 팀에 등록했습니다.");
+      onNotice(editingAgent ? t("Agent 정보를 수정했습니다.") : t("내 Agent를 팀에 등록했습니다."));
     } catch (error) {
       if (!active.current) return;
-      setFormError(errorMessage(error));
+      setFormError(t(errorMessage(error)));
       onError(error);
     }
   }
@@ -263,14 +251,14 @@ export default function AgentsPanel({
       const result = await mutations.issueAgentToken.mutateAsync(agentId);
       if (!active.current) return;
       if (result.agentId !== agentId || !result.token) {
-        throw new Error("토큰 응답을 확인하지 못했습니다. Agent 정보를 새로고침해주세요.");
+        throw new Error(t("토큰 응답을 확인하지 못했습니다. Agent 정보를 새로고침해주세요."));
       }
       setIssuedToken(result.token);
       setTokenVisible(false);
-      onNotice("Agent 연결 토큰을 발급했습니다.");
+      onNotice(t("Agent 연결 토큰을 발급했습니다."));
     } catch (error) {
       if (!active.current) return;
-      setTokenError(errorMessage(error));
+      setTokenError(t(errorMessage(error)));
       onError(error);
     } finally {
       mutations.issueAgentToken.reset();
@@ -302,10 +290,10 @@ export default function AgentsPanel({
         setTokenError(null);
       }
       setDeleteTarget(null);
-      onNotice("Agent를 삭제했습니다.");
+      onNotice(t("Agent를 삭제했습니다."));
     } catch (error) {
       if (!active.current) return;
-      setDeleteError(errorMessage(error));
+      setDeleteError(t(errorMessage(error)));
       onError(error);
     }
   }
@@ -314,219 +302,57 @@ export default function AgentsPanel({
     if (!issuedToken) return;
     try {
       await copyText(issuedToken);
-      if (active.current) onNotice("연결 토큰을 복사했습니다.");
+      if (active.current) onNotice(t("연결 토큰을 복사했습니다."));
     } catch {
       if (active.current)
-        setTokenError("자동 복사를 사용할 수 없습니다. 토큰을 표시한 뒤 직접 선택해 복사해주세요.");
+        setTokenError(t("자동 복사를 사용할 수 없습니다. 토큰을 표시한 뒤 직접 선택해 복사해주세요."));
     }
   }
 
   return (
-    <section className="panel agents-panel" aria-labelledby={`${fieldId}-heading`}>
-      <div className="panel-heading">
-        <div className="management-heading">
-          <div className="management-title-row">
-            <h2 className="section-title" id={`${fieldId}-heading`}>Agent 목록</h2>
-            <span className="management-count">{loading ? "—" : teamAgents.length}</span>
-            {pcReady !== null && (
-              <span className={`badge ${pcReady ? "badge-online" : "badge-offline"}`} role="status">
-                PC : {pcReady ? "연결" : "미연결"}
-              </span>
-            )}
-          </div>
-          <p className="management-description">{team.name}의 Agent와 프로젝트 연결 현황</p>
-        </div>
-        <div className="section-actions management-actions">
-          {desktop?.setup && desktop.getStatus ? (
-            <ProjectConnectView
-              key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
-              setup={desktop.setup}
-              getStatus={desktop.getStatus}
-              account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}
-              teamName={team.name}
-              onRefreshAgents={onRefresh}
-              onReadyChange={setPcReady}
-            />
-          ) : (
-            <button
-              className="button button-primary"
-              type="button"
-              onClick={openRegister}
-              disabled={loading}
-            >
-              <Icon name="plus" size={18} /> Agent 등록
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="agents-toolbar">
-        <div className="management-filters" aria-label="Agent 연결 상태 필터">
-          {(["all", "ONLINE", "OFFLINE"] as const).map((value) => (
-            <button key={value} type="button" aria-pressed={connection === value} onClick={() => setConnection(value)}>
-              {value === "all" ? "전체" : value === "ONLINE" ? "온라인" : "오프라인"}
-              <span>{loading ? "—" : value === "all" ? teamAgents.length : teamAgents.filter((agent) => agent.status === value).length}</span>
-            </button>
-          ))}
-        </div>
-        <label className="search-field" htmlFor={`${fieldId}-search`}>
-          <span className="sr-only">Agent, 프로젝트, 역할 검색</span>
-          <input
-            id={`${fieldId}-search`}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Agent, 프로젝트, 역할 검색"
-            type="search"
+    <AgentListView
+      team={team}
+      agents={agents}
+      currentUserId={currentUserId}
+      loading={loading}
+      pcReady={pcReady}
+      connectingAgentId={connectingAgentId}
+      ownerName={ownerName}
+      onShowDetail={showDetail}
+      onConnect={desktop?.setup?.connectAgent ? connectAgent : undefined}
+      onEdit={openEdit}
+      onToken={openToken}
+      onDelete={openDelete}
+      deleting={deleting}
+      headingActions={desktop?.setup && desktop.getStatus ? (
+          <ProjectConnectView
+            key={`${currentUserId}:${team.teamId}:${currentUserEmail}`}
+            setup={desktop.setup}
+            getStatus={desktop.getStatus}
+            account={{ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }}
+            teamName={team.name}
+            onRefreshAgents={onRefresh}
+            onReadyChange={setPcReady}
           />
-        </label>
-      </div>
-
-      {loading && (
-        <p className="loading-copy" role="status">
-          Agent 목록을 불러오고 있습니다.
-        </p>
-      )}
-      {!loading && teamAgents.length === 0 ? (
-        <EmptyState
-          icon={<Icon name="agent" size={28} />}
-          title="등록된 Agent 없음"
-          description="이 팀에서 사용할 내 Agent와 담당 프로젝트를 등록할 수 있습니다."
-        />
-      ) : (
-        teamAgents.length > 0 && (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Agent</th>
-                  <th scope="col">프로젝트</th>
-                  <th scope="col">도구</th>
-                  <th scope="col">소유자</th>
-                  <th scope="col">연결 상태</th>
-                  <th scope="col">관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleAgents.map((agent) => (
-                  <tr key={agent.agentId}>
-                    <td>
-                      <div className="agent-cell">
-                        <span className="agent-icon">
-                          <img src={agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt={toolName(agent.toolType)} width={22} height={22} />
-                        </span>
-                        <div>
-                          <button
-                            className="agent-name-button"
-                            type="button"
-                            onClick={() => showDetail(agent.agentId)}
-                          >
-                            {agent.name}
-                          </button>
-                          <div className="agent-meta">{agent.roleDescription || "역할 미등록"}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{agent.projectName}</td>
-                    <td>
-                      <span className="management-tool-name">{toolName(agent.toolType)}</span>
-                    </td>
-                    <td>
-                      {ownerName(agent)}
-                      {agent.ownerUserId === currentUserId && (
-                        <span className="self-label">나</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="status-cell">
-                        <span
-                          className={`badge ${agent.status === "ONLINE" ? "badge-online" : "badge-offline"}`}
-                          aria-live={connectingAgentId === agent.agentId ? "polite" : undefined}
-                        >
-                          {agent.status === "ONLINE" ? "온라인" : connectingAgentId === agent.agentId ? "연결 중" : "오프라인"}
-                        </span>
-                        <div className="status-detail">
-                          {agent.lastSeenAt ? formatDate(agent.lastSeenAt) : "접속 기록 없음"}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {agent.ownerUserId === currentUserId ? (
-                        <div className="section-actions">
-                          {desktop?.setup?.connectAgent && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (
-                            <button
-                              className="button button-secondary button-small"
-                              type="button"
-                              onClick={() => void connectAgent(agent)}
-                              disabled={connectingAgentId !== null || deleting}
-                              aria-label={`${agent.name} 이 PC에서 연결`}
-                            >
-                              {connectingAgentId === agent.agentId ? "연결 중…" : "이 PC에서 연결"}
-                            </button>
-                          )}
-                          <button
-                            className="button button-secondary button-small"
-                            type="button"
-                            onClick={() => openEdit(agent)}
-                            disabled={deleting}
-                            aria-label={`${agent.name} 수정`}
-                          >
-                            수정
-                          </button>
-                          <button
-                            className="button button-secondary button-small"
-                            type="button"
-                            onClick={() => openToken(agent)}
-                            disabled={deleting}
-                          >
-                            <Icon name="key" size={15} /> 연결 토큰
-                          </button>
-                          <button
-                            className="button button-danger button-small"
-                            type="button"
-                            onClick={() => openDelete(agent)}
-                            disabled={deleting}
-                            aria-label={`${agent.name} 삭제`}
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {visibleAgents.length === 0 && (
-                  <tr>
-                    <td className="empty-table-cell" colSpan={6}>
-                      조건에 맞는 Agent가 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-      <p className="field-hint agents-footnote">
-        {!loading && <span className="management-result-count">{visibleAgents.length}개 표시</span>}
-        등록 직후에는 오프라인으로 표시됩니다. 실제 접속 상태는 로컬 연결이 보고된 뒤 반영됩니다.
-      </p>
-
+        ) : (
+          <button
+            className="button button-primary"
+            type="button"
+            onClick={openRegister}
+            disabled={loading}
+          >
+            <Icon name="plus" size={18} />{" "}{t("Agent 등록")}</button>
+        )}
+    >
       {deleteTarget && (
         <Modal
-          title="Agent 삭제"
+          title={t("Agent 삭제")}
           description={`${deleteTarget.name} · ${deleteTarget.projectName}`}
           busy={deleting}
           onClose={closeDelete}
         >
-          <p>
-            이 Agent를 삭제할까요? 삭제하면 기존 연결 토큰을 사용할 수 없고 브로커 연결이
-            종료됩니다.
-          </p>
-          <p className="field-hint">
-            작업을 요청하거나 받은 이력이 있는 Agent는 삭제할 수 없습니다.
-          </p>
+          <p>{t("이 Agent를 삭제할까요? 삭제하면 기존 연결 토큰을 사용할 수 없고 브로커 연결이 종료됩니다.")}</p>
+          <p className="field-hint">{t("작업을 요청하거나 받은 이력이 있는 Agent는 삭제할 수 없습니다.")}</p>
           {deleteError && (
             <p className="inline-error" role="alert">
               {deleteError}
@@ -538,9 +364,7 @@ export default function AgentsPanel({
               type="button"
               disabled={deleting}
               onClick={closeDelete}
-            >
-              취소
-            </button>
+            >{t("취소")}</button>
             <button
               className="button button-danger"
               type="button"
@@ -549,7 +373,7 @@ export default function AgentsPanel({
                 void deleteAgent();
               }}
             >
-              {deleting ? "삭제 중…" : "Agent 삭제"}
+              {deleting ? t("삭제 중…") : t("Agent 삭제")}
             </button>
           </div>
         </Modal>
@@ -557,11 +381,11 @@ export default function AgentsPanel({
 
       {formTarget && (
         <Modal
-          title={editingAgent ? "Agent 정보 수정" : "내 Agent 등록"}
+          title={editingAgent ? t("Agent 정보 수정") : t("내 Agent 등록")}
           description={
             editingAgent
-              ? `${editingAgent.name}의 정보를 수정합니다.`
-              : `${team.name} 팀에 등록할 Agent 정보를 입력해주세요.`
+              ? t("{{value0}}의 정보를 수정합니다.", { value0: editingAgent.name })
+              : t("{{value0}} 팀에 등록할 Agent 정보를 입력해주세요.", { value0: team.name })
           }
           busy={saving}
           onClose={closeForm}
@@ -573,8 +397,7 @@ export default function AgentsPanel({
             }}
           >
             <div className="field">
-              <label htmlFor={`${fieldId}-name`}>
-                Agent 이름 <span className="required-mark">*</span>
+              <label htmlFor={`${fieldId}-name`}>{t("Agent 이름")}{" "}<span className="required-mark">*</span>
               </label>
               <input
                 id={`${fieldId}-name`}
@@ -583,14 +406,14 @@ export default function AgentsPanel({
                 required
                 autoFocus
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
-                placeholder="예: 프론트엔드 Agent"
+                placeholder={t("예: 프론트엔드 Agent")}
                 disabled={saving}
               />
             </div>
             <div className={editingAgent ? undefined : "form-row"}>
               <div className="field">
                 <label htmlFor={`${fieldId}-project`}>
-                  {editingAgent ? "프로젝트 표시명" : "프로젝트명"}{" "}
+                  {editingAgent ? t("프로젝트 표시명") : t("프로젝트명")}{" "}
                   <span className="required-mark">*</span>
                 </label>
                 <input
@@ -599,13 +422,13 @@ export default function AgentsPanel({
                   maxLength={120}
                   required
                   onChange={(event) => setForm({ ...form, projectName: event.target.value })}
-                  placeholder="예: DevLink Web"
+                  placeholder={t("예: DevLink Web")}
                   disabled={saving}
                 />
               </div>
               {!editingAgent && (
                 <div className="field">
-                  <label htmlFor={`${fieldId}-tool`}>사용 도구</label>
+                  <label htmlFor={`${fieldId}-tool`}>{t("사용 도구")}</label>
                   <select
                     id={`${fieldId}-tool`}
                     value={form.toolType}
@@ -621,8 +444,7 @@ export default function AgentsPanel({
               )}
             </div>
             <div className="field">
-              <label htmlFor={`${fieldId}-role`}>
-                담당 역할 <span className="muted">선택</span>
+              <label htmlFor={`${fieldId}-role`}>{t("담당 역할")}{" "}<span className="muted">{t("선택", { context: "optional" })}</span>
               </label>
               <textarea
                 id={`${fieldId}-role`}
@@ -630,10 +452,10 @@ export default function AgentsPanel({
                 maxLength={255}
                 rows={3}
                 onChange={(event) => setForm({ ...form, roleDescription: event.target.value })}
-                placeholder="예: 화면 구성과 사용자 인증 연동을 담당합니다."
+                placeholder={t("예: 화면 구성과 사용자 인증 연동을 담당합니다.")}
                 disabled={saving}
               />
-              <span className="field-hint">{form.roleDescription.length}/255자</span>
+              <span className="field-hint">{form.roleDescription.length}{t("/255자")}</span>
             </div>
             {formError && (
               <p className="inline-error" role="alert">
@@ -646,9 +468,7 @@ export default function AgentsPanel({
                 type="button"
                 disabled={saving}
                 onClick={closeForm}
-              >
-                취소
-              </button>
+              >{t("취소")}</button>
               <button
                 className="button button-primary"
                 type="submit"
@@ -656,11 +476,11 @@ export default function AgentsPanel({
               >
                 {editingAgent
                   ? saving
-                    ? "저장 중…"
-                    : "변경 사항 저장"
+                    ? t("저장 중…")
+                    : t("변경 사항 저장")
                   : saving
-                    ? "등록 중…"
-                    : "Agent 등록"}
+                    ? t("등록 중…")
+                    : t("Agent 등록")}
               </button>
             </div>
           </form>
@@ -668,11 +488,9 @@ export default function AgentsPanel({
       )}
 
       {detail && (
-        <Modal title="Agent 상세 정보" onClose={closeDetail}>
+        <Modal title={t("Agent 상세 정보")} onClose={closeDetail}>
           {detail.loading && (
-            <p className="loading-copy" role="status">
-              상세 정보를 불러오고 있습니다.
-            </p>
+            <p className="loading-copy" role="status">{t("상세 정보를 불러오고 있습니다.")}</p>
           )}
           {detail.error && (
             <p className="inline-error" role="alert">
@@ -682,7 +500,7 @@ export default function AgentsPanel({
           {detail.agent && (
             <dl className="detail-grid">
               <div className="detail-item">
-                <dt>Agent 이름</dt>
+                <dt>{t("Agent 이름")}</dt>
                 <dd>{detail.agent.name}</dd>
               </div>
               <div className="detail-item">
@@ -690,60 +508,55 @@ export default function AgentsPanel({
                 <dd>#{detail.agent.agentId}</dd>
               </div>
               <div className="detail-item">
-                <dt>프로젝트</dt>
+                <dt>{t("프로젝트")}</dt>
                 <dd>{detail.agent.projectName}</dd>
               </div>
               <div className="detail-item">
-                <dt>도구</dt>
-                <dd className="management-tool-detail"><img src={detail.agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt="" width={18} height={18} />{toolName(detail.agent.toolType)}</dd>
+                <dt>{t("도구")}</dt>
+                <dd className="management-tool-detail"><img src={detail.agent.toolType === "CODEX" ? chatgptLogo : claudeLogo} alt="" width={18} height={18} />{agentToolName(detail.agent.toolType)}</dd>
               </div>
               <div className="detail-item">
-                <dt>소유자</dt>
+                <dt>{t("소유자")}</dt>
                 <dd>{ownerName(detail.agent)}</dd>
               </div>
               <div className="detail-item">
-                <dt>연결 상태</dt>
-                <dd>{detail.agent.status === "ONLINE" ? "온라인" : "오프라인"}</dd>
+                <dt>{t("연결 상태")}</dt>
+                <dd>{detail.agent.status === "ONLINE" ? t("온라인") : t("오프라인")}</dd>
               </div>
               <div className="detail-item">
-                <dt>등록일</dt>
-                <dd>{formatDate(detail.agent.createdAt)}</dd>
+                <dt>{t("등록일")}</dt>
+                <dd>{formatDate(detail.agent.createdAt, getLocale(i18n.language))}</dd>
               </div>
               <div className="detail-item">
-                <dt>마지막 접속</dt>
+                <dt>{t("마지막 접속")}</dt>
                 <dd>
-                  {detail.agent.lastSeenAt ? formatDate(detail.agent.lastSeenAt) : "접속 기록 없음"}
+                  {detail.agent.lastSeenAt ? formatDate(detail.agent.lastSeenAt, getLocale(i18n.language)) : t("접속 기록 없음")}
                 </dd>
               </div>
               <div className="detail-item detail-item-full">
-                <dt>담당 역할</dt>
-                <dd>{detail.agent.roleDescription || "역할 미등록"}</dd>
+                <dt>{t("담당 역할")}</dt>
+                <dd>{detail.agent.roleDescription || t("역할 미등록")}</dd>
               </div>
             </dl>
           )}
           <div className="modal-footer">
-            <button className="button button-secondary" type="button" onClick={closeDetail}>
-              닫기
-            </button>
+            <button className="button button-secondary" type="button" onClick={closeDetail}>{t("닫기")}</button>
           </div>
         </Modal>
       )}
 
       {tokenAgent && (
         <Modal
-          title={issuedToken ? "연결 토큰 발급 완료" : "Agent 연결 토큰"}
+          title={issuedToken ? t("연결 토큰 발급 완료") : t("Agent 연결 토큰")}
           description={`${tokenAgent.name} · ${tokenAgent.projectName}`}
           busy={issuing}
           onClose={closeToken}
         >
           {issuedToken ? (
             <>
-              <p className="token-warning">
-                토큰 원문은 이 화면에서만 확인할 수 있습니다. 창을 닫기 전에 안전한 곳에
-                보관해주세요.
-              </p>
+              <p className="token-warning">{t("토큰 원문은 이 화면에서만 확인할 수 있습니다. 창을 닫기 전에 안전한 곳에 보관해주세요.")}</p>
               <div className="field">
-                <label htmlFor={`${fieldId}-token`}>발급된 연결 토큰</label>
+                <label htmlFor={`${fieldId}-token`}>{t("발급된 연결 토큰")}</label>
                 <div className="token-field">
                   <input
                     id={`${fieldId}-token`}
@@ -758,7 +571,7 @@ export default function AgentsPanel({
                     className="icon-button"
                     type="button"
                     onClick={() => setTokenVisible(!tokenVisible)}
-                    aria-label={tokenVisible ? "토큰 숨기기" : "토큰 표시"}
+                    aria-label={tokenVisible ? t("토큰 숨기기") : t("토큰 표시")}
                     aria-pressed={tokenVisible}
                   >
                     <Icon name={tokenVisible ? "eye-off" : "eye"} size={18} />
@@ -770,27 +583,18 @@ export default function AgentsPanel({
                       void copyToken();
                     }}
                   >
-                    <Icon name="copy" size={16} /> 복사
-                  </button>
+                    <Icon name="copy" size={16} />{" "}{t("복사")}</button>
                 </div>
               </div>
-              <p className="field-hint">
-                이 화면을 닫으면 토큰을 다시 조회할 수 없습니다. 필요한 경우 새 토큰을 발급해주세요.
-              </p>
+              <p className="field-hint">{t("이 화면을 닫으면 토큰을 다시 조회할 수 없습니다. 필요한 경우 새 토큰을 발급해주세요.")}</p>
             </>
           ) : (
             <>
               <div className="token-warning">
-                <strong>기존 토큰이 있으면 새 토큰으로 교체됩니다.</strong>
-                <p>
-                  이전 토큰은 사용할 수 없고 기존 연결이 종료됩니다. 새 토큰이 필요할 때
-                  발급해주세요.
-                </p>
+                <strong>{t("기존 토큰이 있으면 새 토큰으로 교체됩니다.")}</strong>
+                <p>{t("이전 토큰은 사용할 수 없고 기존 연결이 종료됩니다. 새 토큰이 필요할 때 발급해주세요.")}</p>
               </div>
-              <p className="muted">
-                토큰은 이 Agent의 연결 자격정보입니다. 다른 사람에게 공유하거나 공개 저장소에 올리지
-                마세요.
-              </p>
+              <p className="muted">{t("토큰은 이 Agent의 연결 자격정보입니다. 다른 사람에게 공유하거나 공개 저장소에 올리지 마세요.")}</p>
             </>
           )}
           {tokenError && (
@@ -805,7 +609,7 @@ export default function AgentsPanel({
               disabled={issuing}
               onClick={closeToken}
             >
-              {issuedToken ? "닫기" : "취소"}
+              {issuedToken ? t("닫기") : t("취소")}
             </button>
             {!issuedToken && (
               <button
@@ -816,12 +620,12 @@ export default function AgentsPanel({
                   void issueToken();
                 }}
               >
-                <Icon name="key" size={16} /> {issuing ? "발급 중…" : "새 연결 토큰 발급"}
+                <Icon name="key" size={16} /> {issuing ? t("발급 중…") : t("새 연결 토큰 발급")}
               </button>
             )}
           </div>
         </Modal>
       )}
-    </section>
+    </AgentListView>
   );
 }
