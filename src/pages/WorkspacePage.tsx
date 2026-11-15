@@ -213,7 +213,7 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
                 : <section className="workspace-selection-empty"><EmptyState title={teamsLoading ? "팀 정보 불러오는 중" : "참여 중인 팀 없음"} description="팀을 만들거나 초대 코드로 참여하면, 이곳에서 팀의 Agent를 관리할 수 있어요." icon={<Icon name="team" size={28} />} /><button type="button" className="button button-primary" onClick={() => setView("teams")}>팀 관리로 이동<Icon name="arrow" size={15} /></button></section>}
             </div>}
             {view === "conversation" && (selectedTeamId !== null && selectedTaskId !== null
-              ? <TaskConversationView userId={user.userId} teamId={selectedTeamId} taskId={selectedTaskId} autoRefresh={autoRefresh} active={dashboardVisible && view === "conversation"} onRead={realtime.markRead} onError={onError} onBack={() => setView("workspace")} />
+              ? <TaskConversationView userId={user.userId} userEmail={user.email} agents={agents} teamId={selectedTeamId} taskId={selectedTaskId} autoRefresh={autoRefresh} active={dashboardVisible && view === "conversation"} onRead={realtime.markRead} onError={onError} onBack={() => setView("workspace")} />
               : <section className="workspace-selection-empty"><EmptyState title="대화 선택" description="왼쪽 채팅 목록에서 현재 팀의 작업 대화 기록을 열 수 있어요." icon={<Icon name="book" size={28} />} /></section>)}
             {view === "guide" && <GuidePage />}
             {view === "settings" && <WorkspaceSettingsView user={user} autoRefresh={autoRefresh} onAutoRefreshChange={changeAutoRefresh} loggingOut={loggingOut} onLogout={() => { void logout(); }} onGuide={() => setView("guide")} />}
