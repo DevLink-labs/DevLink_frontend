@@ -1235,50 +1235,6 @@
 .detail-item-full {
   grid-column: 1 / -1;
 }
-.toast {
-  position: fixed;
-  bottom: 28px;
-  left: calc(50% + 118px);
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: max-content;
-  max-width: min(600px, calc(100vw - 36px));
-  padding: 13px 15px;
-  color: #526548;
-  background: #f4fced;
-  border: 1px solid #dbeacd;
-  border-radius: 11px;
-  box-shadow: 0 8px 35px #1f2c3914;
-  font-size: 13px;
-}
-.toast > span:nth-child(2) {
-  flex: 1;
-  overflow-wrap: anywhere;
-}
-body:has(.itp-experience) .toast-desktop.toast-success {
-  inset: 112px 24px auto auto;
-  max-width: min(420px, calc(100vw - 36px));
-  transform: none;
-}
-@media (max-width: 680px) {
-  body:has(.itp-experience) .toast-desktop.toast-success {
-    top: 152px;
-    right: 16px;
-  }
-}
-.toast-error {
-  color: #ac6251;
-  border-color: #f1d7cd;
-  background: #fff5f1;
-}
-.toast-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
 .boot-screen {
   display: flex;
   flex-direction: column;
@@ -1366,9 +1322,6 @@ body:has(.itp-experience) .toast-desktop.toast-success {
   }
   .member-list {
     grid-template-columns: 1fr;
-  }
-  .toast {
-    left: calc(50% + 104px);
   }
 }
 @media (max-width: 900px) {
@@ -1521,10 +1474,6 @@ body:has(.itp-experience) .toast-desktop.toast-success {
   .agents-footnote {
     padding-left: 18px;
     padding-right: 18px;
-  }
-  .toast {
-    left: 50%;
-    bottom: 18px;
   }
   .guide-notes {
     grid-template-columns: 1fr;

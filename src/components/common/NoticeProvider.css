@@ -1,0 +1,112 @@
+.toast {
+  --toast-accent: #285b8a;
+  --toast-border: #c6dced;
+  --toast-tint: #f0f7fe;
+  --toast-icon-start: #eaf4ff;
+  --toast-icon-end: var(--color-brand);
+  position: fixed;
+  z-index: 100;
+  inset-inline: 16px;
+  inset-block-end: max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
+  margin-inline: auto;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--toast-border);
+  border-radius: 16px;
+  background: linear-gradient(110deg, var(--toast-tint), var(--workspace-surface) 56%);
+  color: var(--color-ink);
+  box-shadow: 0 14px 36px #213a5526, 0 3px 8px #213a5510;
+  animation: toast-enter 240ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+body:has(.itp-experience[data-view="scene"]) .toast {
+  inset-block-end: max(80px, calc(env(safe-area-inset-bottom) + 56px));
+}
+
+.toast-error {
+  --toast-accent: #a33c35;
+  --toast-border: #efccc6;
+  --toast-tint: #fff5f2;
+  --toast-icon-start: #fff2ee;
+  --toast-icon-end: #f9ded8;
+}
+
+.toast-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--toast-border);
+  border-radius: 11px;
+  background: linear-gradient(145deg, var(--toast-icon-start), var(--toast-icon-end));
+  color: var(--toast-accent);
+  box-shadow: inset 0 1px #fff9;
+}
+
+.toast-message {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.toast-action,
+.toast-close {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px;
+  transition: background-color 150ms, color 150ms;
+}
+
+.toast-action {
+  padding: 4px 11px;
+  background: var(--toast-icon-start);
+  color: var(--toast-accent);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.toast-action:hover {
+  background: var(--toast-icon-end);
+}
+
+.toast-close {
+  width: 34px;
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-muted);
+}
+
+.toast-close:hover {
+  background: var(--color-workspace);
+  color: var(--color-ink);
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .toast {
+    inset-block-end: max(16px, env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+  }
+}

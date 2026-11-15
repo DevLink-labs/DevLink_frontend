@@ -294,10 +294,6 @@
   font-size: 13px;
 }
 
-.auth-layout ~ .toast {
-  left: 50%;
-}
-
 @media (min-width: 901px) {
   .auth-story {
     height: calc(100svh - 40px);
