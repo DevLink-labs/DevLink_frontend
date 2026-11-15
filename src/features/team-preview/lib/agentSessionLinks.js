@@ -31,16 +31,25 @@ const fragmentShader = `
   uniform float uPhase;
   uniform float uOpacity;
   uniform float uGlow;
+  uniform float uPending;
   varying float vAlong;
   varying float vFacing;
 
   void main() {
     float forward = fract(uTime*0.28 + uPhase - vAlong + 1.0);
     float backward = fract(uTime*0.28 + uPhase + vAlong + 0.5);
-    float flow = max(exp(-forward*32.0), exp(-backward*32.0)*0.8);
+    float request = exp(-forward*32.0);
+    float forwardLight = 1.0 - smoothstep(0.025, 0.14, min(forward, 1.0-forward));
+    float backwardLight = 1.0 - smoothstep(0.025, 0.14, min(backward, 1.0-backward));
+    float bidirectional = max(forwardLight, backwardLight);
+    float flow = mix(bidirectional, request, uPending);
     float tips = smoothstep(0.0, 0.035, vAlong) * smoothstep(0.0, 0.035, 1.0-vAlong);
-    vec3 color = mix(vec3(0.16, 0.43, 0.69), vec3(0.66, 0.95, 1.0), flow);
-    float alpha = mix(0.44 + flow*0.5, 0.06 + flow*0.14, uGlow);
+    vec3 base = mix(vec3(0.16, 0.43, 0.69), vec3(0.85, 0.28, 0.045), uPending);
+    vec3 highlight = mix(vec3(0.035, 0.48, 1.0), vec3(1.0, 0.72, 0.3), uPending);
+    vec3 color = mix(base, highlight, flow);
+    float activeAlpha = mix(0.38 + flow*0.62, 0.05 + flow*0.31, uGlow);
+    float pendingAlpha = mix(0.44 + flow*0.5, 0.06 + flow*0.14, uGlow);
+    float alpha = mix(activeAlpha, pendingAlpha, uPending);
     alpha *= mix(0.45, 1.0, vFacing) * tips * uOpacity;
     gl_FragColor = vec4(color, alpha);
     #include <colorspace_fragment>
@@ -54,7 +63,7 @@ export function createAgentSessionLinks() {
     new THREE.LineCurve3(new THREE.Vector3(), new THREE.Vector3(1, 0, 0)),
     64, 1, 8, false,
   );
-  const packetGeometry = new THREE.OctahedronGeometry(0.045);
+  const arrowGeometry = new THREE.ConeGeometry(0.06, 0.18, 4).rotateX(Math.PI / 2);
   const ringGeometry = new THREE.TorusGeometry(0.055, 0.005, 6, 24);
   const links = new Map();
   const up = new THREE.Vector3(0, 0, 1);
@@ -67,6 +76,7 @@ export function createAgentSessionLinks() {
   }
 
   function createLink(connection) {
+    const pending = connection.status === "PENDING";
     const root = new THREE.Group();
     root.name = `AgentSession:${connection.id}`;
     const curve = new THREE.CubicBezierCurve3();
@@ -79,6 +89,7 @@ export function createAgentSessionLinks() {
       uTime: { value: 0 },
       uPhase: { value: phase },
       uOpacity: { value: 1 },
+      uPending: { value: Number(pending) },
     };
     const materials = [0, 1].map((glow) => new THREE.ShaderMaterial({
       vertexShader,
@@ -93,24 +104,34 @@ export function createAgentSessionLinks() {
       mesh.frustumCulled = false;
       root.add(mesh);
     });
-    const packetMaterial = new THREE.MeshBasicMaterial({ color: "#4c9bc9", transparent: true, depthWrite: false, toneMapped: false });
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: "#6ca8cf", transparent: true, depthWrite: false, toneMapped: false });
-    const packets = [0, 1].map(() => new THREE.Mesh(packetGeometry, packetMaterial));
+    const arrow = pending
+      ? new THREE.Mesh(arrowGeometry, new THREE.MeshBasicMaterial({
+          color: "#f29b38",
+          transparent: true,
+          depthWrite: false,
+          toneMapped: false,
+        }))
+      : null;
+    if (arrow) {
+      root.add(arrow);
+      materials.push(arrow.material);
+    }
+    const ringMaterial = new THREE.MeshBasicMaterial({ color: pending ? "#f7bb68" : "#6ca8cf", transparent: true, depthWrite: false, toneMapped: false });
     const rings = [0, 1].map(() => new THREE.Mesh(ringGeometry, ringMaterial));
-    root.add(...packets, ...rings);
+    root.add(...rings);
     group.add(root);
     return {
       group: root,
       curve,
       uniforms,
       phase,
+      pending,
       sourceId: connection.requesterAgentId,
       angle: null,
-      packets,
+      arrow,
       rings,
-      packetMaterial,
       ringMaterial,
-      materials: [...materials, packetMaterial, ringMaterial],
+      materials: [...materials, ringMaterial],
     };
   }
 
@@ -139,7 +160,7 @@ export function createAgentSessionLinks() {
       link.group.visible = Boolean(from && to);
       if (!from || !to) continue;
 
-      const { curve } = link;
+      const { arrow, curve } = link;
       from.object.getWorldPosition(curve.v0);
       to.object.getWorldPosition(curve.v3);
       group.worldToLocal(curve.v0);
@@ -159,7 +180,11 @@ export function createAgentSessionLinks() {
       if (link.angle !== null) angle += Math.round((link.angle - angle) / (Math.PI * 2)) * Math.PI * 2;
       link.angle = angle;
       const handle = (4 / 3) * Math.tan(angle / 4);
-      const lift = Math.min(0.7, 0.22 + length * 0.07) + link.phase * 0.12;
+      // 진행 중 연결과 양방향 대기 요청을 서로 다른 높이로 분리
+      const requestLift = link.pending
+        ? (connection.requesterAgentId.localeCompare(connection.receiverAgentId) < 0 ? 0.22 : 0.48)
+        : 0;
+      const lift = Math.min(0.7, 0.22 + length * 0.07) + link.phase * 0.12 + requestLift;
       // 중앙 모델을 가로지르지 않도록 원점을 도는 원호 접선으로 제어점 배치
       curve.v1.set(curve.v0.x - curve.v0.z * handle, curve.v0.y + lift, curve.v0.z + curve.v0.x * handle);
       curve.v2.set(curve.v3.x + curve.v3.z * handle, curve.v3.y + lift, curve.v3.z - curve.v3.x * handle);
@@ -172,19 +197,17 @@ export function createAgentSessionLinks() {
       const opacity = reveal * density * (related ? 1 : 0.12);
       link.uniforms.uTime.value = time;
       link.uniforms.uOpacity.value = opacity;
-      link.packetMaterial.opacity = opacity * 0.95;
       link.ringMaterial.opacity = opacity * 0.6;
-      const intensity = Math.min(1.3, 1 + (connection.sessionCount - 1) * 0.08);
-      link.packets.forEach((packet, index) => {
-        const progress = index === 0
-          ? (time * 0.28 + link.phase) % 1
-          : 1 - (time * 0.28 + link.phase + 0.5) % 1;
-        curve.getPoint(progress, packet.position);
+      if (arrow) {
+        const progress = (time * 0.28 + link.phase) % 1;
+        curve.getPoint(progress, arrow.position);
         curve.getTangent(progress, direction);
-        packet.quaternion.setFromUnitVectors(up, direction);
+        arrow.quaternion.setFromUnitVectors(up, direction);
         const envelope = THREE.MathUtils.smoothstep(progress, 0, 0.08) * (1 - THREE.MathUtils.smoothstep(progress, 0.92, 1));
-        packet.scale.set(0.7, 0.7, 1.8).multiplyScalar(envelope * intensity);
-      });
+        const intensity = Math.min(1.3, 1 + (connection.sessionCount - 1) * 0.08);
+        arrow.scale.setScalar(envelope * intensity);
+        arrow.material.opacity = opacity * 0.95;
+      }
       link.rings.forEach((ring, index) => {
         const progress = index === 0 ? 0 : 1;
         curve.getPoint(progress, ring.position);
@@ -199,7 +222,7 @@ export function createAgentSessionLinks() {
     links.forEach(removeLink);
     links.clear();
     geometry.dispose();
-    packetGeometry.dispose();
+    arrowGeometry.dispose();
     ringGeometry.dispose();
   }
 

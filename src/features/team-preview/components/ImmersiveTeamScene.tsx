@@ -25,6 +25,7 @@ interface ImmersiveTeamSceneProps {
   transitionState: RefObject<{ progress: number; sceneProgress: number; sceneDistance: number }>;
   onRenderRequestChange: (requestRender: () => void) => void;
   onSelectMember: (id: string) => void;
+  introProgress: RefObject<number>;
   paused: boolean;
   topView: boolean;
   onAvailabilityChange: (available: boolean) => void;
@@ -33,6 +34,11 @@ interface ImmersiveTeamSceneProps {
 const MOBILE_BREAKPOINT = 680;
 const LABEL_SIDE_SWITCH_THRESHOLD = 20;
 const TOP_VIEW_POLAR = 0.025;
+const SCENE_INTRO_SECONDS = 1.55;
+const SCENE_INTRO_DISTANCE_LIMIT = 24;
+const SCENE_INTRO_BLUR_PX = 11;
+const SCENE_INTRO_LABEL_START = 0.55;
+const SCENE_FOG_DENSITY = 0.04;
 const TEAM_REVEAL_SECONDS = 0.72;
 const MEMBER_REVEAL_RISE = 0.24;
 const TEAM_CHARACTER_HEIGHT = 2.7;
@@ -116,6 +122,7 @@ export default function ImmersiveTeamScene({
   transitionState,
   onRenderRequestChange,
   onSelectMember,
+  introProgress,
   paused,
   topView,
   onAvailabilityChange,
@@ -264,13 +271,15 @@ export default function ImmersiveTeamScene({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.domElement.style.cssText =
+    const canvas = renderer.domElement;
+    canvas.style.cssText =
       "display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab";
-    renderer.domElement.setAttribute("aria-hidden", "true");
-    element.appendChild(renderer.domElement);
+    canvas.setAttribute("aria-hidden", "true");
+    element.appendChild(canvas);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2("#f3f4f6", 0.04);
+    const fog = new THREE.FogExp2("#f3f4f6", SCENE_FOG_DENSITY);
+    scene.fog = fog;
     const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 80);
     const world = new THREE.Group();
     scene.add(world);
@@ -452,7 +461,6 @@ export default function ImmersiveTeamScene({
     let width = 1;
     let height = 1;
     let previous = performance.now();
-    let entrance = control.current.paused ? 1 : 0;
     let azimuth = 0.16;
     let targetAzimuth = 0.16;
     let polar = 1.08;
@@ -803,6 +811,12 @@ export default function ImmersiveTeamScene({
       }
     }
 
+    function finishIntro() {
+      introProgress.current = 1;
+      canvas.style.removeProperty("filter");
+      labelsElement?.style.removeProperty("opacity");
+    }
+
     function frame(now: number) {
       if (disposed || assetFailed || contextLost || !control.current.active) {
         renderer.setAnimationLoop(null);
@@ -831,6 +845,15 @@ export default function ImmersiveTeamScene({
         frozen ? 1 : 1 - Math.exp(-delta * 12),
       );
       const loading = control.current.loading || !companionAsset || !teamCharacter;
+      if (introProgress.current < 1) {
+        if (frozen || focusId !== null || lookingDown) {
+          finishIntro();
+        } else if (!loading && transition === 0 && sceneProgress === 0) {
+          introProgress.current = Math.min(1, introProgress.current + delta / SCENE_INTRO_SECONDS);
+          if (introProgress.current === 1) finishIntro();
+        }
+      }
+      const introDepth = 1 - THREE.MathUtils.smoothstep(introProgress.current, 0, 1);
       updateMembers(control.current.members);
       if (agentFocus && (agentFocus.memberId !== focusId || now >= agentFocus.until || loading))
         clearAgentFocus();
@@ -854,6 +877,13 @@ export default function ImmersiveTeamScene({
       }
       const reveal = teamReveal * teamReveal * (3 - 2 * teamReveal);
       const loadingWeight = 1 - reveal;
+      if (introDepth > 0) {
+        canvas.style.filter = `blur(${introDepth * SCENE_INTRO_BLUR_PX}px)`;
+        if (labelsElement) {
+          const labelReveal = THREE.MathUtils.smoothstep(introProgress.current, SCENE_INTRO_LABEL_START, 0.95);
+          labelsElement.style.opacity = String(reveal * labelReveal);
+        }
+      }
       if (lastReveal !== reveal) {
         stage?.style.setProperty("--itp-team-reveal", String(reveal));
         if (lastReveal === -1 || lastReveal >= 0.25 !== reveal >= 0.25) {
@@ -864,9 +894,8 @@ export default function ImmersiveTeamScene({
         }
         lastReveal = reveal;
       }
-      entrance = THREE.MathUtils.lerp(entrance, 1, frozen ? 1 : 1 - Math.exp(-delta * 2.4));
-      world.scale.setScalar((0.96 + entrance * 0.04) * (1 - sceneDepth * 0.2));
-      world.position.y = -0.025 + entrance * 0.025 - sceneDepth * 0.22;
+      world.scale.setScalar(1 - sceneDepth * 0.2);
+      world.position.y = -sceneDepth * 0.22;
       core.position.y = TEAM_CHARACTER_CENTER_Y + Math.sin(elapsed * 0.4) * 0.008;
       if (loadingAgent) {
         const orbit = elapsed * 0.72;
@@ -955,6 +984,9 @@ export default function ImmersiveTeamScene({
         radius = Math.max(11.4, horizontalFit, verticalFit) * (1 - loadingWeight * 0.14);
       }
       radius *= zoomFactor * (1 + sceneDepth * 0.25);
+      const introDistance = Math.min(radius * 1.8, SCENE_INTRO_DISTANCE_LIMIT) * introDepth;
+      fog.density = SCENE_FOG_DENSITY * radius / (radius + introDistance);
+      radius += introDistance;
       orbitOffset.set(
         Math.sin(azimuth) * Math.sin(polar) * radius,
         Math.cos(polar) * radius,
@@ -993,7 +1025,8 @@ export default function ImmersiveTeamScene({
       }
       sessionLinks.update(control.current.connections, sessionAnchors, elapsed, reveal, focusId);
       renderer.render(scene, camera);
-      if (!loading && teamCharacter && teamReveal >= 0.25) updateLabels();
+      if (!loading && teamCharacter && teamReveal >= 0.25 &&
+        introProgress.current > SCENE_INTRO_LABEL_START) updateLabels();
       else if (labelsElement) labelsElement.style.visibility = "hidden";
       updateAgentPopover();
       if (!availabilityReported && companionAsset && teamCharacter) {
@@ -1009,6 +1042,7 @@ export default function ImmersiveTeamScene({
 
     function start() {
       if (!control.current.active) {
+        if (introProgress.current < 1) finishIntro();
         renderer.setAnimationLoop(null);
         running = false;
         pointerDown = null;
@@ -1173,7 +1207,6 @@ export default function ImmersiveTeamScene({
       availabilityReported = false;
       start();
     }
-    const canvas = renderer.domElement;
     const wheelTarget = stage ?? element;
     wheelTarget.addEventListener("wheel", wheel, { passive: false });
     canvas.addEventListener("pointerdown", down);
@@ -1261,14 +1294,14 @@ export default function ImmersiveTeamScene({
       renderer.dispose();
       canvas.remove();
     };
-  }, [dismissAgentPopover]);
+  }, [dismissAgentPopover, introProgress]);
 
   return (
     <div
       className="itp-canvas"
       ref={host}
       role="group"
-      aria-label={`팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 진행 중인 세션의 Agent 연결 ${connections.length}개. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다.`}
+      aria-label={`팀 허브와 팀원별 노드, 작은 AI 동료가 함께하는 3D 공간. 진행 중인 세션은 파란 연결선에 양방향으로 흐르는 빛, 수락 대기 요청은 요청 Agent에서 수신 Agent로 이동하는 주황색 화살표로 표시합니다. Agent 연결 ${connections.length}개. 드래그로 회전하고 휠로 확대하거나 축소하며 팀원 또는 이름을 선택할 수 있습니다.`}
     >
       <div
         className="itp-scene-labels"

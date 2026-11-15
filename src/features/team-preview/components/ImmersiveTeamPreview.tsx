@@ -314,6 +314,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   const navigationComplete = useRef<(() => void) | null>(null);
   const inviteDialog = useRef<HTMLDialogElement>(null);
   const copyAttempt = useRef(0);
+  const introProgress = useRef(workspace?.initialDashboard ? 1 : 0);
   const team = immersivePreviewTeams.find((item) => item.id === teamId) ?? immersivePreviewTeams[0];
   const activeTeamId = workspace ? String(workspace.selectedTeam?.teamId ?? "") : team.id;
   const sceneStatus = workspace?.sceneStatus ?? "ready";
@@ -338,7 +339,12 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
     showTeam && activeSelection?.focused && selectedMember ? selectedMember.id : null;
   const agentCount =
     workspace?.agentCount ?? members.reduce((count, item) => count + item.agents.length, 0);
-  const activeSessionCount = workspace?.connections.reduce((count, connection) => count + connection.sessionCount, 0) ?? 0;
+  const activeSessionCount = workspace?.connections.reduce(
+    (count, connection) => count + (connection.status === "IN_PROGRESS" ? connection.sessionCount : 0), 0,
+  ) ?? 0;
+  const pendingSessionCount = workspace?.connections.reduce(
+    (count, connection) => count + (connection.status === "PENDING" ? connection.sessionCount : 0), 0,
+  ) ?? 0;
   const color = memberColors[member?.color] ?? memberColors.sage;
   const sceneActive = activeView === "scene";
   const sceneVisible = sceneActive || transitioning;
@@ -710,6 +716,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                   transitionState={transitionState}
                   onRenderRequestChange={onRenderRequestChange}
                   onSelectMember={selectMember}
+                  introProgress={introProgress}
                   paused={paused}
                   topView={topView}
                   onAvailabilityChange={onAvailabilityChange}
@@ -828,7 +835,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                     />
                     <div
                       className="itp-stats"
-                      aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개, 진행 중인 세션 ${activeSessionCount}개`}
+                      aria-label={`팀원 ${members.length}명, 에이전트 ${agentCount}개, 진행 중인 세션 ${activeSessionCount}개, 수락 대기 요청 ${pendingSessionCount}개`}
                     >
                       <div>
                         <strong>{members.length}</strong>
@@ -841,9 +848,16 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                       </div>
                       {activeSessionCount > 0 && <>
                         <span className="itp-stat-line" />
-                        <div className="itp-session-stat" title="블루 연결선은 진행 중인 세션의 Agent를 연결합니다.">
+                        <div className="itp-session-stat" title="진행 중인 세션은 Agent를 잇는 파란 연결선에 빛이 양방향으로 흐릅니다.">
                           <strong>{activeSessionCount}</strong>
                           <span><i className="itp-session-signal" aria-hidden="true" />진행 중</span>
+                        </div>
+                      </>}
+                      {pendingSessionCount > 0 && <>
+                        <span className="itp-stat-line" />
+                        <div className="itp-pending-stat" title="주황색 화살표는 수락 대기 중인 요청의 요청 Agent에서 수신 Agent로 이동합니다.">
+                          <strong>{pendingSessionCount}</strong>
+                          <span><i className="itp-pending-signal" aria-hidden="true" />수락 대기</span>
                         </div>
                       </>}
                     </div>
