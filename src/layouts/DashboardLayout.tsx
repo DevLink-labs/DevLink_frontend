@@ -11,7 +11,7 @@ import { taskTitle, taskStatusLabels } from "@/features/tasks/utils/taskPresenta
 import { API_BASE_URL } from "@/lib/apiClient";
 import "@/styles/dashboard-layout.css";
 
-export type WorkspaceView = "workspace" | "agents" | "teams" | "conversation" | "guide" | "settings" | "design";
+export type WorkspaceView = "workspace" | "agents" | "teams" | "tree" | "conversation" | "guide" | "settings" | "design";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -37,6 +37,7 @@ const viewLabels: Record<WorkspaceView, string> = {
   workspace: "대시보드",
   agents: "Agent 관리",
   teams: "팀 관리",
+  tree: "소스코드 맵",
   conversation: "채팅",
   guide: "사용 가이드",
   settings: "설정",
@@ -362,7 +363,7 @@ export default function DashboardLayout({
         <button type="button" className={`nav-item${view === "workspace" ? " active" : ""}`} onClick={() => changeView("workspace")} aria-current={view === "workspace" ? "page" : undefined} aria-label="대시보드" {...hint("대시보드")}><Icon name="grid" size={19} /><span>대시보드</span></button>
         <button type="button" className={`nav-item${view === "agents" ? " active" : ""}`} onClick={() => changeView("agents")} aria-current={view === "agents" ? "page" : undefined} aria-label="Agent 관리" {...hint("Agent 관리")}><Icon name="agent" size={19} /><span>Agent 관리</span></button>
         <button type="button" className={`nav-item${view === "teams" ? " active" : ""}`} onClick={() => changeView("teams")} aria-current={view === "teams" ? "page" : undefined} aria-label="팀 관리" {...hint("팀 관리")}><Icon name="team" size={19} /><span>팀 관리</span></button>
-        <a className="nav-item" href="/tree" aria-label="소스코드 맵" {...hint("소스코드 맵")}><Icon name="activity" size={19} /><span>소스코드 맵</span></a>
+        <button type="button" className={`nav-item${view === "tree" ? " active" : ""}`} onClick={() => changeView("tree")} aria-current={view === "tree" ? "page" : undefined} aria-label="소스코드 맵" {...hint("소스코드 맵")}><Icon name="activity" size={19} /><span>소스코드 맵</span></button>
       </nav>
       {!collapsed && <section className="dashboard-chats" aria-label="최근 채팅">
         <div className="dashboard-chats-heading"><h2>최근 채팅</h2><span>{taskList.length}</span>{tasksLoading && <span className="dashboard-chat-updating" role="status">갱신 중</span>}</div>
@@ -392,7 +393,7 @@ export default function DashboardLayout({
     </>;
   }
 
-  return <div className={`workspace-dashboard app-shell min-h-screen${view === "conversation" ? " is-conversation" : ""}${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
+  return <div className={`workspace-dashboard app-shell min-h-screen${view === "conversation" ? " is-conversation" : ""}${view === "tree" ? " is-tree" : ""}${sidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
     <PageTitle title={view === "conversation" && selectedTask ? taskTitle(selectedTask) : pageLabel} />
     <aside className="sidebar" aria-label="워크스페이스 메뉴" ref={sidebar}>
       <div className="dashboard-sidebar-content" id={sidebarId}>{sidebarContent()}</div>

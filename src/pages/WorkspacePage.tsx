@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@/features/auth/types";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useWorkspace } from "@/features/workspace/hooks/useWorkspace";
@@ -23,10 +23,11 @@ import { ApiError } from "@/lib/apiClient";
 import { formatDate } from "@/utils";
 import GuidePage from "./GuidePage";
 
+const DependencyMapView = lazy(() => import("@/features/dependency-tree/components/DependencyMapView"));
 const memberColors = ["sage", "blue", "peach", "lavender", "sand", "mint"];
 
-export default function WorkspacePage({ user, initialTeamId }: { user: User; initialTeamId?: number }) {
-  const [view, setView] = useState<WorkspaceView>('workspace')
+export default function WorkspacePage({ user, initialTeamId, initialView = "workspace" }: { user: User; initialTeamId?: number; initialView?: WorkspaceView }) {
+  const [view, setView] = useState(initialView);
   const [conversation, setConversation] = useState<{ teamId: number; taskId: number } | null>(null);
   const [dashboardRequest, setDashboardRequest] = useState(0);
   const [autoRefresh, setAutoRefresh] = useState(() => {
@@ -41,7 +42,7 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
   const notify = useNotice()
   const realtime = useTaskRealtime({ userId: user.userId, autoRefresh, onError });
   const workspace = useWorkspace(user.userId, initialTeamId, !realtime.connected)
-  const { teams, selectedTeamId, selectedTeam, members, agents, teamsLoading,
+  const { teams, selectedTeamId, selectedTeam, members, agents, teamsLoading, teamsPending, teamsError,
     workspaceLoading, workspaceError, sceneStatus, selectTeam, refreshAll, refreshWorkspace } = workspace;
   const tasksQuery = useTeamTasks(user.userId, selectedTeamId, autoRefresh);
   const taskAccessDenied = tasksQuery.error instanceof ApiError
@@ -170,6 +171,7 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
       onRetry: refreshAll,
       onInvite: canInvite ? openTeamInvite : undefined,
       dashboardRequest,
+      initialDashboard: initialView === "tree",
       unreadCount,
       renderDashboard: (showScene, dashboardVisible) => (
         <DashboardLayout
@@ -212,6 +214,11 @@ export default function WorkspacePage({ user, initialTeamId }: { user: User; ini
                 onRefresh={refreshWorkspace} onError={onError} onNotice={notify} />
                 : <section className="workspace-selection-empty"><EmptyState title={teamsLoading ? "팀 정보 불러오는 중" : "참여 중인 팀 없음"} description="팀을 만들거나 초대 코드로 참여하면, 이곳에서 팀의 Agent를 관리할 수 있어요." icon={<Icon name="team" size={28} />} /><button type="button" className="button button-primary" onClick={() => setView("teams")}>팀 관리로 이동<Icon name="arrow" size={15} /></button></section>}
             </div>}
+            {view === "tree" && (
+              <Suspense fallback={<p role="status">소스코드 맵을 준비하고 있어요.</p>}>
+                <DependencyMapView userId={user.userId} team={selectedTeam} teamsPending={teamsPending} teamsError={teamsError} />
+              </Suspense>
+            )}
             {view === "conversation" && (selectedTeamId !== null && selectedTaskId !== null
               ? <TaskConversationView userId={user.userId} userEmail={user.email} agents={agents} teamId={selectedTeamId} taskId={selectedTaskId} autoRefresh={autoRefresh} active={dashboardVisible && view === "conversation"} onRead={realtime.markRead} onError={onError} onBack={() => setView("workspace")} />
               : <section className="workspace-selection-empty"><EmptyState title="대화 선택" description="왼쪽 채팅 목록에서 현재 팀의 작업 대화 기록을 열 수 있어요." icon={<Icon name="book" size={28} />} /></section>)}

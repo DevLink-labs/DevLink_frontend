@@ -271,6 +271,7 @@ interface LiveWorkspace {
   onRetry: () => void;
   onInvite?: () => void;
   renderDashboard: (showScene: () => void, visible: boolean) => ReactNode;
+  initialDashboard?: boolean;
   unreadCount?: number;
   // 값이 바뀔 때마다 대시보드로 이동
   dashboardRequest?: number;
@@ -290,7 +291,9 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   const [availability, setAvailability] = useState<"loading" | "ready" | "unavailable">("loading");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
-  const [activeView, setActiveView] = useState<"scene" | "dashboard">("scene");
+  const [activeView, setActiveView] = useState<"scene" | "dashboard">(
+    () => workspace?.initialDashboard ? "dashboard" : "scene",
+  );
   const [transitioning, setTransitioning] = useState(false);
   const [sceneReturning, setSceneReturning] = useState(false);
   const experienceRoot = useRef<HTMLDivElement>(null);
@@ -303,8 +306,8 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
   const stopTransition = useRef<(() => void) | null>(null);
   const transitionRunning = useRef(false);
   const transitionState = useRef({
-    progress: 0,
-    sceneProgress: 0,
+    progress: workspace?.initialDashboard ? 1 : 0,
+    sceneProgress: workspace?.initialDashboard ? 1 : 0,
     sceneDistance: 1,
     requestRender: () => {},
   });

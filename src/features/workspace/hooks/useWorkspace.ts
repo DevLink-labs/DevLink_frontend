@@ -56,6 +56,8 @@ export function useWorkspace(userId: number, initialTeamId?: number, refreshPres
     members: membersQuery.data ?? emptyMembers,
     agents: agentAccessError ? emptyAgents : agentsQuery.data ?? emptyAgents,
     teamsLoading: teamsQuery.isFetching,
+    teamsPending: teamsQuery.isPending,
+    teamsError: teamsQuery.error,
     workspaceLoading: selectedTeamId !== null
       && (teamQuery.isFetching || membersQuery.isFetching || (agentsQuery.isFetching && agentsQuery.data === undefined)),
     workspaceError: error instanceof Error ? error.message : null,

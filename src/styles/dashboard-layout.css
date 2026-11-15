@@ -245,6 +245,9 @@ div.workspace-dashboard.app-shell.is-sidebar-collapsed { --dashboard-sidebar-wid
 .workspace-dashboard.is-conversation .topbar { flex-shrink: 0; }
 .workspace-dashboard.is-conversation .workspace-main { display: flex; flex: 1; width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0; }
 .workspace-dashboard.is-conversation .workspace-main > .workspace-selection-empty { flex: 1; margin: 0; border: 0; border-radius: 0; }
+.workspace-dashboard.is-tree .main-shell { display: flex; flex-direction: column; block-size: 100dvh; min-block-size: 40rem; }
+.workspace-dashboard.is-tree .topbar { flex-shrink: 0; }
+.workspace-dashboard.is-tree .workspace-main { display: flex; flex: 1; inline-size: 100%; max-inline-size: none; min-block-size: 0; margin: 0; padding: 0; }
 .workspace-dashboard .dashboard-mobile-menu-button { display: none; position: relative; }
 .workspace-dashboard .dashboard-menu-unread { position: absolute; top: 2px; right: 1px; width: 6px; height: 6px; }
 .workspace-dashboard .dashboard-menu-dialog { width: min(320px, calc(100vw - 28px)); max-width: none; height: 100dvh; max-height: none; margin: 0 auto 0 0; padding: 0; border: 0; border-right: 1px solid var(--workspace-divider); background: var(--workspace-surface); color: var(--color-ink); }

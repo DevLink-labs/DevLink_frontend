@@ -158,7 +158,7 @@ MCP configuration readiness and the AI tool session connection are displayed sep
 
 ### Explore repository change impact
 
-After logging in, open `/tree?mode=team` to view the team's actual repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
+After logging in, open **소스코드 맵 (Source Code Map)** in the dashboard or visit `/tree` to view the current team's repository dependency graph and work activity. A team OWNER can register the repository key, base branch, publishing Agent, and other settings. The broker must upload analysis data before the graph appears.
 
 <p align="center">
   <a href="docs/images/screenshots/05-source-map.jpg">
@@ -166,7 +166,7 @@ After logging in, open `/tree?mode=team` to view the team's actual repository de
   </a>
 </p>
 
-`/tree` displays a **sample graph** without requiring login. Keep it separate from actual team data.
+Select **예제 보기 (View example)** in the source code map to explore a sample graph.
 
 ## Architecture
 
