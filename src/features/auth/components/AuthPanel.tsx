@@ -1,3 +1,4 @@
+import { t as translate, useTranslation } from "@/lib/i18n";
 import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError } from "../../../lib/apiClient";
@@ -12,14 +13,14 @@ const rememberedEmailKey = "devlink:remembered-email";
 
 function validateSignupPassword(password: string): string | null {
   if (password.length < 8 || password.length > 32) {
-    return "비밀번호는 8~32자로 입력해주세요.";
+    return translate("비밀번호는 8~32자로 입력해주세요.");
   }
   if (/[^!-~]/.test(password)) {
-    return "비밀번호에는 영문 대소문자, 숫자, 특수문자만 사용할 수 있습니다.";
+    return translate("비밀번호에는 영문 대소문자, 숫자, 특수문자만 사용할 수 있습니다.");
   }
   const characterTypes = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/];
   if (characterTypes.filter((type) => type.test(password)).length < 3) {
-    return "영문 대문자, 소문자, 숫자, 특수문자 중 3종류 이상을 조합해주세요.";
+    return translate("영문 대문자, 소문자, 숫자, 특수문자 중 3종류 이상을 조합해주세요.");
   }
   return null;
 }
@@ -55,6 +56,7 @@ export default function AuthPanel({
   connectionState: ConnectionState;
   onRetryConnection: () => void;
 }) {
+  const { t } = useTranslation();
   const id = useId();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState(readRememberedEmail);
@@ -86,11 +88,11 @@ export default function AuthPanel({
         return;
       }
       if (!name.trim()) {
-        setError("이름을 입력해주세요.");
+        setError(t("이름을 입력해주세요."));
         return;
       }
     } else if (new TextEncoder().encode(password).length > 72) {
-      setError("비밀번호가 너무 깁니다. UTF-8 기준 72바이트 이하로 입력해주세요.");
+      setError(t("비밀번호가 너무 깁니다. UTF-8 기준 72바이트 이하로 입력해주세요."));
       return;
     }
     try {
@@ -102,7 +104,7 @@ export default function AuthPanel({
           ...(nickname.trim() ? { nickname: nickname.trim() } : {}),
         });
         changeMode("login");
-        onNotice("회원가입이 완료됐습니다. 같은 이메일로 로그인해주세요.");
+        onNotice(t("회원가입이 완료됐습니다. 같은 이메일로 로그인해주세요."));
       } else {
         const user = await login.mutateAsync({ email: email.trim(), password, rememberMe });
         saveRememberedEmail(rememberEmail ? email.trim().toLowerCase() : "");
@@ -113,9 +115,9 @@ export default function AuthPanel({
       setError(
         caught instanceof ApiError
           ? caught.status === 0 || caught.code === "INVALID_API_RESPONSE"
-            ? "연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+            ? t("연결하지 못했습니다. 잠시 후 다시 시도해주세요.")
             : caught.message
-          : "요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.",
+          : t("요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요."),
       );
     } finally {
       login.reset();
@@ -125,15 +127,14 @@ export default function AuthPanel({
 
   return (
     <AuthLayout>
-      <PageTitle title={mode === "login" ? "로그인" : "회원가입"} />
+      <PageTitle title={mode === "login" ? t("로그인") : t("회원가입")} />
       <section className="auth-form-side">
         <div className="auth-form-card">
-          <h2>{mode === "login" ? "로그인" : "회원가입"}</h2>
+          <h2>{mode === "login" ? t("로그인") : t("회원가입")}</h2>
           {connectionState === "offline" && (
             <div className="connection-help">
-              <p>연결하지 못했습니다. 잠시 후 다시 시도해주세요.</p>
-              <button className="text-button" type="button" onClick={onRetryConnection}>
-                다시 확인 <Icon name="refresh" size={14} />
+              <p>{t("연결하지 못했습니다. 잠시 후 다시 시도해주세요.")}</p>
+              <button className="text-button" type="button" onClick={onRetryConnection}>{t("다시 확인")}{" "}<Icon name="refresh" size={14} />
               </button>
             </div>
           )}
@@ -141,7 +142,7 @@ export default function AuthPanel({
             {mode === "signup" && (
               <div className="grid grid-cols-2 gap-[13px] max-[420px]:grid-cols-1">
                 <div className="field">
-                  <label htmlFor={`${id}-name`}>이름</label>
+                  <label htmlFor={`${id}-name`}>{t("이름")}</label>
                   <input
                     id={`${id}-name`}
                     value={name}
@@ -149,13 +150,12 @@ export default function AuthPanel({
                     required
                     maxLength={100}
                     autoComplete="name"
-                    placeholder="홍길동"
+                    placeholder={t("홍길동")}
                     disabled={busy}
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor={`${id}-nickname`}>
-                    닉네임 <span className="optional">선택</span>
+                  <label htmlFor={`${id}-nickname`}>{t("닉네임")}{" "}<span className="optional">{t("선택", { context: "optional" })}</span>
                   </label>
                   <input
                     id={`${id}-nickname`}
@@ -163,14 +163,14 @@ export default function AuthPanel({
                     onChange={(event) => setNickname(event.target.value)}
                     maxLength={100}
                     autoComplete="nickname"
-                    placeholder="팀에서 사용할 이름"
+                    placeholder={t("팀에서 사용할 이름")}
                     disabled={busy}
                   />
                 </div>
               </div>
             )}
             <div className="field">
-              <label htmlFor={`${id}-email`}>이메일</label>
+              <label htmlFor={`${id}-email`}>{t("이메일")}</label>
               <input
                 id={`${id}-email`}
                 type="email"
@@ -186,7 +186,7 @@ export default function AuthPanel({
               />
             </div>
             <div className="field">
-              <label htmlFor={`${id}-password`}>비밀번호</label>
+              <label htmlFor={`${id}-password`}>{t("비밀번호")}</label>
               <div className="password-field">
                 <input
                   id={`${id}-password`}
@@ -196,14 +196,14 @@ export default function AuthPanel({
                   required
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   aria-describedby={mode === "signup" ? `${id}-password-hint` : undefined}
-                  placeholder="비밀번호를 입력해주세요"
+                  placeholder={t("비밀번호를 입력해주세요")}
                   disabled={busy}
                 />
                 <button
                   type="button"
                   className="icon-button"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                  aria-label={showPassword ? t("비밀번호 숨기기") : t("비밀번호 보기")}
                   aria-pressed={showPassword}
                   disabled={busy}
                 >
@@ -211,9 +211,7 @@ export default function AuthPanel({
                 </button>
               </div>
               {mode === "signup" && (
-                <p id={`${id}-password-hint`} className="field-hint">
-                  공백 없이 8~32자로, 영문 대문자·소문자·숫자·특수문자 중 3종류 이상을 조합해주세요.
-                </p>
+                <p id={`${id}-password-hint`} className="field-hint">{t("공백 없이 8~32자로, 영문 대문자·소문자·숫자·특수문자 중 3종류 이상을 조합해주세요.")}</p>
               )}
             </div>
             {mode === "login" && (
@@ -231,7 +229,7 @@ export default function AuthPanel({
                       }}
                       disabled={busy}
                     />
-                    <span>이메일 저장</span>
+                    <span>{t("이메일 저장")}</span>
                   </label>
                   <label className="auth-login-option" htmlFor={`${id}-remember-me`}>
                     <input
@@ -242,12 +240,10 @@ export default function AuthPanel({
                       aria-describedby={`${id}-remember-me-description`}
                       disabled={busy}
                     />
-                    <span>자동 로그인</span>
+                    <span>{t("자동 로그인")}</span>
                   </label>
                 </div>
-                <p id={`${id}-remember-me-description`} className="auth-login-hint">
-                  자동 로그인 선택 시 14일 동안 로그인 상태를 유지합니다.
-                </p>
+                <p id={`${id}-remember-me-description`} className="auth-login-hint">{t("자동 로그인 선택 시 14일 동안 로그인 상태를 유지합니다.")}</p>
               </div>
             )}
             {error && (
@@ -256,17 +252,17 @@ export default function AuthPanel({
               </p>
             )}
             <button className="button button-primary auth-submit" disabled={busy} type="submit">
-              {busy ? "처리 중…" : mode === "login" ? "로그인" : "계정 만들기"}
+              {busy ? t("처리 중…") : mode === "login" ? t("로그인") : t("계정 만들기")}
             </button>
           </form>
           <div className="auth-mode-switch">
-            <span>{mode === "login" ? "계정이 없으신가요?" : "이미 계정이 있으신가요?"}</span>
+            <span>{mode === "login" ? t("계정이 없으신가요?") : t("이미 계정이 있으신가요?")}</span>
             <button
               type="button"
               onClick={() => changeMode(mode === "login" ? "signup" : "login")}
               disabled={busy}
             >
-              {mode === "login" ? "회원가입" : "로그인"}
+              {mode === "login" ? t("회원가입") : t("로그인")}
             </button>
           </div>
         </div>

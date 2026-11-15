@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { lazy, Suspense } from 'react'
 import PageTitle from '../components/common/PageTitle'
 import BrandLogo from "@/components/common/BrandLogo";
@@ -9,8 +10,10 @@ const ImmersiveTeamPreview = lazy(() => import('../features/team-preview/compone
 const TeamObservatory = lazy(() => import('../features/team-preview/components/TeamObservatory'))
 const TeamNetworkPreview = lazy(() => import('../features/team-preview/components/TeamNetworkPreview'))
 const DashboardDesignPage = lazy(() => import("@/pages/DashboardDesignPage.jsx"));
+const ServiceDemoPage = lazy(() => import("@/pages/ServiceDemoPage.jsx"));
 
 const previewRoutes = [
+  { path: "/demo", aliases: [], title: "DevLink 시연", component: ServiceDemoPage },
   { path: '/team-network', aliases: ['agents-3'], title: '3D 팀 스페이스 - 3', component: TeamNetworkPreview },
   { path: '/team-observatory', aliases: ['agents-2'], title: '3D 팀 스페이스 - 2', component: TeamObservatory },
   { path: '/team-orbit', aliases: ['orbit', 'agents'], title: '3D 팀 스페이스', component: ImmersiveTeamPreview },
@@ -19,6 +22,7 @@ const previewRoutes = [
 ]
 
 export default function AppRouter() {
+  const { t } = useTranslation();
   const path = window.location.pathname.replace(/\/$/, '')
   if (path === "/tree") {
     return <Providers><App openTree /></Providers>;
@@ -27,7 +31,7 @@ export default function AppRouter() {
   const route = previewRoutes.find((route) => route.path === path || route.aliases.includes(preview ?? ''))
   if (!route) return <Providers><App /></Providers>
   const Preview = route.component
-  return <Suspense fallback={<div className="grid min-h-svh place-items-center bg-workspace text-ink" role="status" aria-label={`${route.title}를 준비하는 중`}><PageTitle title={route.title} /><BrandLogo /></div>}>
+  return <Suspense fallback={<div className="grid min-h-svh place-items-center bg-workspace text-ink" role="status" aria-label={t("{{title}}를 준비하는 중", { title: t(route.title) })}><PageTitle title={t(route.title)} /><BrandLogo /></div>}>
     <Preview />
   </Suspense>
 }

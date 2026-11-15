@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -10,6 +11,7 @@ import type { SessionValue } from '../hooks/useSession'
 import type { User } from '../types'
 
 export default function SessionProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const client = useQueryClient()
   const notify = useNotice()
   const channel = useRef<BroadcastChannel | null>(null)
@@ -60,13 +62,13 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
       if (!expiring.current && client.getQueryData<User | null>(authKeys.session)) {
         expiring.current = true
         void applySession(null).finally(() => { expiring.current = false })
-        notify('로그인 세션이 만료되었습니다. 다시 로그인해주세요.', 'error')
+        notify(t("로그인 세션이 만료되었습니다. 다시 로그인해주세요."), 'error')
       }
       return
     }
     if (error instanceof ApiError && error.status === 0) setConnectionErrorAt(Date.now())
-    notify(error instanceof Error ? error.message : '요청을 처리하지 못했습니다.', 'error')
-  }, [applySession, client, notify])
+    notify(error instanceof Error ? error.message : t("요청을 처리하지 못했습니다."), 'error')
+  }, [applySession, client, notify, t])
 
   useEffect(() => {
     const unsubscribeQueries = client.getQueryCache().subscribe((event) => {
@@ -115,7 +117,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     onSuccess: async (_result, _variables, version) => {
       if (version !== sessionVersion.current) return
       await applySession(null, true)
-      notify('로그아웃했습니다.')
+      notify(t("로그아웃했습니다."))
     },
     onError: (error, _variables, version) => {
       if (version === sessionVersion.current) onError(error)
@@ -125,8 +127,8 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const onAuthenticated = useCallback(async (user: User) => {
     await applySession(user, true)
     void client.invalidateQueries({ queryKey: authKeys.health })
-    notify(`${user.nickname || user.name}님, 반가워요!`)
-  }, [applySession, client, notify])
+    notify(t("{{name}}님, 반가워요!", { name: user.nickname || user.name }))
+  }, [applySession, client, notify, t])
 
   const retryConnection = () => {
     void client.invalidateQueries({ queryKey: authKeys.session })

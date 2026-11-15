@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { NoticeContext } from "@/hooks/useNotice";
 import type { NoticeAction, NoticeKind } from "@/hooks/useNotice";
+import { useTranslation } from "@/lib/i18n";
 import { Icon } from "../ui";
 import "./NoticeProvider.css";
 
@@ -13,6 +14,7 @@ type Notice = {
 };
 
 export default function NoticeProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [notice, setNotice] = useState<Notice | null>(null);
   const latestId = useRef(0);
   const notify = useCallback(
@@ -59,7 +61,7 @@ export default function NoticeProvider({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="toast-close"
-            aria-label="알림 닫기"
+            aria-label={t("알림 닫기")}
             onClick={() => setNotice(null)}
           >
             <Icon name="close" size={18} />

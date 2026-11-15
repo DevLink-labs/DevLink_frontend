@@ -1,3 +1,4 @@
+import { t as translate } from "@/lib/i18n";
 /**
  * 방사형 의존성 트리 모델.
  * 저장소를 중심에 두고 페이지(BE만 있으면 엔드포인트)를 사방으로 배치한 뒤, 클릭한 가지만 펼친다.
@@ -202,16 +203,16 @@ export function visibleTree(model, branches, openPath, autoOpen) {
 }
 
 /** 접힌 카드에 보여줄 요약. 직접 자식을 종류별로 센다. */
-export function collapsedSummary(model, entry) {
-  if (entry.id === COMMON_ID) return `진입점 ${entry.childIds.length}`;
+export function collapsedSummary(model, entry, translateSummary = translate) {
+  if (entry.id === COMMON_ID) return translateSummary("진입점 {{value0}}", { value0: entry.childIds.length });
   if (entry.virtual === SELF_ID) return `API ${entry.childIds.length}`;
-  if (entry.node?.kind === "HTTP_CLIENT") return model.callTarget.has(entry.id) ? "BE 경로 보기" : "연결된 엔드포인트 없음";
-  if (entry.node?.kind === "ENDPOINT") return "BE 경로 보기";
+  if (entry.node?.kind === "HTTP_CLIENT") return model.callTarget.has(entry.id) ? translateSummary("BE 경로 보기") : translateSummary("연결된 엔드포인트 없음");
+  if (entry.node?.kind === "ENDPOINT") return translateSummary("BE 경로 보기");
   const counts = new Map();
   for (const id of entry.childIds) {
     const kind = model.nodeById.get(id)?.kind;
-    const label = { PAGE: "페이지", COMPONENT: "컴포넌트", HOOK: "훅", HTTP_CLIENT: "API", MODULE: "함수",
-      SERVICE: "서비스", REPOSITORY: "레포지토리", DB_TABLE: "테이블" }[kind] ?? kind;
+    const label = { PAGE: translateSummary("페이지"), COMPONENT: translateSummary("컴포넌트"), HOOK: translateSummary("훅"), HTTP_CLIENT: "API", MODULE: translateSummary("함수"),
+      SERVICE: translateSummary("서비스"), REPOSITORY: translateSummary("레포지토리"), DB_TABLE: translateSummary("테이블") }[kind] ?? kind;
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   return [...counts].map(([label, count]) => `${label} ${count}`).join(" · ");

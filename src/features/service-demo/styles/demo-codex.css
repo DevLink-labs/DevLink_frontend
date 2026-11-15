@@ -1,0 +1,181 @@
+.service-demo .demo-codex {
+  --demo-codex-mono: "JetBrains Mono Variable", Consolas, monospace;
+  display: flex;
+  min-width: 0;
+  min-height: 338px;
+  flex-direction: column;
+  overflow: clip;
+  border: 1px solid #344256;
+  border-radius: 13px;
+  background: #171e29;
+  color: #f3f7fd;
+  box-shadow: 0 7px 21px #233d5920;
+}
+
+.service-demo .demo-codex-titlebar {
+  display: flex;
+  min-height: 43px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px 10px;
+  padding: 6px 13px 0 8px;
+  border-bottom: 1px solid #364255;
+  background: #222c3a;
+  color: #b9cadf;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.service-demo .demo-codex-tab {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 15px 6px 10px;
+  border: 1px solid #364255;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #171e29;
+  color: #f3f7fd;
+  font-size: 13px;
+}
+
+.service-demo .demo-codex-tab img {
+  flex: 0 0 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.service-demo .demo-codex-session {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+}
+
+.service-demo .demo-codex-context {
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 11px;
+  border: 1px solid #45536a;
+  border-radius: 7px;
+  color: #dde8f6;
+  font: 500 12px/1.55 var(--demo-codex-mono);
+}
+
+.service-demo .demo-codex-context p { margin: 0 0 5px; font-weight: 680; }
+.service-demo .demo-codex-context p > span { color: #a8cbd9; }
+.service-demo .demo-codex-context dl { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 0; }
+.service-demo .demo-codex-context dt { color: #a8bed8; }
+.service-demo .demo-codex-context dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.service-demo .demo-codex-context code { font: inherit; }
+
+.service-demo .demo-codex-prompt {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid #384c67;
+  border-radius: 8px;
+  background: #26374e;
+  color: #f5f8fd;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.service-demo .demo-codex-prompt > span {
+  color: #9cc8fd;
+  font: 700 21px/1 var(--demo-codex-mono);
+}
+
+.service-demo .demo-codex-prompt > p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.service-demo .demo-codex-dispatch {
+  display: grid;
+  gap: 7px;
+  padding: 11px 12px;
+  border-left: 2px solid #6fbf9d;
+  background: #1d2d35;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  animation: demo-codex-receipt .24s ease-out both;
+}
+
+.service-demo .demo-codex-tool {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  color: #a8dfc4;
+  font-size: 12px;
+  font-weight: 630;
+}
+
+.service-demo .demo-codex-tool code { font: 580 12px/1.5 var(--demo-codex-mono); }
+.service-demo .demo-codex-dispatch p { margin: 0; }
+.service-demo .demo-codex-task { display: flex; flex-wrap: wrap; gap: 6px 12px; color: #cddce9; font-size: 12px; }
+
+.service-demo .demo-codex-task > span:last-child {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: #46381d;
+  color: #f3db9a;
+  font-weight: 650;
+}
+
+.service-demo .demo-codex-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  border-top: 1px solid #364255;
+  background: #1c2634;
+  color: #b9cade;
+  font-size: 12px;
+}
+
+.service-demo .demo-codex-send {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid #b7d3f5;
+  border-radius: 7px;
+  background: #deedff;
+  color: #203d60;
+  font-size: 13px;
+  font-weight: 670;
+}
+
+.service-demo .demo-codex-send:hover { background: #c8e2ff; }
+.service-demo .demo-codex-send:focus-visible { outline: 2px solid #bfddff; outline-offset: 3px; }
+
+.service-demo.is-capture .demo-codex-dispatch { animation: none; }
+.service-demo.is-capture .demo-codex-actions { display: none; }
+
+@keyframes demo-codex-receipt {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .service-demo .demo-codex { min-height: 0; }
+  .service-demo .demo-codex-session { padding: 13px; }
+  .service-demo .demo-codex-actions { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-demo .demo-codex-dispatch { animation: none; }
+}

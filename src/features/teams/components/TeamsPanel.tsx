@@ -1,3 +1,4 @@
+import { getLocale, useTranslation } from "@/lib/i18n";
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, Ref } from "react";
 import type { Team, TeamMember } from '../types'
@@ -39,6 +40,7 @@ export default function TeamsPanel({
   onNotice,
   inviteButtonRef,
 }: TeamsPanelProps) {
+  const { t, i18n } = useTranslation();
   const fieldId = useId()
   const active = useRef(true)
   const mutations = useTeamMutations(currentUserId)
@@ -85,7 +87,7 @@ export default function TeamsPanel({
 
   function reportFailure(error: unknown) {
     if (!active.current) return
-    setFormError(error instanceof Error ? error.message : '요청을 처리하지 못했습니다. 다시 확인해주세요.')
+    setFormError(error instanceof Error ? error.message : t("요청을 처리하지 못했습니다. 다시 확인해주세요."))
     onError(error)
   }
 
@@ -107,7 +109,7 @@ export default function TeamsPanel({
       setCopied(false)
       setDialog({ kind: 'invite', team, code: created.inviteCode, created: true })
       onTeamsChanged(team.teamId)
-      onNotice('팀을 만들었습니다. 초대 코드를 팀원에게 공유해보세요.')
+      onNotice(t("팀을 만들었습니다. 초대 코드를 팀원에게 공유해보세요."))
     } catch (error) {
       reportFailure(error)
     } finally {
@@ -127,8 +129,8 @@ export default function TeamsPanel({
       setInviteCode('')
       onTeamsChanged(joined.teamId)
       onNotice(joined.replayed
-        ? '이미 참여 중인 팀입니다. 해당 팀으로 이동합니다.'
-        : '팀에 참여했습니다. 함께 사용할 Agent를 등록해보세요.')
+        ? t("이미 참여 중인 팀입니다. 해당 팀으로 이동합니다.")
+        : t("팀에 참여했습니다. 함께 사용할 Agent를 등록해보세요."))
     } catch (error) {
       reportFailure(error)
     }
@@ -144,7 +146,7 @@ export default function TeamsPanel({
       setIssuedCodes((previous) => ({ ...previous, [team.teamId]: issued.inviteCode }))
       setCopied(false)
       setDialog({ kind: 'invite', team, code: issued.inviteCode, created: false })
-      onNotice('새 초대 코드를 만들었습니다. 이전 코드는 사용할 수 없습니다.')
+      onNotice(t("새 초대 코드를 만들었습니다. 이전 코드는 사용할 수 없습니다."))
     } catch (error) {
       reportFailure(error)
     } finally {
@@ -157,10 +159,10 @@ export default function TeamsPanel({
       await copyText(code)
       if (!active.current) return
       setCopied(true)
-      onNotice('초대 코드를 복사했습니다.')
+      onNotice(t("초대 코드를 복사했습니다."))
     } catch (error) {
       if (!active.current) return
-      setFormError('복사하지 못했습니다. 코드를 선택해 직접 복사해주세요.')
+      setFormError(t("복사하지 못했습니다. 코드를 선택해 직접 복사해주세요."))
       onError(error)
     }
   }
@@ -170,31 +172,29 @@ export default function TeamsPanel({
       <div className="panel-heading">
         <div className="management-heading">
           <div className="management-title-row">
-            <h2 className="section-title" id={`${fieldId}-title`}>참여 팀</h2>
+            <h2 className="section-title" id={`${fieldId}-title`}>{t("참여 팀")}</h2>
             <span className="management-count">{loading ? "—" : teams.length}</span>
           </div>
-          <p className="management-description">참여 중인 팀과 팀원 정보를 관리하세요.</p>
+          <p className="management-description">{t("참여 중인 팀과 팀원 정보를 관리하세요.")}</p>
         </div>
         <div className="section-actions management-actions">
           <button className="button button-secondary" type="button" onClick={openJoin} disabled={pending}>
-            <Icon name="arrow" size={16} /> 코드로 참여
-          </button>
+            <Icon name="arrow" size={16} />{" "}{t("코드로 참여")}</button>
           <button className="button button-primary" type="button" onClick={openCreate} disabled={pending}>
-            <Icon name="plus" size={16} /> 팀 만들기
-          </button>
+            <Icon name="plus" size={16} />{" "}{t("팀 만들기")}</button>
         </div>
       </div>
 
       {teams.length > 0 && (
         <div className="team-selector">
-          <label htmlFor={`${fieldId}-team`}>현재 팀</label>
+          <label htmlFor={`${fieldId}-team`}>{t("현재 팀")}</label>
           <select
             id={`${fieldId}-team`}
             value={selectedTeam?.teamId ?? ''}
             onChange={(event) => onSelectTeam(Number(event.target.value))}
             disabled={loading || pending}
           >
-            {!selectedTeam && <option value="" disabled>팀을 선택하세요</option>}
+            {!selectedTeam && <option value="" disabled>{t("팀을 선택하세요")}</option>}
             {teams.map((team) => (
               <option key={team.teamId} value={team.teamId}>{team.name} · #{team.teamId}</option>
             ))}
@@ -203,8 +203,8 @@ export default function TeamsPanel({
             className="icon-button refresh-button"
             type="button"
             onClick={onRefresh}
-            aria-label="팀 정보 새로고침"
-            title="팀 정보 새로고침"
+            aria-label={t("팀 정보 새로고침")}
+            title={t("팀 정보 새로고침")}
             aria-busy={loading}
             disabled={loading || pending || !selectedTeam}
           >
@@ -214,28 +214,28 @@ export default function TeamsPanel({
       )}
 
       {loading && !selectedTeam ? (
-        <p className="loading-copy" role="status">팀 정보를 불러오는 중입니다.</p>
+        <p className="loading-copy" role="status">{t("팀 정보를 불러오는 중입니다.")}</p>
       ) : !selectedTeam ? (
         <EmptyState
           icon={<Icon name="team" size={30} />}
-          title="참여 중인 팀 없음"
-          description="첫 팀을 만들거나 팀원에게 받은 초대 코드로 참여해보세요."
+          title={t("참여 중인 팀 없음")}
+          description={t("첫 팀을 만들거나 팀원에게 받은 초대 코드로 참여해보세요.")}
         />
       ) : (
         <div className="team-workspace">
           <div className="team-summary">
             <div className="team-summary-heading">
               <div>
-                <span className="management-label">팀 정보</span>
+                <span className="management-label">{t("팀 정보")}</span>
                 <h3>{selectedTeam.name}</h3>
                 <span className={`badge ${selectedTeam.myRole === 'OWNER' ? 'badge-owner' : 'badge-member'}`}>
-                  {selectedTeam.myRole === 'OWNER' ? '소유자' : '팀원'}
+                  {selectedTeam.myRole === 'OWNER' ? t("소유자") : t("팀원")}
                 </span>
               </div>
             </div>
             <dl className="team-meta">
-              <div><dt>팀 ID</dt><dd>#{selectedTeam.teamId}</dd></div>
-              <div><dt>생성일</dt><dd>{formatDate(selectedTeam.createdAt)}</dd></div>
+              <div><dt>{t("팀 ID")}</dt><dd>#{selectedTeam.teamId}</dd></div>
+              <div><dt>{t("생성일")}</dt><dd>{formatDate(selectedTeam.createdAt, getLocale(i18n.language))}</dd></div>
             </dl>
             {selectedTeam.myRole === 'OWNER' ? (
               <button
@@ -246,21 +246,21 @@ export default function TeamsPanel({
                 onClick={() => openInvite(selectedTeam)}
               >
                 <Icon name="key" size={15} />
-                {issuedCodes[selectedTeam.teamId] ? '초대 코드 보기' : '새 초대 코드'}
+                {issuedCodes[selectedTeam.teamId] ? t("초대 코드 보기") : t("새 초대 코드")}
               </button>
             ) : (
-              <p className="field-hint">초대 코드는 팀 소유자가 발급할 수 있습니다.</p>
+              <p className="field-hint">{t("초대 코드는 팀 소유자가 발급할 수 있습니다.")}</p>
             )}
           </div>
 
           <div className="team-members">
             <div className="team-members-heading">
-              <h3>팀원 목록 <span className="management-count">{loading ? '—' : members.length}</span></h3>
+              <h3>{t("팀원 목록")}{" "}<span className="management-count">{loading ? '—' : members.length}</span></h3>
             </div>
             {loading ? (
-              <p className="loading-copy" role="status">팀원 정보를 불러오는 중입니다.</p>
+              <p className="loading-copy" role="status">{t("팀원 정보를 불러오는 중입니다.")}</p>
             ) : members.length === 0 ? (
-              <p className="muted">표시할 팀원이 없습니다. 팀 정보를 다시 불러와주세요.</p>
+              <p className="muted">{t("표시할 팀원이 없습니다. 팀 정보를 다시 불러와주세요.")}</p>
             ) : (
               <ul className="member-list">
                 {members.map((member) => (
@@ -269,13 +269,13 @@ export default function TeamsPanel({
                     <div className="member-identity">
                       <strong>
                         {member.name}
-                        {member.userId === currentUserId && <span className="member-self">나</span>}
+                        {member.userId === currentUserId && <span className="member-self">{t("나")}</span>}
                       </strong>
-                      <span className="muted">{member.nickname ? `@${member.nickname}` : `사용자 #${member.userId}`}</span>
+                      <span className="muted">{member.nickname ? `@${member.nickname}` : t("사용자 #{{userId}}", { userId: member.userId })}</span>
                     </div>
-                    <div className="member-joined"><span>참여일</span><time dateTime={member.joinedAt}>{formatDate(member.joinedAt)}</time></div>
+                    <div className="member-joined"><span>{t("참여일")}</span><time dateTime={member.joinedAt}>{formatDate(member.joinedAt, getLocale(i18n.language))}</time></div>
                     <span className={`badge ${member.role === 'OWNER' ? 'badge-owner' : 'badge-member'}`}>
-                      {member.role === 'OWNER' ? '소유자' : '팀원'}
+                      {member.role === 'OWNER' ? t("소유자") : t("팀원")}
                     </span>
                   </li>
                 ))}
@@ -286,14 +286,14 @@ export default function TeamsPanel({
       )}
 
       {dialog?.kind === 'create' && (
-        <Modal title="새 팀 만들기" description="팀을 만든 계정이 소유자(OWNER)가 됩니다." onClose={closeDialog} busy={pending}>
+        <Modal title={t("새 팀 만들기")} description={t("팀을 만든 계정이 소유자(OWNER)가 됩니다.")} onClose={closeDialog} busy={pending}>
           <form className="grid gap-[18px]" onSubmit={(event) => { void createTeam(event) }}>
             <div className="field">
-              <label htmlFor={`${fieldId}-name`}>팀 이름</label>
+              <label htmlFor={`${fieldId}-name`}>{t("팀 이름")}</label>
               <input
                 id={`${fieldId}-name`}
                 name="teamName"
-                placeholder="예: DevLink 개발팀"
+                placeholder={t("예: DevLink 개발팀")}
                 value={teamName}
                 onChange={(event) => setTeamName(event.target.value)}
                 maxLength={120}
@@ -301,13 +301,13 @@ export default function TeamsPanel({
                 disabled={pending}
                 aria-invalid={Boolean(formError)}
               />
-              <span className="field-hint">최대 120자까지 입력할 수 있습니다.</span>
+              <span className="field-hint">{t("최대 120자까지 입력할 수 있습니다.")}</span>
             </div>
             {formError && <p className="inline-error" role="alert">{formError}</p>}
             <div className="modal-footer">
-              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>취소</button>
+              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>{t("취소")}</button>
               <button className="button button-primary" type="submit" disabled={pending || !teamName.trim()}>
-                {pending ? '팀 만드는 중…' : '팀 만들기'}
+                {pending ? t("팀 만드는 중…") : t("팀 만들기")}
               </button>
             </div>
           </form>
@@ -315,15 +315,15 @@ export default function TeamsPanel({
       )}
 
       {dialog?.kind === 'join' && (
-        <Modal title="초대 코드로 참여" description="팀원에게 받은 초대 코드를 입력해주세요." onClose={closeDialog} busy={pending}>
+        <Modal title={t("초대 코드로 참여")} description={t("팀원에게 받은 초대 코드를 입력해주세요.")} onClose={closeDialog} busy={pending}>
           <form className="grid gap-[18px]" onSubmit={(event) => { void joinTeam(event) }}>
             <div className="field">
-              <label htmlFor={`${fieldId}-invite`}>초대 코드</label>
+              <label htmlFor={`${fieldId}-invite`}>{t("초대 코드")}</label>
               <input
                 id={`${fieldId}-invite`}
                 name="inviteCode"
                 className="code-input"
-                placeholder="초대 코드를 붙여넣으세요"
+                placeholder={t("초대 코드를 붙여넣으세요")}
                 value={inviteCode}
                 onChange={(event) => setInviteCode(event.target.value)}
                 maxLength={64}
@@ -334,13 +334,13 @@ export default function TeamsPanel({
                 disabled={pending}
                 aria-invalid={Boolean(formError)}
               />
-              <span className="field-hint">영문 대소문자를 구분합니다.</span>
+              <span className="field-hint">{t("영문 대소문자를 구분합니다.")}</span>
             </div>
             {formError && <p className="inline-error" role="alert">{formError}</p>}
             <div className="modal-footer">
-              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>취소</button>
+              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>{t("취소")}</button>
               <button className="button button-primary" type="submit" disabled={pending || !inviteCode.trim()}>
-                {pending ? '참여하는 중…' : '팀에 참여하기'}
+                {pending ? t("참여하는 중…") : t("팀에 참여하기")}
               </button>
             </div>
           </form>
@@ -348,17 +348,17 @@ export default function TeamsPanel({
       )}
 
       {dialog?.kind === 'invite-confirm' && (
-        <Modal title="새 초대 코드 만들기" description={`${dialog.team.name} 팀의 초대 코드를 새로 발급합니다.`} onClose={closeDialog} busy={pending}>
+        <Modal title={t("새 초대 코드 만들기")} description={t("{{teamName}} 팀의 초대 코드를 새로 발급합니다.", { teamName: dialog.team.name })} onClose={closeDialog} busy={pending}>
           <div className="grid gap-[18px]">
             <div className="invite-warning">
               <Icon name="shield" size={20} />
-              <p>새 코드를 만들면 이전 초대 코드는 사용할 수 없습니다. 기존 팀원의 가입은 유지됩니다.</p>
+              <p>{t("새 코드를 만들면 이전 초대 코드는 사용할 수 없습니다. 기존 팀원의 가입은 유지됩니다.")}</p>
             </div>
             {formError && <p className="inline-error" role="alert">{formError}</p>}
             <div className="modal-footer">
-              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>취소</button>
+              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>{t("취소")}</button>
               <button className="button button-primary" type="button" onClick={() => { void regenerateInvite() }} disabled={pending}>
-                {pending ? '코드 만드는 중…' : '새 코드 만들기'}
+                {pending ? t("코드 만드는 중…") : t("새 코드 만들기")}
               </button>
             </div>
           </div>
@@ -367,14 +367,14 @@ export default function TeamsPanel({
 
       {dialog?.kind === 'invite' && (
         <Modal
-          title={dialog.created ? "팀 생성 완료" : "팀 초대 코드"}
-          description={`${dialog.team.name} 팀에 초대할 사람에게 코드를 공유해주세요.`}
+          title={dialog.created ? t("팀 생성 완료") : t("팀 초대 코드")}
+          description={t("{{teamName}} 팀에 초대할 사람에게 코드를 공유해주세요.", { teamName: dialog.team.name })}
           onClose={closeDialog}
           busy={pending}
         >
           <div className="grid gap-[18px]">
             <div className="field">
-              <label htmlFor={`${fieldId}-issued`}>초대 코드</label>
+              <label htmlFor={`${fieldId}-issued`}>{t("초대 코드")}</label>
               <input
                 id={`${fieldId}-issued`}
                 className="invite-code"
@@ -383,7 +383,7 @@ export default function TeamsPanel({
                 spellCheck={false}
                 onFocus={(event) => event.currentTarget.select()}
               />
-              <span className="field-hint">팀원은 로그인한 뒤 이 코드로 참여할 수 있습니다.</span>
+              <span className="field-hint">{t("팀원은 로그인한 뒤 이 코드로 참여할 수 있습니다.")}</span>
             </div>
             {formError && <p className="inline-error" role="alert">{formError}</p>}
             <div className="modal-footer">
@@ -395,12 +395,10 @@ export default function TeamsPanel({
                   setDialog({ kind: 'invite-confirm', team: dialog.team })
                 }}
                 disabled={pending}
-              >
-                새 코드 만들기
-              </button>
-              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>닫기</button>
+              >{t("새 코드 만들기")}</button>
+              <button className="button button-secondary" type="button" onClick={closeDialog} disabled={pending}>{t("닫기")}</button>
               <button className="button button-primary" type="button" onClick={() => { void copyInvite(dialog.code) }} disabled={pending}>
-                <Icon name={copied ? 'check' : 'copy'} size={16} /> {copied ? '복사됨' : '코드 복사'}
+                <Icon name={copied ? 'check' : 'copy'} size={16} /> {copied ? t("복사됨") : t("코드 복사")}
               </button>
             </div>
           </div>

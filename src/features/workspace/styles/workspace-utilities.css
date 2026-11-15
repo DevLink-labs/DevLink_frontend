@@ -16,6 +16,13 @@
 .workspace-dashboard .settings-preference-row > div { min-width: 0; }
 .workspace-dashboard .settings-preference-row strong { display: block; color: var(--color-ink); font-size: 15px; font-weight: 600; }
 .workspace-dashboard .settings-preference-row p { margin: 5px 0 0; color: var(--workspace-muted); font-size: 14px; }
+.workspace-dashboard .settings-language-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.workspace-dashboard .settings-language-row > div { flex: 1; min-width: 0; }
+.workspace-dashboard .settings-language-row label { color: var(--color-ink); font-size: 15px; font-weight: 600; }
+.workspace-dashboard .settings-language-row p { margin: 5px 0 0; color: var(--workspace-muted); font-size: 14px; }
+.workspace-dashboard .settings-language-row select { flex-shrink: 0; width: 160px; min-width: 140px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--workspace-border); border-radius: 7px; background: var(--workspace-surface); color: var(--workspace-action); font: inherit; }
+.workspace-dashboard .settings-language-row select:focus-visible { outline: 2px solid var(--workspace-focus); outline-offset: 3px; }
+@media (max-width: 720px) { .workspace-dashboard .settings-language-row { align-items: stretch; flex-direction: column; gap: 12px; } .workspace-dashboard .settings-language-row select { width: 100%; } }
 .workspace-dashboard .settings-toggle { position: relative; flex-shrink: 0; width: 40px; height: 23px; padding: 2px; border: 1px solid var(--workspace-border); border-radius: 20px; background: var(--workspace-divider); }
 .workspace-dashboard .settings-toggle > span { display: block; width: 17px; height: 17px; border-radius: 50%; background: var(--workspace-surface); box-shadow: 0 1px 3px #1f2c391f; transition: transform .18s; }
 .workspace-dashboard .settings-toggle[aria-checked="true"] { border-color: var(--workspace-action); background: var(--workspace-action); }

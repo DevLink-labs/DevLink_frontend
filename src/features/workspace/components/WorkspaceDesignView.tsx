@@ -1,3 +1,4 @@
+import { useTranslation } from "@/lib/i18n";
 import { Icon } from "@/components/ui";
 import "../styles/workspace-utilities.css";
 
@@ -8,5 +9,6 @@ const previews = [
 ];
 
 export default function WorkspaceDesignView() {
-  return <div className="workspace-design"><div className="workspace-view-heading"><h1>디자인 미리보기</h1></div><div className="workspace-design-grid">{previews.map((preview) => <a key={preview.href} href={preview.href} className="workspace-design-card"><div className={`design-card-art ${preview.className}`} aria-hidden="true"><Icon name={preview.icon} /></div><div className="design-card-copy"><h2>{preview.title}</h2><p>{preview.description}</p></div><span className="design-card-link">미리보기 열기<Icon name="arrow" size={16} /></span></a>)}</div><p className="workspace-utility-note"><Icon name="eye" size={17} />디자인용 미리보기에는 예시 데이터가 표시됩니다.</p></div>;
+  const { t } = useTranslation();
+  return <div className="workspace-design"><div className="workspace-view-heading"><h1>{t("디자인 미리보기")}</h1></div><div className="workspace-design-grid">{previews.map((preview) => <a key={preview.href} href={preview.href} className="workspace-design-card"><div className={`design-card-art ${preview.className}`} aria-hidden="true"><Icon name={preview.icon} /></div><div className="design-card-copy"><h2>{t(preview.title)}</h2><p>{t(preview.description)}</p></div><span className="design-card-link">{t("미리보기 열기")}<Icon name="arrow" size={16} /></span></a>)}</div><p className="workspace-utility-note"><Icon name="eye" size={17} />{t("디자인용 미리보기에는 예시 데이터가 표시됩니다.")}</p></div>;
 }

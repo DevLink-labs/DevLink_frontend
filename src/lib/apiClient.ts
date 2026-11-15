@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 
@@ -49,12 +50,12 @@ function isEnvelope(value: unknown): value is ApiEnvelope {
 }
 
 function statusMessage(status: number): string {
-  if (status === 401) return '로그인이 필요하거나 세션이 만료되었습니다. 다시 로그인해주세요.'
-  if (status === 403) return '요청 권한이 없습니다. 로그인 상태와 팀 권한을 확인해주세요.'
-  if (status === 404) return '요청한 정보를 찾을 수 없습니다. 목록을 새로고침해주세요.'
-  if (status === 409) return '이미 처리되었거나 중복된 요청입니다. 현재 상태를 확인해주세요.'
-  if (status >= 500) return '서버에서 요청을 처리하지 못했습니다. 잠시 후 다시 확인해주세요.'
-  return '요청을 처리하지 못했습니다. 입력한 내용을 확인해주세요.'
+  if (status === 401) return t("로그인이 필요하거나 세션이 만료되었습니다. 다시 로그인해주세요.")
+  if (status === 403) return t("요청 권한이 없습니다. 로그인 상태와 팀 권한을 확인해주세요.")
+  if (status === 404) return t("요청한 정보를 찾을 수 없습니다. 목록을 새로고침해주세요.")
+  if (status === 409) return t("이미 처리되었거나 중복된 요청입니다. 현재 상태를 확인해주세요.")
+  if (status >= 500) return t("서버에서 요청을 처리하지 못했습니다. 잠시 후 다시 확인해주세요.")
+  return t("요청을 처리하지 못했습니다. 입력한 내용을 확인해주세요.")
 }
 
 async function request<T>(path: string, options: AxiosRequestConfig<unknown> = {}): Promise<T> {
@@ -64,7 +65,7 @@ async function request<T>(path: string, options: AxiosRequestConfig<unknown> = {
     const response = await httpClient.request<unknown>({ ...options, url: path })
     if (!String(response.headers['content-type'] ?? '').includes('application/json')) {
       throw new ApiError(
-        'API 응답을 읽을 수 없습니다. 프론트의 API 주소와 백엔드 실행 상태를 확인해주세요.',
+        t("API 응답을 읽을 수 없습니다. 프론트의 API 주소와 백엔드 실행 상태를 확인해주세요."),
         response.status,
         'INVALID_API_RESPONSE',
       )
@@ -74,10 +75,10 @@ async function request<T>(path: string, options: AxiosRequestConfig<unknown> = {
     try {
       data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
     } catch {
-      throw new ApiError('서버 응답 형식이 올바르지 않습니다.', response.status, 'INVALID_API_RESPONSE')
+      throw new ApiError(t("서버 응답 형식이 올바르지 않습니다."), response.status, 'INVALID_API_RESPONSE')
     }
     if (!isEnvelope(data)) {
-      throw new ApiError('서버 응답 형식이 올바르지 않습니다.', response.status, 'INVALID_API_RESPONSE')
+      throw new ApiError(t("서버 응답 형식이 올바르지 않습니다."), response.status, 'INVALID_API_RESPONSE')
     }
     if (response.status < 200 || response.status >= 300 || !data.success) {
       const message = typeof data.message === 'string' && data.message.trim()
@@ -91,12 +92,12 @@ async function request<T>(path: string, options: AxiosRequestConfig<unknown> = {
     const timedOut = axios.isAxiosError(error)
       && (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT')
     const timeoutMessage = timedOut
-      ? '서버 응답 시간이 초과되었습니다.'
-      : '서버에 연결하지 못했습니다.'
+      ? t("서버 응답 시간이 초과되었습니다.")
+      : t("서버에 연결하지 못했습니다.")
     throw new ApiError(
       mutation
-        ? `${timeoutMessage} 요청 결과가 저장되었을 수 있으니 새로고침으로 확인한 뒤 다시 시도해주세요.`
-        : `${timeoutMessage} 백엔드 주소와 실행 상태를 확인해주세요.`,
+        ? t("{{message}} 요청 결과가 저장되었을 수 있으니 새로고침으로 확인한 뒤 다시 시도해주세요.", { message: timeoutMessage })
+        : t("{{message}} 백엔드 주소와 실행 상태를 확인해주세요.", { message: timeoutMessage }),
       0,
       timedOut ? 'REQUEST_TIMEOUT' : 'NETWORK_ERROR',
     )
@@ -112,7 +113,7 @@ function mutate<T>(method: 'POST' | 'PATCH' | 'DELETE', path: string, body?: unk
     const csrf = await request<CsrfToken>('/auth/csrf')
     if (!csrf || !['X-CSRF-TOKEN', 'X-XSRF-TOKEN'].includes(csrf.headerName)
       || typeof csrf.token !== 'string' || !csrf.token) {
-      throw new ApiError('요청 인증 정보를 확인하지 못했습니다. 페이지를 새로고침해주세요.', 0, 'INVALID_CSRF_RESPONSE')
+      throw new ApiError(t("요청 인증 정보를 확인하지 못했습니다. 페이지를 새로고침해주세요."), 0, 'INVALID_CSRF_RESPONSE')
     }
     return request<T>(path, {
       method,
