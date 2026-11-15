@@ -461,13 +461,18 @@ export default function AgentsPanel({
                         <div className="section-actions">
                           {desktop?.setup?.connectAgent && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (
                             <button
-                              className="button button-secondary button-small"
+                              className="button button-small agent-activate-button"
                               type="button"
                               onClick={() => void connectAgent(agent, "terminal")}
                               disabled={agentLaunch !== null || deleting}
-                              aria-label={`${agent.name} 이 PC에서 연결`}
+                              aria-busy={connectingAgentId === agent.agentId}
+                              aria-label={`${agent.name} ${connectingAgentId === agent.agentId ? "활성화 중" : "활성화"}`}
                             >
-                              {connectingAgentId === agent.agentId ? "연결 중…" : "이 PC에서 연결"}
+                              <Icon
+                                name={connectingAgentId === agent.agentId ? "refresh" : "activity"}
+                                size={14}
+                              />
+                              {connectingAgentId === agent.agentId ? "활성화 중…" : "활성화"}
                             </button>
                           )}
                           {desktop?.setup?.openAgentInCodex && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (

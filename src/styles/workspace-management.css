@@ -61,6 +61,34 @@
 .workspace-dashboard .management-tool-detail { display: flex; align-items: center; gap: 8px; }
 .workspace-dashboard .management-tool-detail img { display: block; object-fit: contain; }
 
+.workspace-dashboard .agents-panel .agent-activate-button {
+  gap: 5px;
+  min-inline-size: 92px;
+  border-color: #afccec;
+  color: #23517e;
+  background: linear-gradient(180deg, #f4f9ff, var(--workspace-accent));
+  box-shadow: 0 1px 2px #244d751a;
+  font-weight: 650;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.workspace-dashboard .agents-panel .agent-activate-button:not(:disabled):is(:hover, :focus-visible) {
+  border-color: #79a7d6;
+  box-shadow: 0 0 0 3px #d9eafdb3, 0 3px 8px #244d7526;
+}
+.workspace-dashboard .agents-panel .agent-activate-button[aria-busy="true"] {
+  opacity: 1;
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-dashboard .agents-panel .agent-activate-button:not(:disabled):hover:not(:active) {
+    transform: translateY(-1px);
+  }
+  .agent-activate-button[aria-busy="true"] svg { animation: agent-activate-spin 1.2s linear infinite; }
+}
+
+@keyframes agent-activate-spin { to { transform: rotate(360deg); } }
+
 .workspace-dashboard .team-panel .team-selector { flex-wrap: wrap; gap: 12px; padding: 0 24px 22px; border-bottom: 1px solid var(--workspace-divider); }
 .workspace-dashboard .team-panel .team-selector label { font-size: 12px; font-weight: 500; }
 .workspace-dashboard .team-panel .team-selector select { width: 280px; max-width: calc(100% - 104px); min-height: 36px; padding: 7px 11px; border-color: var(--workspace-divider); border-radius: 7px; font-size: 13px; }
