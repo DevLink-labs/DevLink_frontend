@@ -5,10 +5,10 @@ import BrandLogo from "@/components/common/BrandLogo";
 import { useSession } from "@/features/auth/hooks/useSession";
 import AuthPage from "@/pages/AuthPage";
 
-const DependencyTreePage = lazy(() => import("@/pages/DependencyTreePage.jsx"));
+const WorkspacePage = lazy(() => import("@/pages/WorkspacePage"));
 const WorkspaceEntryPage = lazy(() => import("@/pages/WorkspaceEntryPage"));
 
-export default function App({ dependencyTree = false }: { dependencyTree?: boolean }) {
+export default function App({ openTree = false }: { openTree?: boolean }) {
   const { t } = useTranslation();
   const { user, booting } = useSession()
   if (booting) return <div className="boot-screen">
@@ -25,8 +25,8 @@ export default function App({ dependencyTree = false }: { dependencyTree?: boole
       <h1 className="boot-brand-title"><BrandLogo variant="wordmark" className="boot-brand-wordmark" /></h1>
       <p className="muted">{t("워크스페이스를 준비하고 있어요.")}</p>
     </div>}>
-      {dependencyTree
-        ? <DependencyTreePage key={user.userId} user={user} />
+      {openTree
+        ? <WorkspacePage key={user.userId} user={user} initialView="tree" />
         : <WorkspaceEntryPage key={user.userId} user={user} />}
     </Suspense>
   );

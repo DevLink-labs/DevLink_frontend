@@ -6,6 +6,7 @@ export interface AgentSessionConnection {
   requesterAgentId: string;
   receiverAgentId: string;
   sessionCount: number;
+  status: "IN_PROGRESS" | "PENDING";
 }
 
 export function getAgentSessionConnections(

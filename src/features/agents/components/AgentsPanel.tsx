@@ -67,7 +67,9 @@ export default function AgentsPanel({
   const connecting = useRef<AbortController | null>(null);
   const mutations = useAgentMutations(currentUserId, team.teamId);
   const [pcReady, setPcReady] = useState<boolean | null>(null);
-  const [connectingAgentId, setConnectingAgentId] = useState<number | null>(null);
+  const [agentLaunch, setAgentLaunch] = useState<{ agentId: number; target: "terminal" | "app" } | null>(null);
+  const connectingAgentId = agentLaunch?.target === "terminal" ? agentLaunch.agentId : null;
+  const openingAgentId = agentLaunch?.target === "app" ? agentLaunch.agentId : null;
   const [formTarget, setFormTarget] = useState<Agent | "register" | null>(null);
   const [form, setForm] = useState<AgentForm>(emptyForm);
   const saving = mutations.registerAgent.isPending || mutations.updateAgent.isPending;
@@ -118,16 +120,21 @@ export default function AgentsPanel({
     return owner?.nickname || owner?.name || t("사용자 #{{value0}}", { value0: agent.ownerUserId });
   }
 
-  async function connectAgent(agent: Agent) {
-    const launch = desktop?.setup?.connectAgent;
+  async function connectAgent(agent: Agent, target: "terminal" | "app") {
+    const launch = target === "terminal" ? desktop?.setup?.connectAgent : desktop?.setup?.openAgentInCodex;
     if (!launch || connecting.current || agent.ownerUserId !== currentUserId ||
         agent.status !== "OFFLINE" || agent.toolType !== "CODEX") return;
     const controller = new AbortController();
     connecting.current = controller;
-    setConnectingAgentId(agent.agentId);
+    setAgentLaunch({ agentId: agent.agentId, target });
 
     try {
       await launch({ userId: currentUserId, teamId: team.teamId, email: currentUserEmail }, agent.agentId);
+      if (controller.signal.aborted) return;
+      if (target === "app") {
+        onNotice(t("Codex 앱에서 연결 지시문을 전송해주세요."));
+        return;
+      }
       const deadline = Date.now() + onlineCheckTimeout;
       while (!controller.signal.aborted && Date.now() < deadline) {
         const latest = await agentApi.getAgent(agent.agentId, controller.signal);
@@ -146,7 +153,7 @@ export default function AgentsPanel({
       if (!controller.signal.aborted) onError(error);
     } finally {
       connecting.current = null;
-      if (!controller.signal.aborted) setConnectingAgentId(null);
+      if (!controller.signal.aborted) setAgentLaunch(null);
     }
   }
 
@@ -317,9 +324,11 @@ export default function AgentsPanel({
       loading={loading}
       pcReady={pcReady}
       connectingAgentId={connectingAgentId}
+      openingAgentId={openingAgentId}
       ownerName={ownerName}
       onShowDetail={showDetail}
-      onConnect={desktop?.setup?.connectAgent ? connectAgent : undefined}
+      onConnect={desktop?.setup?.connectAgent ? (agent: Agent) => connectAgent(agent, "terminal") : undefined}
+      onOpenInCodex={desktop?.setup?.openAgentInCodex ? (agent: Agent) => connectAgent(agent, "app") : undefined}
       onEdit={openEdit}
       onToken={openToken}
       onDelete={openDelete}

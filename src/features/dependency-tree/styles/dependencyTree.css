@@ -88,10 +88,12 @@
   --tree-camera-easing: cubic-bezier(0.22, 0.8, 0.3, 1);
   --tree-card-in-duration: 0.35s;
 
-  /* 툴바 한 줄 + 그래프가 남은 높이 전부. 페이지 자체는 스크롤하지 않고 그래프 뷰포트만 스크롤한다. */
+  /* 툴바 아래 남은 높이에 그래프 배치 */
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  block-size: 100svh;
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 0;
   overflow: hidden;
   background: var(--tree-canvas);
   color: var(--tree-ink);
@@ -140,8 +142,7 @@
 .dependency-topbar,
 .dependency-topbar-end,
 .dependency-controls,
-.dependency-legend,
-.dependency-navigation {
+.dependency-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -162,7 +163,7 @@
   white-space: nowrap;
 }
 .dependency-brand p { margin: 0; font-size: var(--tree-meta-size); color: var(--tree-muted); }
-.dependency-topbar .dependency-controls { flex: 1 1 0; flex-wrap: nowrap; min-inline-size: 0; justify-content: center; }
+.dependency-topbar .dependency-controls { flex: 1 1 auto; min-inline-size: 0; justify-content: flex-start; }
 .dependency-topbar .dependency-controls > label { flex: 0 1 auto; }
 .dependency-topbar .dependency-controls select { flex: 1 1 auto; min-inline-size: 6rem; }
 .dependency-topbar-end { margin-inline-start: auto; gap: var(--tree-gap-lg); }
@@ -174,29 +175,18 @@
   border-block-start: var(--tree-http-width) solid var(--tree-http);
   border-radius: var(--tree-pill-radius);
 }
-.dependency-navigation a {
-  padding: var(--tree-gap-xs) var(--tree-gap-md);
-  border: var(--tree-stroke) solid var(--tree-panel-border);
-  border-radius: var(--tree-pill-radius);
+.dependency-mode-action {
+  flex-shrink: 0;
+  padding: var(--tree-gap-sm) var(--tree-gap-md);
+  border: var(--tree-stroke) solid var(--workspace-divider);
+  border-radius: var(--tree-ui-radius);
+  background: var(--tree-panel);
   color: var(--tree-http);
   font-size: var(--tree-meta-size);
   font-weight: var(--tree-weight-bold);
-}
-
-.dependency-navigation .dependency-return-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--tree-gap-sm);
-  flex-shrink: 0;
-  padding: var(--tree-gap-sm) var(--tree-gap-md);
-  border-color: var(--tree-focus);
-  background: var(--tree-focus);
-  color: var(--tree-canvas);
-  text-decoration: none;
   white-space: nowrap;
 }
-.dependency-return-link svg { flex-shrink: 0; transform: rotate(180deg); }
-.dependency-navigation .dependency-return-link:hover { background: var(--tree-ink); border-color: var(--tree-ink); }
+.dependency-mode-action:hover { border-color: var(--workspace-focus); }
 
 .dependency-page label { display: grid; gap: var(--tree-gap-xs); font-size: var(--tree-meta-size); color: var(--tree-muted); }
 /* 툴바의 컨트롤은 라벨과 선택 상자를 한 줄에 둔다. */
@@ -419,7 +409,7 @@
 .dependency-code { display: block; min-inline-size: 0; max-inline-size: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dependency-node.dependency-focused { outline: var(--tree-focus-width) solid var(--tree-border); }
 .dependency-node[aria-pressed="true"] { outline: var(--tree-focus-width) solid var(--tree-focus); }
-.dependency-page :is(button, a, select, input, .dependency-viewport):focus-visible {
+.dependency-page :is(button, select, input, .dependency-viewport):focus-visible {
   outline: var(--tree-focus-width) solid var(--tree-focus);
   outline-offset: var(--tree-focus-offset);
 }

@@ -1,6 +1,6 @@
 .task-conversation { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; background: var(--workspace-surface, #fff); overflow: hidden; color: var(--color-ink, #1f2c39); }
 .task-conversation .tc-header { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 16px; padding: 12px 24px; border-bottom: 1px solid var(--workspace-divider, #e9edf2); }
-.task-conversation .tc-heading { display: flex; align-items: center; flex: 1; gap: 10px; min-width: 0; }
+.task-conversation .tc-heading { display: flex; align-items: center; flex: 1 1 240px; gap: 10px; min-width: 0; }
 .task-conversation .tc-heading > div { min-width: 0; }
 .task-conversation .tc-back { margin: 0 0 0 -8px; }
 .task-conversation .tc-back svg { transform: rotate(180deg); }
@@ -9,7 +9,7 @@
 .task-conversation .tc-team-name { display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 240px; margin: 0; }
 .task-conversation .tc-team-name svg, .task-conversation .tc-participants > svg { flex-shrink: 0; }
 .task-conversation .tc-team-name > span, .task-conversation .tc-participants > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.task-conversation .tc-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.task-conversation .tc-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; max-width: 100%; }
 .task-conversation .tc-participants { display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
 .task-conversation .tc-participants > span { min-width: 0; }
 .task-conversation .tc-participant-divider { flex-shrink: 0; }

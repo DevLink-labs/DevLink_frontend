@@ -1,6 +1,26 @@
 import type { ReactNode } from 'react'
 
-type IconName = 'team' | 'agent' | 'plus' | 'arrow' | 'refresh' | 'copy' | 'logout' | 'check' | 'close' | 'key' | 'chevron' | 'chevrons' | 'book' | 'shield' | 'eye' | 'eye-off' | 'grid' | 'clock' | 'activity'
+type IconName =
+  | "team"
+  | "agent"
+  | "plus"
+  | "arrow"
+  | "refresh"
+  | "copy"
+  | "logout"
+  | "check"
+  | "close"
+  | "key"
+  | "chevron"
+  | "chevrons"
+  | "book"
+  | "shield"
+  | "eye"
+  | "eye-off"
+  | "grid"
+  | "clock"
+  | "activity"
+  | "alert-circle";
 
 export function Icon({ name, size = 20, className = '' }: { name: IconName; size?: number; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
@@ -23,6 +43,12 @@ export function Icon({ name, size = 20, className = '' }: { name: IconName; size
     grid: <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>,
     clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
     activity: <path d="M2 12h4l3-8 6 16 3-8h4" />,
+    "alert-circle": (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7.5v5m0 3.5h.01" />
+      </>
+    ),
   }
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">{paths[name]}</svg>
 }

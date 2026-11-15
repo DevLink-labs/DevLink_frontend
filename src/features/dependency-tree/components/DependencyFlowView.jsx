@@ -172,7 +172,7 @@ function FlowCanvas({ nodes: targets, edges, fit, focusIds, cameraTick }) {
 
 /**
  * @param {{ graph: object, activity?: object, frame?: object }} props
- * frame은 DependencyTreeFrame에 그대로 넘기는 제목·링크·추가 컨트롤·패널 내용이다.
+ * frame에 제목·보기 전환 버튼·추가 컨트롤·패널 내용 전달
  */
 export default function DependencyFlowView({ graph, activity, frame = {} }) {
   const { t, i18n } = useTranslation();

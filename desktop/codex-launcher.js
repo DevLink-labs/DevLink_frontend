@@ -68,4 +68,32 @@ async function launchCodex({ codex, terminal }, project) {
   }
 }
 
-module.exports = { prepareCodex, launchCodex };
+function codexAppUrl(project, teamId, agentId, taskId) {
+  const connect = [
+    `DevLink get_my_context({})로 프로젝트, 팀 ${teamId}, Agent ${agentId}를 확인하세요.`,
+    "일치하고 hostSession=unbound면 register_agent({}) 후 다시 확인하세요.",
+    "identity=verified와 hostSession=bound일 때만 진행하세요.",
+  ];
+  const prompt = taskId === undefined
+    ? [...connect, "작업 조회·생성·변경과 파일 변경 없이 연결 결과만 알려주세요."]
+    : [
+      ...connect,
+      `get_task_result({"taskId":"${taskId}"})로 수신 Agent와 IN_PROGRESS 상태를 확인하세요.`,
+      "재수락 없이 요청 범위만 작업하세요. 최신 version으로 성공 시 complete_task, 실행 실패 시 update_task_status(FAILED)를 호출하세요.",
+    ];
+  const url = `codex://new?path=${encodeURIComponent(project)}&prompt=${encodeURIComponent(prompt.join(" "))}`;
+  if (url.length > 2081) {
+    throw new Error("Codex 앱에 전달할 링크가 너무 깁니다. Codex에서 프로젝트 폴더를 직접 열어주세요.");
+  }
+  return url;
+}
+
+async function launchCodexApp(shell, url) {
+  try {
+    await shell.openExternal(url);
+  } catch {
+    throw new Error("Codex 앱을 열지 못했습니다. Codex 데스크톱 앱의 설치 상태를 확인해주세요.");
+  }
+}
+
+module.exports = { prepareCodex, launchCodex, codexAppUrl, launchCodexApp };

@@ -6,6 +6,10 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Icon } from '@/components/ui'
 import { ApiError } from '@/lib/apiClient'
+import type { Agent } from "@/features/agents/types";
+import { getDesktopApi } from "@/features/desktop-setup/api/desktopApi";
+import { useNotice } from "@/hooks/useNotice";
+import { copyText } from "@/utils";
 import { taskApi } from '../api/taskApi'
 import { taskKeys, useTaskDetail, useTaskHistory } from '../hooks/useTasks'
 import type { TaskDetail, TaskEvent, TaskHistory } from '../types'
@@ -14,6 +18,8 @@ import '../styles/task-conversation.css'
 
 interface TaskConversationViewProps {
   userId: number
+  userEmail: string;
+  agents: readonly Agent[];
   teamId: number
   taskId: number
   autoRefresh: boolean
@@ -51,6 +57,19 @@ function errorMessage(error: unknown, fallback = "기록을 불러오지 못했�
 
 function isAccessError(error: unknown): error is ApiError {
   return error instanceof ApiError && [401, 403, 404].includes(error.status)
+}
+
+function taskExecutionPrompt(taskId: number, receiverAgentId: number, t = translate) {
+  const values = { taskId, receiverAgentId };
+  return [
+    t("DevLink 작업 {{taskId}}를 수신 Agent {{receiverAgentId}}의 기존 Codex 대화에서 이어서 진행해주세요.", values),
+    t("먼저 get_my_context({})로 현재 Agent 신원을 확인해주세요. 연결되지 않은 경우에만 register_agent({})로 현재 프로젝트의 기존 Agent에 연결한 뒤 신원을 다시 확인해주세요."),
+    t("현재 Agent가 {{receiverAgentId}}가 아니면 재등록하거나 작업을 실행하지 말고 알려주세요.", values),
+    t('get_task_result({taskId: "{{taskId}}"})로 최신 작업 내용과 상태를 조회하고, 수신 Agent가 {{receiverAgentId}}이며 상태가 IN_PROGRESS인지 확인해주세요. 팀과 프로젝트도 현재 연결과 일치해야 합니다.', values),
+    t("조건이 다르면 작업이나 상태를 변경하지 말고 알려주세요. 이미 수락된 작업이므로 다시 수락하지 마세요."),
+    t("확인한 작업의 승인된 범위 안에서만 수행하고, 추가 승인이 필요한 행동은 먼저 사용자에게 확인해주세요."),
+    t("실제로 완료한 뒤 complete_task로 결과와 변경 파일을 기록해주세요. 실행 중 실패한 경우에는 update_task_status로 FAILED 상태와 실제 실패 이유를 기록해주세요."),
+  ].join("\n\n");
 }
 
 function RecordTime({ value, utc = false, className }: { value: string; utc?: boolean; className?: string }) {
@@ -126,7 +145,7 @@ function eventMessage(event: TaskEvent, translateMessage = translate) {
     return translateMessage("작업요청을 수락했습니다. (IN_PROGRESS)");
   }
   if (transition?.[1] === "IN_PROGRESS" && transition[2] === "COMPLETED") {
-    return translate("작업이 완료되었습니다. (COMPLETED)");
+    return translateMessage("작업이 완료되었습니다. (COMPLETED)");
   }
   return event.message;
 }
@@ -251,7 +270,7 @@ function ConversationHeader({ taskId, detail, onBack, children }: {
   const title = detail ? taskTitle(detail, t) : t("작업 #{{value0}}", { value0: taskId });
 
   return (
-    <header className="tc-header">
+    <header className="tc-header section-actions">
       <div className="tc-heading">
         {onBack && <button type="button" className="icon-button tc-back" onClick={onBack} aria-label={t("작업 목록으로 돌아가기")}><Icon name="arrow" size={18} /></button>}
         <div>
@@ -269,7 +288,7 @@ function ConversationHeader({ taskId, detail, onBack, children }: {
           )}
         </div>
       </div>
-      <div className="tc-header-actions">
+      <div className="tc-header-actions section-actions">
         {detail && <span key={detail.status} className={`dashboard-task-badge dashboard-task-${detail.status.toLowerCase()}`}>{t(taskStatusLabels[detail.status])}</span>}
         {children}
       </div>
@@ -345,9 +364,10 @@ function ConversationPreview({ preview, onBack }: TaskConversationPreviewProps) 
   );
 }
 
-function ConversationContent({ userId, teamId, taskId, autoRefresh, active = true, onRead, onError, onBack }: TaskConversationViewProps) {
+function ConversationContent({ userId, userEmail, agents, teamId, taskId, autoRefresh, active = true, onRead, onError, onBack }: TaskConversationViewProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient()
+  const notify = useNotice();
   const [blockedError, setBlockedError] = useState<ApiError | null>(null)
   const activeTaskId = blockedError ? null : taskId
   const detailQuery = useTaskDetail(userId, teamId, activeTaskId, autoRefresh)
@@ -377,6 +397,30 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
   const accessError = blockedError ?? observedAccessError
   const detail = accessError ? undefined : detailQuery.data
   const acceptVersion = detail?.canAccept === true && detail.status === "PENDING" ? detail.version : undefined;
+  const receivingAgent = detail?.status === "IN_PROGRESS" && detail.teamId === teamId
+    ? agents.find((agent) => agent.agentId === detail.receiverAgent.agentId && agent.teamId === teamId
+      && agent.ownerUserId === userId && agent.toolType === "CODEX")
+    : undefined;
+  const openAgentInCodex = getDesktopApi()?.setup?.openAgentInCodex;
+  const canOpenInCodex = !!receivingAgent && !!openAgentInCodex;
+  const openCodex = useMutation({
+    mutationFn: async () => {
+      if (!receivingAgent || !openAgentInCodex) throw new Error(t("현재 작업을 Codex 앱에서 열 수 없습니다."));
+      await openAgentInCodex({ userId, teamId, email: userEmail }, receivingAgent.agentId, taskId);
+    },
+    retry: false,
+    onSuccess: () => notify(t("Codex 앱에서 작업 지시문을 확인하고 전송해주세요."), "success"),
+    onError,
+  });
+  const copyTaskPrompt = useMutation({
+    mutationFn: async () => {
+      if (!receivingAgent) throw new Error(t("현재 작업의 수신 Agent를 확인할 수 없습니다."));
+      await copyText(taskExecutionPrompt(taskId, receivingAgent.agentId, t));
+    },
+    retry: false,
+    onSuccess: () => notify(t("작업 지시문을 복사했어요. 연결된 Codex 대화에 붙여넣어 주세요."), "success"),
+    onError: (copyError) => notify(t(errorMessage(copyError, "작업 지시문을 복사하지 못했습니다.")), "error"),
+  });
   const pages = accessError ? undefined : historyQuery.data?.pages
   const latestHistory = pages?.[0]
   const events = useMemo(() => mergeTaskEvents(pages), [pages])
@@ -626,6 +670,17 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
             {acceptTask.isPending ? t("수락 중…") : t("수락")}
           </button>
         )}
+        {canOpenInCodex && <>
+          <button type="button" className="button button-secondary button-small" disabled={openCodex.isPending}
+            aria-busy={openCodex.isPending} onClick={() => openCodex.mutate()}>
+            <Icon name="arrow" size={14} />{openCodex.isPending ? t("Codex 앱 여는 중…") : t("Codex 앱에서 열기")}
+          </button>
+          <button type="button" className="button button-ghost button-small" disabled={copyTaskPrompt.isPending}
+            aria-busy={copyTaskPrompt.isPending} onClick={() => copyTaskPrompt.mutate()}
+            title={t("이미 연결된 Codex 대화에 붙여넣어 작업을 이어갈 수 있어요.")}>
+            <Icon name="copy" size={14} />{copyTaskPrompt.isPending ? t("복사 중…") : t("작업 지시문 복사")}
+          </button>
+        </>}
       </ConversationHeader>
 
       {error && (detail || latestHistory) && <div className="tc-refresh-error" role="alert"><span>{t(errorMessage(error))}</span><button type="button" onClick={refresh} disabled={refreshing}>{t("다시 시도")}</button></div>}
@@ -633,6 +688,9 @@ function ConversationContent({ userId, teamId, taskId, autoRefresh, active = tru
         {acceptTask.error instanceof ApiError && acceptTask.error.status === 409
           ? t("작업 상태가 변경되었습니다. 최신 상태를 확인해주세요.")
           : t(errorMessage(acceptTask.error, "요청을 수락하지 못했습니다. 잠시 후 다시 시도해주세요."))}
+      </div>}
+      {openCodex.isError && canOpenInCodex && <div className="tc-refresh-error" role="alert">
+        {t(errorMessage(openCodex.error, "Codex 앱을 열지 못했습니다. 연결 관리에서 프로젝트 설정을 확인해주세요."))}
       </div>}
 
       <div className="tc-body">

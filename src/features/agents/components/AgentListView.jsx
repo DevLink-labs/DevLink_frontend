@@ -13,10 +13,12 @@ export default function AgentListView({
   currentUserId,
   loading,
   pcReady,
-  connectingAgentId,
+  connectingAgentId = /** @type {number | null} */ (null),
+  openingAgentId = /** @type {number | null} */ (null),
   ownerName,
   onShowDetail,
   onConnect,
+  onOpenInCodex,
   onEdit,
   onToken,
   onDelete,
@@ -29,6 +31,7 @@ export default function AgentListView({
   const [search, setSearch] = useState("");
   const [connection, setConnection] = useState("all");
   const query = search.trim().toLocaleLowerCase();
+  const launching = connectingAgentId !== null || openingAgentId !== null;
   const teamAgents = agents.filter((agent) => agent.teamId === team.teamId);
   const visibleAgents = teamAgents.filter((agent) =>
     (connection === "all" || agent.status === connection)
@@ -148,13 +151,28 @@ export default function AgentListView({
                         <div className="section-actions">
                           {onConnect && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (
                             <button
-                              className="button button-secondary button-small"
+                              className="button button-small agent-activate-button"
                               type="button"
                               onClick={() => void onConnect(agent)}
-                              disabled={connectingAgentId !== null || deleting}
-                              aria-label={t("{{value0}} 이 PC에서 연결", { value0: agent.name })}
+                              disabled={launching || deleting}
+                              aria-busy={connectingAgentId === agent.agentId}
+                              aria-label={connectingAgentId === agent.agentId
+                                ? t("{{value0}} 활성화 중", { value0: agent.name })
+                                : t("{{value0}} 활성화", { value0: agent.name })}
                             >
-                              {connectingAgentId === agent.agentId ? t("연결 중…") : t("이 PC에서 연결")}
+                              <Icon name={connectingAgentId === agent.agentId ? "refresh" : "activity"} size={14} />
+                              {connectingAgentId === agent.agentId ? t("활성화 중…") : t("활성화")}
+                            </button>
+                          )}
+                          {onOpenInCodex && agent.status === "OFFLINE" && agent.toolType === "CODEX" && (
+                            <button
+                              className="button button-secondary button-small"
+                              type="button"
+                              onClick={() => void onOpenInCodex(agent)}
+                              disabled={launching || deleting}
+                              aria-busy={openingAgentId === agent.agentId}
+                            >
+                              {openingAgentId === agent.agentId ? t("Codex 앱 여는 중…") : t("Codex 앱에서 열기")}
                             </button>
                           )}
                           <button

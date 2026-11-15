@@ -2,13 +2,13 @@ import { useTranslation } from "@/lib/i18n";
 import "../styles/dependencyTree.css";
 
 /**
- * 트리 화면의 고정 레이아웃. 상단 한 줄 툴바(제목·선택 컨트롤·범례·이동 링크) 아래에
- * 팀원 선택 줄(toolbar), 그래프(남은 높이 전부), 상세 패널 순으로 쌓인다.
+ * 트리 화면 상단에 제목·선택 컨트롤·범례·보기 전환 버튼 배치
+ * 아래에 팀원 선택 줄, 그래프, 상세 패널 배치
  */
-export default function DependencyTreeFrame({ title, description, links, controls, toolbar, panel, children }) {
+export default function DependencyTreeFrame({ title, description, modeAction, controls, toolbar, panel, children }) {
   const { t } = useTranslation();
   return (
-    <main className="dependency-page">
+    <section className="dependency-page" aria-label={title}>
       <header className="dependency-topbar">
         <div className="dependency-brand">
           <h1>{title}</h1>
@@ -21,7 +21,7 @@ export default function DependencyTreeFrame({ title, description, links, control
             <span className="dependency-pill dependency-pill--schema">{t("스키마 변경")}</span>
             <span className="dependency-legend-line">{t("FE → BE API 연결")}</span>
           </div>
-          {links && <nav className="dependency-navigation" aria-label={t("코드 의존성 화면")}>{links}</nav>}
+          {modeAction}
         </div>
       </header>
       <div className="dependency-body">
@@ -29,6 +29,6 @@ export default function DependencyTreeFrame({ title, description, links, control
         {children}
         {panel && <aside className="dependency-panel" aria-label={t("상세 정보")}>{panel}</aside>}
       </div>
-    </main>
+    </section>
   );
 }
