@@ -36,20 +36,23 @@ function taskPayload(value) {
   return { task, event: event ?? null };
 }
 
-export function useTaskRealtime({ userId, autoRefresh = true, onError }) {
+export function useTaskRealtime({ userId, autoRefresh = true, onError, onCompleted }) {
   const client = useQueryClient();
   const initialReads = useMemo(() => loadReads(userId), [userId]);
   const [stored, setStored] = useState(() => ({ userId, reads: initialReads }));
   const [connection, setConnection] = useState({ userId, connected: false });
-  const handlers = useRef({ autoRefresh, onError });
+  const handlers = useRef({ autoRefresh, onError, onCompleted });
   const resync = useRef(() => {});
   const reads = stored.userId === userId ? stored.reads : initialReads;
   const connected = connection.userId === userId && connection.connected;
 
   useEffect(() => {
-    handlers.current = { autoRefresh, onError };
+    handlers.current = { autoRefresh, onError, onCompleted };
+  }, [autoRefresh, onError, onCompleted]);
+
+  useEffect(() => {
     if (autoRefresh) resync.current();
-  }, [autoRefresh, onError]);
+  }, [autoRefresh]);
 
   const updateReads = useCallback((update) => {
     setStored((previous) => {
@@ -96,6 +99,16 @@ export function useTaskRealtime({ userId, autoRefresh = true, onError }) {
     const presence = new Map();
     const initializedTeams = new Set();
     const seenEvents = new Set();
+    const taskStatuses = new Map();
+
+    function observeCompletion(task, live = false) {
+      const key = taskReadKey(task.teamId, task.taskId);
+      const previous = taskStatuses.get(key);
+      taskStatuses.set(key, task.status);
+      if (task.status === "COMPLETED" && previous !== "COMPLETED" && (live || previous !== undefined)) {
+        handlers.current.onCompleted?.(task);
+      }
+    }
 
     function setConnected(value) {
       if (!active) return;
@@ -109,6 +122,7 @@ export function useTaskRealtime({ userId, autoRefresh = true, onError }) {
       if (key[2] === "tasks" && key[4] === "list" && Array.isArray(query.state.data)) {
         const initial = !initializedTeams.has(key[3]);
         initializedTeams.add(key[3]);
+        query.state.data.forEach((task) => observeCompletion(task));
         updateReads((current) => query.state.data.reduce((next, task) => observeTask(next, task, null, initial), current));
       }
       if (key[2] === "agents" && key[3] === "team" && Array.isArray(query.state.data)) {
@@ -174,6 +188,7 @@ export function useTaskRealtime({ userId, autoRefresh = true, onError }) {
       const newer = !previous || (event && compareSequences(event.sequence, previous.sequence ?? "0") >= 0)
         || (!event && (task.lastActivityAt || task.createdAt) >= (previous.task.lastActivityAt || previous.task.createdAt));
       if (newer) {
+        observeCompletion(task, true);
         client.setQueryData(snapshotsKey, (current) => ({
           ...current,
           [String(task.taskId)]: { task, sequence: event?.sequence ?? previous?.sequence ?? "0", receivedAt: Date.now() },

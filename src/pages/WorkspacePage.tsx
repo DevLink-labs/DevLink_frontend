@@ -42,7 +42,25 @@ export default function WorkspacePage({ user, initialTeamId, initialView = "work
   const inviteButton = useRef<HTMLButtonElement>(null);
   const { onError, logout, loggingOut } = useSession()
   const notify = useNotice()
-  const realtime = useTaskRealtime({ userId: user.userId, autoRefresh, onError });
+  const completedNotices = useRef<{ userId: number; tasks: Set<string> }>({ userId: user.userId, tasks: new Set() });
+  function showCompletedNotice(teamId: number, taskId: number, summary?: string | null) {
+    if (completedNotices.current.userId !== user.userId) {
+      completedNotices.current = { userId: user.userId, tasks: new Set() };
+    }
+    const key = `${teamId}:${taskId}`;
+    if (completedNotices.current.tasks.has(key)) return;
+    completedNotices.current.tasks.add(key);
+    notify(
+      summary || `#${taskId}`,
+      "success",
+      { label: t("열기"), onClick: () => openTask(teamId, taskId) },
+      { title: t("작업 완료") },
+    );
+  }
+  const realtime = useTaskRealtime({
+    userId: user.userId, autoRefresh, onError,
+    onCompleted: (task) => showCompletedNotice(task.teamId, task.taskId, task.taskSummary),
+  });
   const workspace = useWorkspace(user.userId, initialTeamId, !realtime.connected)
   const { teams, selectedTeamId, selectedTeam, members, agents, teamsLoading, teamsPending, teamsError,
     workspaceLoading, workspaceError, sceneStatus, selectTeam, refreshAll, refreshWorkspace } = workspace;
@@ -86,6 +104,10 @@ export default function WorkspacePage({ user, initialTeamId, initialView = "work
     onUpdates: (items) => {
       // 한 번만 오는 폴더 누락 안내는 작업 소식에 묻히지 않도록 모두 표시
       for (const item of items) {
+        if (item.kind === "TASK_COMPLETED" && item.taskId) {
+          showCompletedNotice(Number(item.teamId), Number(item.taskId), item.body);
+          continue;
+        }
         const kind = !item.taskId
           || ["TASK_STATUS_CHANGED", "TASK_OVERDUE", "PROJECT_MISSING"].includes(item.kind)
           ? "error"
