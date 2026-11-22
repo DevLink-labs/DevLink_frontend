@@ -76,6 +76,21 @@ export interface McpGuide {
 }
 
 export interface SetupInspection {
+  diagnostics?: {
+    profile: {
+      profilePath: string;
+      brokerFile: string;
+      issues: string[];
+      snapshot: { state: string; modifiedAt?: string };
+    };
+    configuration: {
+      status: "matches" | "mismatch" | "unknown";
+      issues: string[];
+      expected: { profilePath: string | null; brokerFile: string | null; nodePath: string | null; mcpPath: string | null; projectPath: string | null };
+      effective: { brokerFile: string | null; nodePath: string | null; mcpPath: string | null; projectPath: string | null };
+      sources: { scope: string; path: string | null; present: boolean }[];
+    };
+  };
   guide: McpGuide;
   connection: {
     observedAt: string;

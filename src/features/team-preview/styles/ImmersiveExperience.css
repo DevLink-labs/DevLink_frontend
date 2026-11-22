@@ -40,14 +40,14 @@
 }
 .itp-experience[data-transitioning="true"] { height: 100svh; overflow: hidden; }
 .itp-experience[data-transitioning="true"] > .itp-journey,
-.itp-experience[data-transitioning="true"] > .itp-dashboard-section { position: fixed; inset: 0; height: 100svh; pointer-events: none; }
+.itp-experience[data-transitioning="true"] > .itp-dashboard-section { position: absolute; inset: 0; height: 100svh; pointer-events: none; }
 .itp-experience[data-transitioning="true"] > .itp-journey { z-index: 0; }
 .itp-experience[data-transitioning="true"] > .itp-dashboard-section {
   z-index: 3;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
   background: transparent;
   transform: translate3d(0, calc((1 - var(--itp-view-progress)) * 100%), 0);
   will-change: transform;

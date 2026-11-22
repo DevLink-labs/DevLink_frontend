@@ -42,10 +42,37 @@
 .itp-stage-sticky .itp-stats span { color: #656c77; font-size: 12px; line-height: 20px; letter-spacing: -.2px; }
 .itp-stage-sticky .itp-stats .itp-stat-line { width: 1px; height: 12px; margin: 0; background: #dcdde0; }
 .itp-stage-sticky .itp-unread-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; margin-left: 8px; padding: 0 6px; border-radius: 10px; color: #fff; background: #4389b7; font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums; }
-.itp-stage-sticky .itp-stats .itp-session-stat > strong { color: #397eaf; }
-.itp-stage-sticky .itp-stats .itp-session-stat > span { display: inline-flex; align-items: center; gap: 6px; color: #477995; }
-.itp-stage-sticky .itp-stats .itp-pending-stat > strong { color: #bd6e1b; }
-.itp-stage-sticky .itp-stats .itp-pending-stat > span { display: inline-flex; align-items: center; gap: 6px; color: #a26728; }
+.itp-session-stats {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 18px;
+  border: 1px solid #dfe5ed;
+  border-radius: 14px;
+  background: #fffffff0;
+  box-shadow: 0 3px 12px #33415506;
+  pointer-events: auto;
+}
+.itp-session-stats > div { display: flex; flex-direction: column; gap: 4px; }
+.itp-session-stats strong { font-size: 24px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.itp-session-stats span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.itp-session-stats .itp-stat-line { width: 1px; height: 32px; background: #e2e7ed; }
+.itp-session-stats .itp-session-stat > strong { color: #397eaf; }
+.itp-session-stats .itp-session-stat > span { color: #477995; }
+.itp-session-stats .itp-pending-stat > strong { color: #bd6e1b; }
+.itp-session-stats .itp-pending-stat > span { color: #a26728; }
+.is-focused .itp-session-stats { visibility: hidden; pointer-events: none; }
+@media (max-width: 900px) {
+  .itp-session-stats { top: 20px; right: 12px; gap: 12px; padding: 10px 12px; }
+  .itp-session-stats strong { font-size: 22px; }
+  .itp-session-stats span { font-size: 12px; }
+}
+@media (max-width: 680px) {
+  .itp-session-stats { top: 12px; }
+}
 .itp-pending-signal { position: relative; display: inline-block; flex: none; width: 19px; height: 8px; overflow: hidden; }
 .itp-pending-signal::before { content: ""; position: absolute; inset: 3px 0; border-radius: 2px; background: #edc18c; }
 .itp-pending-signal::after { content: ""; position: absolute; top: 0; left: 0; width: 8px; height: 8px; clip-path: polygon(0 0, 100% 50%, 0 100%, 30% 50%); background: #dc8c2f; animation: itp-request-transfer 1.4s linear infinite; }

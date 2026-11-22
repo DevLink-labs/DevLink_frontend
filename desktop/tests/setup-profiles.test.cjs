@@ -19,6 +19,7 @@ const {
   prepareAccountProfile,
   readProfileAgent,
   readSavedBinding,
+  inspectSelectedProfile,
   resolveProjectPaths,
 } = require("../setup-profiles");
 const { checkSession, runStatus } = require("../setup-runner");
@@ -570,12 +571,18 @@ async function ipcFixture(t) {
           shell: { openPath: async () => "" },
         };
       if (name === "./setup-runner") return runner;
+      if (name === "./mcp-diagnostics") return require("../mcp-diagnostics");
+      if (name === "./codex-launcher") return {
+        ...require("../codex-launcher"),
+        inspectCodex: async (project, paths) => require("../mcp-diagnostics").diagnoseMcpConfiguration(null, project, paths),
+      };
       if (name === "./setup-profiles")
         return {
           listTeamProfiles,
           prepareAccountProfile,
           readProfileAgent,
           readSavedBinding,
+          inspectSelectedProfile,
           resolveProjectPaths,
         };
       return require(name);
@@ -1086,7 +1093,7 @@ test("계정·문서 전환과 프로필 변경은 이전 설정 핸들을 무�
   });
   await assert.rejects(
     f.invoke("getGuide", selected.id),
-    /프로필이나 실행 파일이 변경/,
+    /broker\.json 접속 정보가 변경/,
   );
   const saved = await f.invoke("listConnections", accountB);
   await f.invoke("status", accountA);

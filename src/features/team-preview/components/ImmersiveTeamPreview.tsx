@@ -832,10 +832,7 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                         changeTeam(id);
                       }}
                     />
-                    <div
-                      className="itp-stats"
-                      aria-label={t("팀원 {{value0}}명, 에이전트 {{value1}}개, 진행 중인 세션 {{value2}}개, 수락 대기 요청 {{value3}}개", { value0: members.length, value1: agentCount, value2: activeSessionCount, value3: pendingSessionCount })}
-                    >
+                    <div className="itp-stats">
                       <div>
                         <strong>{members.length}</strong>
                         <span>{t("팀원")}</span>
@@ -845,22 +842,23 @@ export default function ImmersiveTeamPreview({ workspace }: { workspace?: LiveWo
                         <strong>{agentCount}</strong>
                         <span>{t("에이전트")}</span>
                       </div>
-                      {activeSessionCount > 0 && <>
-                        <span className="itp-stat-line" />
-                        <div className="itp-session-stat" title={t("진행 중인 세션은 Agent를 잇는 파란 연결선에 빛이 양방향으로 흐릅니다.")}>
-                          <strong>{activeSessionCount}</strong>
-                          <span><i className="itp-session-signal" aria-hidden="true" />{t("진행 중")}</span>
-                        </div>
-                      </>}
-                      {pendingSessionCount > 0 && <>
-                        <span className="itp-stat-line" />
-                        <div className="itp-pending-stat" title={t("주황색 화살표는 수락 대기 중인 요청의 요청 Agent에서 수신 Agent로 이동합니다.")}>
-                          <strong>{pendingSessionCount}</strong>
-                          <span><i className="itp-pending-signal" aria-hidden="true" />{t("수락 대기")}</span>
-                        </div>
-                      </>}
                     </div>
                   </section>
+                  <div
+                    className="itp-session-stats"
+                    role="status"
+                    aria-label={t("팀원 {{value0}}명, 에이전트 {{value1}}개, 진행 중인 세션 {{value2}}개, 수락 대기 요청 {{value3}}개", { value0: members.length, value1: agentCount, value2: activeSessionCount, value3: pendingSessionCount })}
+                  >
+                    <div className="itp-session-stat" title={t("진행 중인 세션은 Agent를 잇는 파란 연결선에 빛이 양방향으로 흐릅니다.")}>
+                      <strong>{activeSessionCount}</strong>
+                      <span><i className="itp-session-signal" aria-hidden="true" />{t("진행 중")}</span>
+                    </div>
+                    <span className="itp-stat-line" />
+                    <div className="itp-pending-stat" title={t("주황색 화살표는 수락 대기 중인 요청의 요청 Agent에서 수신 Agent로 이동합니다.")}>
+                      <strong>{pendingSessionCount}</strong>
+                      <span><i className="itp-pending-signal" aria-hidden="true" />{t("수락 대기")}</span>
+                    </div>
+                  </div>
                   {focusedMemberId && member && (
                     <FocusedMemberDetails
                       key={`${activeTeamId}-${member.id}`}

@@ -1,73 +1,55 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { NoticeContext } from "@/hooks/useNotice";
-import type { NoticeAction, NoticeKind } from "@/hooks/useNotice";
-import { useTranslation } from "@/lib/i18n";
-import { Icon } from "../ui";
-import "./NoticeProvider.css";
+import type { NoticeAction, NoticeKind, Notify } from "@/hooks/useNotice";
+import NoticeStack from "./NoticeStack";
 
 type Notice = {
   id: number;
   message: string;
   kind: NoticeKind;
+  title?: string;
   action?: NoticeAction;
+  inspected: boolean;
 };
 
 export default function NoticeProvider({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const latestId = useRef(0);
-  const notify = useCallback(
-    (message: string, kind: NoticeKind = "success", action?: NoticeAction) => {
-      setNotice({ id: ++latestId.current, message, kind, action });
+  const notify = useCallback<Notify>(
+    (message, kind = "success", action, options) => {
+      const notice: Notice = {
+        id: ++latestId.current,
+        message,
+        kind,
+        title: options?.title,
+        action,
+        inspected: false,
+      };
+      setNotices((current) => [...current, notice]);
     },
     [],
   );
-  const isError = notice?.kind === "error";
 
-  useEffect(() => {
-    if (!notice) return;
-    // 닫히기 직전에 새 알림이 오면 이전 타이머가 새 알림을 지우지 않도록 자기 알림만 닫음
-    const timer = window.setTimeout(
-      () => setNotice((current) => (current === notice ? null : current)),
-      notice.kind === "error" ? 8000 : 5000,
+  function inspectNotice(notice: Notice) {
+    notice.action?.onClick();
+    setNotices((current) =>
+      current.map((item) =>
+        item.id === notice.id ? { ...item, inspected: true } : item,
+      ),
     );
-    return () => window.clearTimeout(timer);
-  }, [notice]);
+  }
 
   return (
     <NoticeContext.Provider value={notify}>
       {children}
-      {notice && (
-        <div key={notice.id} className={`toast toast-${notice.kind}`}>
-          <span className="toast-icon">
-            <Icon name={isError ? "alert-circle" : "check"} size={20} />
-          </span>
-          <span className="toast-message" role={isError ? "alert" : "status"}>
-            {notice.message}
-          </span>
-          {notice.action && (
-            <button
-              type="button"
-              className="toast-action"
-              onClick={() => {
-                notice.action?.onClick();
-                setNotice(null);
-              }}
-            >
-              {notice.action.label}
-            </button>
-          )}
-          <button
-            type="button"
-            className="toast-close"
-            aria-label={t("알림 닫기")}
-            onClick={() => setNotice(null)}
-          >
-            <Icon name="close" size={18} />
-          </button>
-        </div>
-      )}
+      <NoticeStack
+        notices={notices}
+        onDismiss={(id: number) =>
+          setNotices((current) => current.filter((notice) => notice.id !== id))
+        }
+        onInspect={inspectNotice}
+      />
     </NoticeContext.Provider>
   );
 }

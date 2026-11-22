@@ -11,7 +11,7 @@ const activityLabels = {
   unavailable: "작업 정보 확인 불가",
 };
 
-export default function AgentStatusPopover({ id, panelRef, agent, activity, onClose }) {
+export default function AgentStatusPopover({ id, panelRef, agent, activity, expanded, onSelect, onClose }) {
   const { t } = useTranslation();
   const state = activity?.state ?? "unavailable";
   const summary = activity?.summary
@@ -22,12 +22,12 @@ export default function AgentStatusPopover({ id, panelRef, agent, activity, onCl
     <section
       id={id}
       ref={panelRef}
-      className="itp-agent-status-popover"
-      role="dialog"
-      aria-modal="false"
+      className={`itp-agent-status-popover${expanded ? " is-expanded" : " is-collapsed"}`}
+      role={expanded ? "dialog" : "group"}
+      aria-modal={expanded ? "false" : undefined}
       aria-labelledby={`${id}-name`}
-      aria-describedby={`${id}-activity ${id}-summary`}
-      tabIndex={-1}
+      aria-describedby={expanded ? `${id}-activity ${id}-summary` : undefined}
+      tabIndex={expanded ? -1 : undefined}
       style={{ visibility: "hidden" }}
       onPointerDown={(event) => event.stopPropagation()}
       onPointerUp={(event) => event.stopPropagation()}
@@ -36,22 +36,28 @@ export default function AgentStatusPopover({ id, panelRef, agent, activity, onCl
       onWheel={(event) => event.stopPropagation()}
     >
       <header className="itp-agent-status-heading">
-        <div>
+        <button
+          type="button"
+          className="itp-agent-status-name"
+          aria-expanded={expanded}
+          aria-controls={expanded ? `${id}-content` : undefined}
+          onClick={(event) => expanded ? onClose() : onSelect(event.currentTarget)}
+        >
           <img className="itp-agent-status-tool" src={agent.tool === "Codex" ? chatgptLogo : claudeLogo} alt={agent.tool} title={agent.tool} width={20} height={20} />
-          <h3 id={`${id}-name`} title={agent.name}>{agent.name}</h3>
-        </div>
-        <button type="button" className="itp-agent-status-close" aria-label={t("Agent 상태 닫기")} onClick={onClose}>
+          <span id={`${id}-name`} title={agent.name}>{agent.name}</span>
+        </button>
+        {expanded && <button type="button" className="itp-agent-status-close" aria-label={t("Agent 상태 닫기")} onClick={onClose}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
             <path d="m6 6 12 12M18 6 6 18" />
           </svg>
-        </button>
+        </button>}
       </header>
-      <div className="itp-agent-status-content" tabIndex={0} aria-label={t("Agent 작업 정보")}>
+      {expanded && <div id={`${id}-content`} className="itp-agent-status-content" tabIndex={0} aria-label={t("Agent 작업 정보")}>
         <div className="itp-agent-status-activity" data-state={state}>
           <strong id={`${id}-activity`} className="itp-agent-status-activity-heading">{t(activityLabels[state] ?? activityLabels.unavailable)}</strong>
           <p id={`${id}-summary`} title={summary}>{summary}</p>
         </div>
-      </div>
+      </div>}
     </section>
   );
 }
