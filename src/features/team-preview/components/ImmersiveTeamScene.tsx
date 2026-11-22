@@ -133,12 +133,12 @@ export default function ImmersiveTeamScene({
   const labelsLayer = useRef<HTMLDivElement>(null);
   const teamLabel = useRef<HTMLDivElement>(null);
   const memberLabels = useRef(new Map<string, HTMLButtonElement>());
+  const agentLabels = useRef(new Map<string, HTMLElement>());
   const wake = useRef<() => void>(() => {});
   const requestRender = useRef<() => void>(() => {});
   const [popoverSelection, setPopoverSelection] = useState<SelectedSceneAgent | null>(null);
   const selectedAgentRef = useRef<SelectedSceneAgent | null>(null);
   const popoverPanel = useRef<HTMLElement>(null);
-  const agentPicker = useRef<HTMLSelectElement>(null);
   const popoverTrigger = useRef<HTMLElement | null>(null);
   const focusPopover = useRef(false);
   const chooseAgent = useRef<(memberId: string, agentId: string, trigger?: HTMLElement) => void>(
@@ -375,7 +375,7 @@ export default function ImmersiveTeamScene({
       }, AGENT_FOCUS_DURATION_MS);
       const selection = { memberId, agentId, teamKey: control.current.teamKey };
       selectedAgentRef.current = selection;
-      popoverTrigger.current = trigger ?? agentPicker.current;
+      popoverTrigger.current = trigger ?? agentLabels.current.get(agentId)?.querySelector<HTMLButtonElement>(".itp-agent-status-name") ?? null;
       focusPopover.current = true;
       if (popoverPanel.current) popoverPanel.current.style.visibility = "hidden";
       setPopoverSelection(selection);
@@ -517,6 +517,7 @@ export default function ImmersiveTeamScene({
       panelTop: 0,
       panelBottom: 0,
       hasPanel: false,
+      memberList: { x: 0, y: 0, width: 0, height: 0 },
     };
     const focusFrame = {
       left: 20,
@@ -602,6 +603,13 @@ export default function ImmersiveTeamScene({
         if (panel) panelObserver.observe(panel);
       }
       const panelBounds = panel?.getBoundingClientRect();
+      const memberListBounds = stage?.querySelector(".itp-member-list")?.getBoundingClientRect();
+      labelLayout.memberList = {
+        x: memberListBounds ? memberListBounds.left - hostBounds.left : 0,
+        y: memberListBounds ? memberListBounds.top - hostBounds.top : 0,
+        width: memberListBounds?.width ?? 0,
+        height: memberListBounds?.height ?? 0,
+      };
       labelLayout.minY = mobile ? Math.min(220, height * 0.27) : 110;
       labelLayout.panelTop = panelBounds ? panelBounds.top - hostBounds.top : height;
       labelLayout.panelBottom = panelBounds ? panelBounds.bottom - hostBounds.top : height;
@@ -768,48 +776,69 @@ export default function ImmersiveTeamScene({
       return progress > 0 || sceneProgress > 0;
     }
 
-    function updateAgentPopover() {
-      const panel = popoverPanel.current;
-      const selection = selectedAgentRef.current;
-      if (!panel || !selection) return;
-      const anchor = sessionAnchors.get(selection.agentId);
-      if (
-        !anchor || selection.memberId !== control.current.focusedMemberId ||
-        teamReveal < 0.65 || isTransitioning()
-      ) {
-        panel.style.visibility = "hidden";
-        return;
-      }
-      anchor.object.getWorldPosition(labelPoint).project(camera);
-      if (labelPoint.z < -1 || labelPoint.z > 1) {
-        panel.style.visibility = "hidden";
-        return;
-      }
-      const screenX = (labelPoint.x * 0.5 + 0.5) * width;
-      const screenY = (-labelPoint.y * 0.5 + 0.5) * height;
+    function updateAgentLabels() {
+      const { active, loading, focusedMemberId } = control.current;
       const left = Math.max(12, focusFrame.left + 4);
       const right = Math.min(width - 12, focusFrame.right - 4);
-      const top = Math.max(84, focusFrame.top + 4);
+      const top = Math.max(100, focusFrame.top + 4);
       const bottom = Math.min(height - 16, focusFrame.bottom - 4);
-      panel.style.maxWidth = `${Math.max(1, right - left)}px`;
-      panel.style.maxHeight = `${Math.max(1, bottom - top)}px`;
-      const panelWidth = panel.offsetWidth;
-      const panelHeight = panel.offsetHeight;
-      const x = THREE.MathUtils.clamp(
-        screenX + 24,
-        left,
-        Math.max(left, right - panelWidth),
+      const occupied = labelPlacements.filter((placement) => placement.visible).map((placement) => ({
+        x: placement.x - placement.halfWidth,
+        y: placement.y - placement.halfHeight,
+        width: placement.halfWidth * 2,
+        height: placement.halfHeight * 2,
+      }));
+      const selection = selectedAgentRef.current;
+      if (labelLayout.memberList.width > 0) occupied.push(labelLayout.memberList);
+      const labels = [...agentLabels.current].sort(([a], [b]) =>
+        Number(b === selection?.agentId) - Number(a === selection?.agentId),
       );
-      const y = THREE.MathUtils.clamp(
-        screenY - panelHeight - 24,
-        top,
-        Math.max(top, bottom - panelHeight),
-      );
-      panel.style.transform = `translate3d(${x}px,${y}px,0)`;
-      panel.style.visibility = "visible";
-      if (focusPopover.current) {
-        focusPopover.current = false;
-        panel.focus({ preventScroll: true });
+      for (const [agentId, panel] of labels) {
+        const anchor = sessionAnchors.get(agentId);
+        if (!active || loading || !anchor || anchor.memberId !== focusedMemberId ||
+          teamReveal < 0.65 || isTransitioning()) {
+          panel.style.visibility = "hidden";
+          continue;
+        }
+        anchor.object.localToWorld(labelPoint.set(0, 0.34, 0)).project(camera);
+        if (Math.abs(labelPoint.x) > 1 || Math.abs(labelPoint.y) > 1 || Math.abs(labelPoint.z) > 1) {
+          panel.style.visibility = "hidden";
+          continue;
+        }
+        const screenX = (labelPoint.x * 0.5 + 0.5) * width;
+        const screenY = (-labelPoint.y * 0.5 + 0.5) * height;
+        const expanded = agentId === selection?.agentId;
+        panel.style.maxWidth = `${Math.max(1, Math.min(expanded ? 274 : 168, right - left))}px`;
+        panel.style.maxHeight = `${Math.max(1, bottom - top)}px`;
+        const panelWidth = panel.offsetWidth;
+        const panelHeight = panel.offsetHeight;
+        const desiredX = screenX - panelWidth / 2;
+        const desiredY = screenY - panelHeight - 8;
+        const candidates = [
+          { x: desiredX, y: desiredY },
+          { x: desiredX, y: screenY + 20 },
+          ...occupied.flatMap((box) => [
+            { x: desiredX, y: box.y - panelHeight - 8 },
+            { x: desiredX, y: box.y + box.height + 8 },
+            { x: box.x - panelWidth - 8, y: desiredY },
+            { x: box.x + box.width + 8, y: desiredY },
+          ]),
+        ].map((candidate) => {
+          const x = THREE.MathUtils.clamp(candidate.x, left, Math.max(left, right - panelWidth));
+          const y = THREE.MathUtils.clamp(candidate.y, top, Math.max(top, bottom - panelHeight));
+          const overlap = occupied.reduce((area, box) => area +
+            Math.max(0, Math.min(x + panelWidth + 8, box.x + box.width) - Math.max(x - 8, box.x)) *
+            Math.max(0, Math.min(y + panelHeight + 8, box.y + box.height) - Math.max(y - 8, box.y)), 0);
+          return { x, y, score: overlap * 10000 + (x - desiredX) ** 2 + (y - desiredY) ** 2 };
+        });
+        const position = candidates.reduce((best, candidate) => candidate.score < best.score ? candidate : best);
+        panel.style.transform = `translate3d(${position.x}px,${position.y}px,0)`;
+        panel.style.visibility = "visible";
+        occupied.push({ x: position.x, y: position.y, width: panelWidth, height: panelHeight });
+        if (agentId === selection?.agentId && focusPopover.current) {
+          focusPopover.current = false;
+          panel.focus({ preventScroll: true });
+        }
       }
     }
 
@@ -1030,7 +1059,7 @@ export default function ImmersiveTeamScene({
       if (!loading && teamCharacter && teamReveal >= 0.25 &&
         introProgress.current > SCENE_INTRO_LABEL_START) updateLabels();
       else if (labelsElement) labelsElement.style.visibility = "hidden";
-      updateAgentPopover();
+      updateAgentLabels();
       if (!availabilityReported && companionAsset && teamCharacter) {
         control.current.onAvailabilityChange(true);
         availabilityReported = true;
@@ -1160,7 +1189,7 @@ export default function ImmersiveTeamScene({
     function wheel(event: WheelEvent) {
       if (!control.current.active || event.ctrlKey) return;
       if (event.target instanceof Element) {
-        if (event.target.closest(".itp-selection, .itp-team-picker-panel, .itp-member-list, .itp-agent-status-popover, .itp-agent-picker"))
+        if (event.target.closest(".itp-selection, .itp-team-picker-panel, .itp-member-list, .itp-agent-status-popover"))
           return;
         let ancestor: HTMLElement | null =
           event.target instanceof HTMLElement ? event.target : event.target.parentElement;
@@ -1348,40 +1377,23 @@ export default function ImmersiveTeamScene({
             <span>{member.name}</span>
           </button>
         ))}
-        {active && !loading && focusedMember && focusedMember.agents.length > 0 && (
-          <label
-            className="itp-agent-picker"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <span>{t("Agent 상태")}</span>
-            <select
-              ref={agentPicker}
-              value={selectedAgent?.id ?? ""}
-              aria-label={t("{{name}} 팀원의 Agent 상태 확인", { name: focusedMember.name })}
-              aria-controls={selectedAgent ? popoverId : undefined}
-              onChange={(event) => {
-                const agentId = event.currentTarget.value;
-                if (agentId) chooseAgent.current(focusedMember.id, agentId, event.currentTarget);
-              }}
-            >
-              <option value="" disabled>{t("Agent 선택")}</option>
-              {focusedMember.agents.map((agent) => (
-                <option key={agent.id} value={agent.id}>{agent.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
       </div>
-      {selectedAgent && (
+      {active && !loading && focusedMember?.agents.map((agent) => (
         <AgentStatusPopover
-          id={popoverId}
-          panelRef={popoverPanel}
-          agent={selectedAgent}
-          activity={agentActivities?.get(selectedAgent.id)}
+          key={`${teamKey}-${agent.id}`}
+          id={`${popoverId}-${agent.id}`}
+          panelRef={(element: HTMLElement | null) => {
+            if (element) agentLabels.current.set(agent.id, element);
+            else agentLabels.current.delete(agent.id);
+            if (selectedAgent?.id === agent.id) popoverPanel.current = element;
+          }}
+          agent={agent}
+          activity={agentActivities?.get(agent.id)}
+          expanded={selectedAgent?.id === agent.id}
+          onSelect={(trigger: HTMLElement) => chooseAgent.current(focusedMember.id, agent.id, trigger)}
           onClose={() => dismissAgentPopover(true)}
         />
-      )}
+      ))}
     </div>
   );
 }

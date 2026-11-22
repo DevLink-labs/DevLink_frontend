@@ -1,5 +1,5 @@
 const { createHash } = require("node:crypto");
-const { mkdir, readFile, readdir } = require("node:fs/promises");
+const { lstat, mkdir, readFile, readdir } = require("node:fs/promises");
 const path = require("node:path");
 
 function serverOrigin(serverUrl) {
@@ -202,7 +202,43 @@ async function prepareAccountProfile(paths) {
   }
 }
 
+async function inspectSelectedProfile(paths, expected) {
+  const scope = accountScope(paths, expected);
+  const issues = [];
+  let binding;
+  try {
+    binding = await readJson(runtimeFile(paths.config, "agent-profile.json"));
+  } catch {
+    issues.push("PROFILE_UNREADABLE");
+  }
+  if (!binding) issues.push("PROFILE_IDENTITY_UNAVAILABLE");
+  else if (!boundTo(binding, scope, expected.project, expected.tool) ||
+      (expected.agentId && String(binding.state?.agent?.agentId) !== String(expected.agentId))) {
+    issues.push("PROFILE_IDENTITY_MISMATCH");
+  }
+  const brokerFile = runtimeFile(paths.config, "broker.json");
+  let snapshot;
+  try {
+    const info = await lstat(brokerFile);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 16_384) throw new Error();
+    const data = JSON.parse(await readFile(brokerFile, "utf8"));
+    snapshot = {
+      state: data.schemaVersion === 1 ? "present" : "invalid",
+      schemaVersion: data.schemaVersion === 1 ? 1 : null,
+      modifiedAt: info.mtime.toISOString(),
+    };
+    if (data.agentId !== undefined && expected.agentId && String(data.agentId) !== String(expected.agentId)) {
+      issues.push("BROKER_AGENT_MISMATCH");
+    }
+  } catch (error) {
+    snapshot = { state: error.code === "ENOENT" ? "missing" : ["EACCES", "EPERM"].includes(error.code) ? "denied" : "unreadable" };
+  }
+  // 선택한 프로필만 진단하며 토큰·자격 파일 원문은 반환하지 않음
+  return { profilePath: paths.config, brokerFile, issues, snapshot };
+}
+
 module.exports = {
+  inspectSelectedProfile,
   listTeamProfiles,
   prepareAccountProfile,
   readProfileAgent,

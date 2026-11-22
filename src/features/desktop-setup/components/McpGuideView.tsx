@@ -339,6 +339,27 @@ export default function McpGuideView({
                   </div>
                 </dl>
               )}
+              {inspection.diagnostics && (
+                <div className="break-all">
+                  <h4>{t("MCP 실행 경로 진단")}</h4>
+                  <p>{t("선택한 프로필")}: {inspection.diagnostics.profile.profilePath}</p>
+                  <p>broker.json: {inspection.diagnostics.profile.snapshot.state}</p>
+                  <p>{t("예상 브로커 경로")}: {inspection.diagnostics.configuration.expected.brokerFile}</p>
+                  <p>{t("실제 설정 브로커 경로")}: {inspection.diagnostics.configuration.effective.brokerFile ?? t("확인 불가")}</p>
+                  <p>{t("예상 Node 경로")}: {inspection.diagnostics.configuration.expected.nodePath}</p>
+                  <p>{t("실제 설정 Node 경로")}: {inspection.diagnostics.configuration.effective.nodePath ?? t("확인 불가")}</p>
+                  <p>{t("예상 MCP 경로")}: {inspection.diagnostics.configuration.expected.mcpPath}</p>
+                  <p>{t("실제 설정 MCP 경로")}: {inspection.diagnostics.configuration.effective.mcpPath ?? t("확인 불가")}</p>
+                  {inspection.diagnostics.configuration.sources.map((source) => (
+                    <p key={source.scope}>{source.scope}: {source.path} ({source.present ? t("있음") : t("없음")})</p>
+                  ))}
+                  {[...inspection.diagnostics.profile.issues, ...inspection.diagnostics.configuration.issues].map((issue) => (
+                    <p key={issue}>{issue}</p>
+                  ))}
+                  <p>{t("프로필 경로가 다르면 프로젝트·전역 MCP 설정을 확인한 뒤 AI 도구 세션을 다시 열어주세요. 다른 프로필로 자동 전환하지 않습니다.")}</p>
+                  <p>{t("이 진단은 현재 설정 기준입니다. 실행 중인 MCP의 환경변수는 바뀌지 않습니다. 경로가 같고 접속 정보만 바뀌었다면 같은 신원 확인 후 복구하며, 세션 충돌이나 신원 불일치는 재시작 전에 원인을 확인해주세요.")}</p>
+                </div>
+              )}
               <p>{t("확인 시각:")}{" "}
                 {new Date(
                   connection?.observedAt ?? guide.observedAt,

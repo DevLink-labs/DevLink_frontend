@@ -4,8 +4,10 @@ import AppRouter from './app/router'
 import './styles/index.css'
 import "./lib/i18n";
 
-const isServiceDemo = window.location.pathname.replace(/\/$/, "") === "/demo";
-const Agentation = import.meta.env.DEV && !isServiceDemo
+const isStandalonePreview = ["/demo", "/toast-preview"].includes(
+  window.location.pathname.replace(/\/$/, ""),
+);
+const Agentation = import.meta.env.DEV && !isStandalonePreview
   ? lazy(() => import('agentation').then((module) => ({ default: module.Agentation })))
   : null
 

@@ -72,7 +72,7 @@ export default function WorkspacePage({ user, initialTeamId, initialView = "work
   // 데스크톱 알림에서 다른 팀의 작업을 열면 팀도 함께 전환
   function openTask(teamId: number, taskId: number) {
     if (!teams.some((team) => team.teamId === teamId)) return;
-    if (teamId !== selectedTeamId) selectTeam(teamId);
+    selectTeam(teamId);
     setConversation({ teamId, taskId });
     setView("conversation");
     setDashboardRequest((request) => request + 1);
@@ -84,18 +84,23 @@ export default function WorkspacePage({ user, initialTeamId, initialView = "work
     email: user.email,
     teamIds,
     onUpdates: (items) => {
-      const tasks = items.filter((item) => item.taskId);
-      const notices = items.filter((item) => !item.taskId);
       // 한 번만 오는 폴더 누락 안내는 작업 소식에 묻히지 않도록 모두 표시
-      if (notices.length) {
-        const rest = tasks.length ? t(" 작업 소식 {{count}}건도 도착했습니다.", { count: tasks.length }) : "";
-        notify(`${notices.map((notice) => notice.body).join(" ")}${rest}`, "error");
-      } else {
-        const [first] = tasks;
-        notify(tasks.length > 1 ? t("{{message}} 외 {{count}}건", { message: first.body, count: tasks.length - 1 }) : first.body, "success", {
-          label: t("열기"),
-          onClick: () => openTask(Number(first.teamId), Number(first.taskId)),
-        });
+      for (const item of items) {
+        const kind = !item.taskId
+          || ["TASK_STATUS_CHANGED", "TASK_OVERDUE", "PROJECT_MISSING"].includes(item.kind)
+          ? "error"
+          : item.kind === "TASK_COMPLETED" ? "success" : "info";
+        notify(
+          item.body,
+          kind,
+          item.taskId
+            ? {
+                label: t("열기"),
+                onClick: () => openTask(Number(item.teamId), Number(item.taskId)),
+              }
+            : undefined,
+          { title: t(item.title) },
+        );
       }
       void tasksQuery.refetch();
     },

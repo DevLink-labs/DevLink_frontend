@@ -11,8 +11,15 @@ const TeamObservatory = lazy(() => import('../features/team-preview/components/T
 const TeamNetworkPreview = lazy(() => import('../features/team-preview/components/TeamNetworkPreview'))
 const DashboardDesignPage = lazy(() => import("@/pages/DashboardDesignPage.jsx"));
 const ServiceDemoPage = lazy(() => import("@/pages/ServiceDemoPage.jsx"));
+const ToastPreviewPage = lazy(() => import("@/pages/ToastPreviewPage.jsx"));
 
 const previewRoutes = [
+  {
+    path: "/toast-preview",
+    aliases: [],
+    title: "토스트 미리보기",
+    component: ToastPreviewPage,
+  },
   { path: "/demo", aliases: [], title: "DevLink 시연", component: ServiceDemoPage },
   { path: '/team-network', aliases: ['agents-3'], title: '3D 팀 스페이스 - 3', component: TeamNetworkPreview },
   { path: '/team-observatory', aliases: ['agents-2'], title: '3D 팀 스페이스 - 2', component: TeamObservatory },

@@ -11,12 +11,14 @@ const {
   runGuide,
   startBroker,
 } = require("./setup-runner");
-const { prepareCodex, launchCodex, codexAppUrl, launchCodexApp } = require("./codex-launcher");
+const { prepareCodex, inspectCodex, launchCodex, codexAppUrl, launchCodexApp } = require("./codex-launcher");
+const { diagnoseMcpConfiguration, diagnosticMessage } = require("./mcp-diagnostics");
 const {
   listTeamProfiles,
   prepareAccountProfile,
   readProfileAgent,
   readSavedBinding,
+  inspectSelectedProfile,
   resolveProjectPaths,
 } = require("./setup-profiles");
 
@@ -197,6 +199,16 @@ function registerSetupHandlers(
     );
   }
 
+  function changedProfileMessage(previous, next) {
+    const before = JSON.parse(previous);
+    const after = JSON.parse(next);
+    if (before.length === after.length && before.every((part, index) =>
+      index === 5 || JSON.stringify(part) === JSON.stringify(after[index]))) {
+      return "선택한 프로필의 broker.json 접속 정보가 변경됐습니다. 프로필 경로 불일치와는 다릅니다. 프로젝트 설정을 다시 선택해 확인해주세요. 실행 중인 MCP에서 같은 신원으로 복구되지 않으면 해당 AI 도구 세션을 다시 열어주세요.";
+    }
+    return "연결 프로필이나 실행 파일이 변경됐습니다. 프로젝트 설정을 다시 선택해주세요.";
+  }
+
   async function readGuide(current) {
     const version = documentVersion;
     const paths = await resolveProjectPaths(
@@ -216,7 +228,7 @@ function registerSetupHandlers(
     const before = await fingerprint(paths);
     if (current.fingerprint && before !== current.fingerprint) {
       throw new Error(
-        "연결 프로필이나 실행 파일이 변경됐습니다. 프로젝트 설정을 다시 선택해주세요.",
+        changedProfileMessage(current.fingerprint, before),
       );
     }
     const result = await runGuide(paths);
@@ -449,7 +461,25 @@ function registerSetupHandlers(
   handle("inspectSetup", (_frame, id) =>
     exclusive(async () => {
       const current = requireSelection(id);
-      const guide = await readGuide(current);
+      const profile = await inspectSelectedProfile(current.paths, current);
+      let configuration;
+      if (current.tool === "codex") {
+        configuration = await inspectCodex(current.project, current.paths);
+      } else {
+        let result = null;
+        try {
+          const info = await lstat(current.targetPath);
+          if (info.isFile() && !info.isSymbolicLink() && info.size <= 262_144) {
+            const entry = JSON.parse(await readFile(current.targetPath, "utf8"))?.mcpServers?.devlink;
+            if (entry) result = { enabled: true, transport: { type: "stdio", ...entry } };
+          }
+        } catch {}
+        configuration = await diagnoseMcpConfiguration(result, current.project, current.paths, { tool: current.tool });
+      }
+      const guide = await readGuide(current).catch((error) => {
+        if (configuration.status === "mismatch") throw new Error(diagnosticMessage(configuration));
+        throw error;
+      });
       const status = await runStatus(current.paths);
       const latest = await readGuide(current);
       const data = status.result?.data;
@@ -471,6 +501,7 @@ function registerSetupHandlers(
       return {
         guide: latest,
         connection: guide.fileState === latest.fileState ? connection : null,
+        diagnostics: { profile, configuration },
       };
     }),
   );
