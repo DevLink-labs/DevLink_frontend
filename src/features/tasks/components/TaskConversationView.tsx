@@ -72,10 +72,9 @@ function taskExecutionPrompt(taskId: number, receiverAgentId: number, t = transl
   ].join("\n\n");
 }
 
-function RecordTime({ value, utc = false, className }: { value: string; utc?: boolean; className?: string }) {
-  const { t, i18n } = useTranslation();
-  const localTime = utc || /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
-  return <time className={className} title={localTime ? t("내 기기의 시간대 기준") : t("서버에 기록된 시각")}>{formatTaskTime(value, utc, getLocale(i18n.language))}<span className="tc-time-basis">· {localTime ? t("내 시간") : t("서버 시각")}</span></time>
+function RecordTime({ value, className }: { value: string; className?: string }) {
+  const { i18n } = useTranslation();
+  return <time className={className}>{formatTaskTime(value, { locale: getLocale(i18n.language) })}</time>;
 }
 
 function CollapsibleMessage({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -198,7 +197,7 @@ function EventMessage({ event, detail, eventsById, enter = false }: {
       <li className={`tc-system-record${enterClass}`} data-event-id={event.eventId}>
         <span className="tc-system-symbol"><Icon name={event.eventType === 'CREATED' ? 'plus' : 'check'} size={13} /></span>
         <div>
-          <div className="tc-system-meta"><strong>{t(eventLabels[event.eventType] ?? "작업 기록")}</strong><RecordTime value={event.createdAt} utc={conversation} /></div>
+          <div className="tc-system-meta"><strong>{t(eventLabels[event.eventType] ?? "작업 기록")}</strong><RecordTime value={event.createdAt} /></div>
           {author && <span className="tc-system-author">{author.name}</span>}
           {event.questionEventId && <span className="tc-system-reference">{t("질문 #")}{event.questionEventId}{t("에 대한 답변")}</span>}
           {event.message !== null && <CollapsibleMessage><p className="tc-message-text">{eventMessage(event, t)}</p></CollapsibleMessage>}
@@ -224,7 +223,7 @@ function EventMessage({ event, detail, eventsById, enter = false }: {
             <p className="tc-message-text">{event.message ?? t("저장된 메시지 본문이 없습니다.")}</p>
           </CollapsibleMessage>
         </div>
-        <RecordTime className="tc-message-time" value={event.createdAt} utc />
+        <RecordTime className="tc-message-time" value={event.createdAt} />
       </div>
     </li>
   )
