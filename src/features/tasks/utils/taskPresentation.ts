@@ -36,23 +36,26 @@ export function parseTaskPrompt(prompt: string): { title: string; description: s
 }
 
 const timeOptions: Intl.DateTimeFormatOptions = {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+};
+const dateTimeOptions: Intl.DateTimeFormatOptions = {
+  ...timeOptions,
   year: "numeric",
   month: "numeric",
   day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
 };
-export function formatTaskTime(value: string | null | undefined, utc = false, locale = getLocale()): string {
+
+export function formatTaskTime(
+  value: string | null | undefined,
+  { locale = getLocale(), includeDate = false } = {},
+): string {
   if (!value) return translate("기록 없음");
   const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
   const date = new Date(hasOffset ? value : `${value}Z`);
   if (Number.isNaN(date.getTime())) return translate("기록 없음");
-  // 오프셋 없는 시스템 시각은 서버 시간대를 추정하지 않고 원래 시각으로 표시
-  return new Intl.DateTimeFormat(locale, {
-    ...timeOptions,
-    ...(!utc && !hasOffset ? { timeZone: "UTC" } : {}),
-  }).format(date);
+  return new Intl.DateTimeFormat(locale, includeDate ? dateTimeOptions : timeOptions).format(date);
 }
 
 export function mergeTaskEvents(pages: TaskHistory[] | undefined): TaskEvent[] {

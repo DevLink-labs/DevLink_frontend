@@ -12,7 +12,7 @@ const recordedEvents = [
     authorAgent: null,
     message: null,
     questionEventId: null,
-    createdAt: "2026-11-12T14:00:00",
+    createdAt: "2026-11-12T05:00:00Z",
   },
   {
     eventId: "102",
@@ -21,7 +21,7 @@ const recordedEvents = [
     authorAgent: null,
     message: "PENDING → IN_PROGRESS: 작업 수락",
     questionEventId: null,
-    createdAt: "2026-11-12T14:01:00",
+    createdAt: "2026-11-12T05:01:00Z",
   },
   {
     eventId: "103",
@@ -48,7 +48,7 @@ const recordedEvents = [
     authorAgent: null,
     message: "IN_PROGRESS → COMPLETED: 작업 완료",
     questionEventId: null,
-    createdAt: "2026-11-12T14:06:00",
+    createdAt: "2026-11-12T05:06:00Z",
   },
 ];
 

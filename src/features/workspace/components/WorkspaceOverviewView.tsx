@@ -184,7 +184,14 @@ export default function WorkspaceOverviewView({
                           <Icon name="chevron" size={14} />
                         </span>}
                       </span></td>
-                      <td><time dateTime={task.lastActivityAt ?? task.createdAt}>{formatTaskTime(task.lastActivityAt ?? task.createdAt, false, getLocale(i18n.language))}</time></td>
+                      <td>
+                        <time dateTime={task.lastActivityAt ?? task.createdAt}>
+                          {formatTaskTime(task.lastActivityAt ?? task.createdAt, {
+                            locale: getLocale(i18n.language),
+                            includeDate: true,
+                          })}
+                        </time>
+                      </td>
                     </tr>)}</tbody>
                   </table>
                 </div>}
